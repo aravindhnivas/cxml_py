@@ -31,11 +31,9 @@ save_location = pt(tempfile.gettempdir()) / "com.umdaui.app"
 
 @app.route("/", methods=["POST"])
 def compute():
-
     logger("fetching request")
 
     try:
-
         startTime = perf_counter()
         data = request.get_json()
         pyfile = data["pyfile"]
@@ -60,15 +58,15 @@ def compute():
             return jsonify(output)
 
         if not filename.exists():
-            raise Exception("Computed file is neither returned from main function or saved to temperary location")
+            raise Exception(
+                "Computed file is neither returned from main function or saved to temperary location"
+            )
 
         with open(filename, "r") as f:
             data = json.load(f)
         return jsonify(data)
 
     except Exception:
-
         error = traceback.format_exc(5)
         logger("catching the error occured in python", error)
         abort(404, description=error)
-

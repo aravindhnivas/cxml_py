@@ -5,7 +5,6 @@ from importlib import import_module
 
 
 if __name__ == "__main__":
-
     pyfile = sys.argv[1]
     args = None
     if len(sys.argv) > 2:
