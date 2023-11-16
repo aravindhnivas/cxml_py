@@ -1,0 +1,31 @@
+name: umdapy
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.9
+  - numpy
+  - scipy
+  - numba
+  - matplotlib
+  - dask
+  - dask-ml
+  - tqdm
+  - h5py
+  - tabulate
+  - loguru
+  - pandas
+  - flask
+  - waitress
+  - pip
+  - pip:
+    - uncertainties
+    - pyinstaller
+    - flask-cors
+    - pyqt6
+
+# conda env create -n umdapy -f src/conda.yml
+
+# update if necessary after creating an environment
+# conda activate umdapy
+# conda env update -f src/conda.yml --prune
