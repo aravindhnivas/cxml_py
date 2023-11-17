@@ -48,7 +48,8 @@ def compute():
             pyfunction = import_module(f"umdapy.{pyfile}")
             pyfunction = reload(pyfunction)
             output = pyfunction.main(args)
-            logger(f"{warn=}")
+            if warn:
+                logger(f"{warn=}")
 
         timeConsumed = perf_counter() - startTime
         logger(f"function execution done in {timeConsumed:.2f} s")
