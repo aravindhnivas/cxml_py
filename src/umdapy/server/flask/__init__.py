@@ -16,7 +16,7 @@ def logger(*args, **kwargs):
     print(*args, **kwargs, flush=True)
 
 
-@app.route("/")
+@app.route("/umdapy")
 def home():
     return "Server running: umdapy"
 
