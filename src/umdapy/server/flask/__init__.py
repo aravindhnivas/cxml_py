@@ -18,7 +18,7 @@ def logger(*args, **kwargs):
 
 @app.route("/")
 def home():
-    return "Server running: felionpy"
+    return "Server running: umdapy"
 
 
 @app.errorhandler(404)
@@ -45,7 +45,7 @@ def compute():
         logger(f"{pyfile=}\n{args=}")
 
         with warnings.catch_warnings(record=True) as warn:
-            pyfunction = import_module(f"felionlib.{pyfile}")
+            pyfunction = import_module(f"umdapy.{pyfile}")
             pyfunction = reload(pyfunction)
             output = pyfunction.main(args)
             logger(f"{warn=}")
