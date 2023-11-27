@@ -11,3 +11,4 @@ dask
 dask-ml
 scikit-learn
 scipy
+pytables

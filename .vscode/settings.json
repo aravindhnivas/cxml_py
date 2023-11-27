@@ -2,5 +2,10 @@
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.formatOnSave": true
+      },
+
+      // hide __pycache__ folder
+      "files.exclude": {
+        "**/__pycache__": true
       }
 }
