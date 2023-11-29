@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import dask.dataframe as dd
+from loguru import logger
 
 
 @dataclass
@@ -22,6 +23,7 @@ def main(args: Args):
     else:
         raise ValueError(f"Unknown filetype: {args.filetype}")
 
+    logger.info(f"read_data file: Shape: {df.shape[0].compute()}")
     if df.columns[0] == "Unnamed: 0":
         df = df.drop(columns=["Unnamed: 0"])
         # df = df.set_index(df.columns[0])

@@ -12,3 +12,4 @@ dask-ml
 scikit-learn
 scipy
 pytables
+loguru
