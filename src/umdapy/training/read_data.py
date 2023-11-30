@@ -1,6 +1,14 @@
 from dataclasses import dataclass
 import dask.dataframe as dd
 from loguru import logger
+from dask.diagnostics import ProgressBar
+
+from multiprocessing import cpu_count
+
+NPARTITIONS = cpu_count() * 5
+
+pbar = ProgressBar()
+pbar.register()
 
 
 @dataclass
@@ -8,6 +16,7 @@ class Args:
     filename: str
     filetype: str
     key: str
+    only_columns: bool
 
 
 def main(args: Args):
@@ -24,13 +33,18 @@ def main(args: Args):
         raise ValueError(f"Unknown filetype: {args.filetype}")
 
     logger.info(f"read_data file: Shape: {df.shape[0].compute()}")
-    if df.columns[0] == "Unnamed: 0":
-        df = df.drop(columns=["Unnamed: 0"])
-        # df = df.set_index(df.columns[0])
+    # if df.columns[0] == "Unnamed: 0":
+    #     df = df.drop(columns=["Unnamed: 0"])
+
+    data = {
+        "columns": df.columns.values.tolist(),
+    }
+
+    if args.only_columns:
+        return data
 
     head = df.head(10)
-    return {
-        "columns": df.columns.values.tolist(),
-        "head": head.to_dict(orient="records"),
-        "shape": df.shape[0].compute(),
-    }
+    data["shape"] = df.shape[0].compute()
+    data["head"] = head.to_dict(orient="records")
+
+    return data
