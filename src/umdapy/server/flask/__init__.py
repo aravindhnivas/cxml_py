@@ -76,6 +76,7 @@ def compute():
 
         if isinstance(output, dict):
             logger.info(f"Returning received to client\n{output=}")
+            logger.success(f"Computation done!!")
             return jsonify(output)
 
         data = log_output(logfilename)
