@@ -7,8 +7,8 @@ from multiprocessing import cpu_count
 
 NPARTITIONS = cpu_count() * 5
 
-pbar = ProgressBar()
-pbar.register()
+# pbar = ProgressBar()
+# pbar.register()
 
 
 @dataclass
@@ -43,8 +43,9 @@ def main(args: Args):
     if args.only_columns:
         return data
 
-    head = df.head(10)
-    data["shape"] = df.shape[0].compute()
-    data["head"] = head.to_dict(orient="records")
+    with ProgressBar():
+        head = df.head(10)
+        data["head"] = head.to_dict(orient="records")
+        data["shape"] = df.shape[0].compute()
 
     return data
