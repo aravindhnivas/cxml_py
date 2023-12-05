@@ -13,3 +13,7 @@ scikit-learn
 scipy
 pytables
 loguru
+selfies
+pytables
+astrochem-embedding
+git+https://github.com/aravindhnivas/mol2vec.git@gensim_v4
