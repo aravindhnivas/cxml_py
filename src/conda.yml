@@ -25,6 +25,7 @@ dependencies:
     - uncertainties
     - pyinstaller
     - flask-cors
+    - git+https://github.com/guyrosin/mol2vec.git@gensim_v4
 
 # conda env create -n umdapy -f src/conda.yml
 
