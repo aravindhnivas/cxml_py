@@ -20,12 +20,12 @@ dependencies:
   - pip
   - pytables
   - selfies
+  - pyinstaller
+  - flask-cors
   - pip:
     - astrochem-embedding
     - uncertainties
-    - pyinstaller
-    - flask-cors
-    - git+https://github.com/guyrosin/mol2vec.git@gensim_v4
+    - git+https://github.com/aravindhnivas/mol2vec.git@gensim_v4
 
 # conda env create -n umdapy -f src/conda.yml
 
