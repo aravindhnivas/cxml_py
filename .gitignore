@@ -152,4 +152,4 @@ cython_debug/
 #.idea/
 
 # custom ignored files
-**/.DS_Store
+.DS_Store
