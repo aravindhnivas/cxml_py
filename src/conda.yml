@@ -19,14 +19,13 @@ dependencies:
   - waitress
   - pip
   - pytables
-  - astrochem-embeddings
   - selfies
   - pip:
+    - astrochem-embedding
     - uncertainties
     - pyinstaller
     - flask-cors
-    - pyqt6
-    
+
 # conda env create -n umdapy -f src/conda.yml
 
 # update if necessary after creating an environment
