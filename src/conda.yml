@@ -31,4 +31,4 @@ dependencies:
 
 # update if necessary after creating an environment
 # conda activate umdapy
-# conda env update -f src/conda.yml --prune
+# conda env update -n umdapy -f src/conda.yml --prune
