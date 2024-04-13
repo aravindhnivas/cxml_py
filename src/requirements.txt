@@ -16,4 +16,6 @@ loguru
 selfies
 pytables
 astrochem-embedding
+periodictable
+h5py
 git+https://github.com/aravindhnivas/mol2vec.git@gensim_v4
