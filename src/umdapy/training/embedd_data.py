@@ -1,20 +1,14 @@
 from dataclasses import dataclass
 from time import perf_counter
-from typing import Literal
+from typing import Callable, Literal
 import dask.dataframe as dd
-from loguru import logger
 from dask.diagnostics import ProgressBar
 from astrochem_embedding import VICGAE
-from multiprocessing import cpu_count
 from pathlib import Path as pt
 import numpy as np
-
-NPARTITIONS = cpu_count() * 5
-
-# pbar = ProgressBar()
-# pbar.register()
-
-embedding_model = None
+from rdkit import Chem
+from mol2vec import features
+from umdapy.utils import load_model, logger
 
 
 @dataclass
@@ -22,24 +16,58 @@ class Args:
     filename: str
     filetype: str
     key: str
+    npartitions: int
+    mol2vec_dim: int
+    PCA_dim: int
     df_column: str
     embedding: Literal["VICGAE", "mol2vec"]
 
 
-def embedding_to_vec(smi):
+def VICGAE2vec(smi: str):
+    model = VICGAE.from_pretrained()
     try:
-        return embedding_model.embed_smiles(smi).numpy()
+        return model.embed_smiles(smi).numpy()
     except:
         return None
 
 
+mol2vec_model = load_model("mol2vec/mol2vec_model.pkl")
+logger.info(f"Loaded mol2vec model with {mol2vec_model.vector_size} dimensions")
+
+
+def mol2vec(smi: str) -> list[np.ndarray]:
+    """
+    Given a model, convert a SMILES string into the corresponding
+    NumPy vector.
+    """
+
+    # Molecule from SMILES will break on "bad" SMILES; this tries
+    # to get around sanitization (which takes a while) if it can
+    mol = Chem.MolFromSmiles(smi, sanitize=False)
+    if not mol:
+        return None
+
+    mol.UpdatePropertyCache(strict=False)
+    Chem.GetSymmSSSR(mol)
+    # generate a sentence from rdkit molecule
+    sentence = features.mol2alt_sentence(mol, radius=1)
+    # generate vector embedding from sentence and model
+    vector = features.sentences2vec([sentence], mol2vec_model)
+    return vector
+
+
+embedding_model: dict[str, Callable] = {
+    "VICGAE": VICGAE2vec,
+    "mol2vec": mol2vec,
+}
+
+
 def main(args: Args):
-    global embedding_model
 
     fullfile = pt(args.filename)
     location = fullfile.parent
 
-    print(f"Reading {fullfile} as {args.filetype}")
+    logger.info(f"Reading {fullfile} as {args.filetype}")
     df = None
     if args.filetype == "csv":
         df = dd.read_csv(fullfile)
@@ -52,22 +80,30 @@ def main(args: Args):
     else:
         raise ValueError(f"Unknown filetype: {args.filetype}")
 
-    logger.info(f"{NPARTITIONS=}")
-    df = df.repartition(npartitions=NPARTITIONS)
+    logger.info(f"{args.npartitions=}")
+    df = df.repartition(npartitions=args.npartitions)
 
-    if args.embedding == "VICGAE":
-        embedding_model = VICGAE.from_pretrained()
+    vectors = None
+    logger.info(f"Using {args.embedding} for embedding")
+    apply_model = embedding_model[args.embedding]
+    logger.info(f"Using {apply_model} for embedding")
+    if not callable(apply_model):
+        raise ValueError(f"Unknown embedding model: {args.embedding}")
 
-        vectors = df[args.df_column].apply(embedding_to_vec, meta=(None, "object"))
+    vectors = df[args.df_column].apply(apply_model, meta=(None, "object"))
 
-        embedd_savefile = f"{fullfile.stem}_{args.df_column}_embedded.npy"
-        logger.info(f"Begin computing embeddings for {fullfile.stem}...")
-        time = perf_counter()
-        with ProgressBar():
-            vec_computed = vectors.compute()
-            np.save(location / embedd_savefile, vec_computed)
+    if vectors is None:
+        raise ValueError(f"Unknown embedding model: {args.embedding}")
 
-        logger.info(
-            f"Embeddings computed in {(perf_counter() - time):.2f} s and saved to {embedd_savefile}"
-        )
+    embedd_savefile = f"{fullfile.stem}_{args.df_column}_embedded.npy"
+    logger.info(f"Begin computing embeddings for {fullfile.stem}...")
+    time = perf_counter()
+    with ProgressBar():
+        vec_computed = vectors.compute()
+        np.save(location / embedd_savefile, vec_computed)
+
+    logger.info(f"{vec_computed[0]=}, {vec_computed[0].shape=}")
+    logger.info(
+        f"Embeddings computed in {(perf_counter() - time):.2f} s and saved to {embedd_savefile}"
+    )
     return {"name": embedd_savefile, "shape": vec_computed.shape[0]}

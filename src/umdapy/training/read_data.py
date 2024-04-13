@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 import dask.dataframe as dd
-from loguru import logger
-from dask.diagnostics import ProgressBar
 
+# from loguru import logger
+from umdapy.utils import logger
+from dask.diagnostics import ProgressBar
 from multiprocessing import cpu_count
 
 NPARTITIONS = cpu_count() * 5

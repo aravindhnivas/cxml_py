@@ -6,15 +6,7 @@ from importlib import import_module, reload
 from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
 from pathlib import Path as pt
-from umdapy.utils import Paths
-from loguru import logger
-
-
-logger.add(
-    Paths().app_log_dir / "umdapy_server.log",
-    rotation="10 MB",
-    compression="zip",
-)
+from umdapy.utils import Paths, logger
 
 app = Flask(__name__)
 CORS(app)
@@ -85,5 +77,5 @@ def compute():
 
     except Exception:
         error = traceback.format_exc(5)
-        logger.error("catching the error occured in python", error)
+        logger.error(error)
         abort(404, description=error)
