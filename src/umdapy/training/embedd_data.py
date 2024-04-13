@@ -95,7 +95,7 @@ def main(args: Args):
     if vectors is None:
         raise ValueError(f"Unknown embedding model: {args.embedding}")
 
-    embedd_savefile = f"{fullfile.stem}_{args.df_column}_embedded.npy"
+    embedd_savefile = f"{fullfile.stem}_{args.df_column}_{args.embedding}.npy"
     logger.info(f"Begin computing embeddings for {fullfile.stem}...")
     time = perf_counter()
     with ProgressBar():
