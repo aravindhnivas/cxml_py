@@ -24,15 +24,18 @@ class Args:
 
 
 def VICGAE2vec(smi: str):
+    global invalid_smiles
     model = VICGAE.from_pretrained()
     try:
         return model.embed_smiles(smi).numpy()
     except:
+        invalid_smiles.append(smi)
         return None
 
 
 mol2vec_model = load_model("mol2vec/mol2vec_model.pkl")
 logger.info(f"Loaded mol2vec model with {mol2vec_model.vector_size} dimensions")
+invalid_smiles = []
 
 
 def mol2vec(smi: str) -> list[np.ndarray]:
@@ -41,10 +44,13 @@ def mol2vec(smi: str) -> list[np.ndarray]:
     NumPy vector.
     """
 
+    global invalid_smiles
+
     # Molecule from SMILES will break on "bad" SMILES; this tries
     # to get around sanitization (which takes a while) if it can
     mol = Chem.MolFromSmiles(smi, sanitize=False)
     if not mol:
+        invalid_smiles.append(smi)
         return None
 
     mol.UpdatePropertyCache(strict=False)
@@ -98,12 +104,20 @@ def main(args: Args):
     embedd_savefile = f"{fullfile.stem}_{args.df_column}_{args.embedding}.npy"
     logger.info(f"Begin computing embeddings for {fullfile.stem}...")
     time = perf_counter()
+
     with ProgressBar():
         vec_computed = vectors.compute()
         np.save(location / embedd_savefile, vec_computed)
 
     logger.info(f"{vec_computed[0]=}, {vec_computed[0].shape=}")
+
     logger.info(
         f"Embeddings computed in {(perf_counter() - time):.2f} s and saved to {embedd_savefile}"
     )
-    return {"name": embedd_savefile, "shape": vec_computed.shape[0]}
+
+    return {
+        "name": embedd_savefile,
+        "shape": vec_computed.shape[0],
+        "invalid_smiles": invalid_smiles,
+        "saved_file": f"{location / embedd_savefile}",
+    }
