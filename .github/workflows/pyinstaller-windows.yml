@@ -76,10 +76,10 @@ jobs:
       - name: Install conda and python dependencies
         uses: conda-incubator/setup-miniconda@v3
         with:
-          activate-environment: umdapy
-          environment-file: src/conda.yml
-          python-version: 3.9
           auto-activate-base: false
+          environment-file: src/conda.yml
+          activate-environment: umdapy
+          python-version: 3.9
 
       - name: Build with pyinstaller for ${{matrix.TARGET}}
         run: ${{matrix.CMD_BUILD}}
