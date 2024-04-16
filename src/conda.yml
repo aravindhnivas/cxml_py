@@ -22,6 +22,7 @@ dependencies:
   - selfies
   - pyinstaller
   - flask-cors
+  - pyarrow-hotfix
   - pip:
     - astrochem-embedding
     - uncertainties

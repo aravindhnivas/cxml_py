@@ -18,4 +18,5 @@ pytables
 astrochem-embedding
 periodictable
 h5py
+pyarrow-hotfix  # temporary fix for pyarrow 11.0.0
 git+https://github.com/aravindhnivas/mol2vec.git@gensim_v4
