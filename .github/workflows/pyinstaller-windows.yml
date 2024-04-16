@@ -74,13 +74,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r src/requirements.txt
 
-      # - name: Install conda and python dependencies
-      #   uses: conda-incubator/setup-miniconda@v3
-      #   with:
-      #     auto-activate-base: false
-      #     environment-file: src/conda.yml
-      #     activate-environment: umdapy
-      #     python-version: 3.9
+      - name: List contents of src/icons
+        run: ls src/icons
 
       - name: Build with pyinstaller for ${{matrix.TARGET}}
         run: ${{matrix.CMD_BUILD}}
