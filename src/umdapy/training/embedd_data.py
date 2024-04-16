@@ -25,6 +25,9 @@ class Args:
 
 def VICGAE2vec(smi: str):
     global invalid_smiles
+    smi = str(smi).replace("\xa0", "")
+    if smi == "nan":
+        return None
     model = VICGAE.from_pretrained()
     try:
         return model.embed_smiles(smi).numpy()
@@ -45,23 +48,32 @@ def mol2vec(smi: str) -> list[np.ndarray]:
     """
 
     global invalid_smiles
+    smi = str(smi).replace("\xa0", "")
+
+    if smi == "nan":
+        return None
 
     # Molecule from SMILES will break on "bad" SMILES; this tries
     # to get around sanitization (which takes a while) if it can
-    smi = smi.replace("\xa0", "")
-    mol = Chem.MolFromSmiles(smi, sanitize=False)
-    if not mol:
-        if not isinstance(smi, str):
-            return None
-        invalid_smiles.append(str(smi))
+    try:
+        mol = Chem.MolFromSmiles(smi, sanitize=False)
+        if not mol:
+            if not isinstance(smi, str):
+                return None
+            invalid_smiles.append(str(smi))
 
-    mol.UpdatePropertyCache(strict=False)
-    Chem.GetSymmSSSR(mol)
-    # generate a sentence from rdkit molecule
-    sentence = features.mol2alt_sentence(mol, radius=1)
-    # generate vector embedding from sentence and model
-    vector = features.sentences2vec([sentence], mol2vec_model)
-    return vector
+        mol.UpdatePropertyCache(strict=False)
+        Chem.GetSymmSSSR(mol)
+        # generate a sentence from rdkit molecule
+        sentence = features.mol2alt_sentence(mol, radius=1)
+        # generate vector embedding from sentence and model
+        vector = features.sentences2vec([sentence], mol2vec_model)
+        return vector
+
+    except:
+        if smi not in invalid_smiles and isinstance(smi, str):
+            invalid_smiles.append(smi)
+        return None
 
 
 embedding_model: dict[str, Callable] = {
@@ -123,7 +135,7 @@ def main(args: Args):
     invalid_smiles = [
         smiles.replace("\xa0", "").strip()
         for smiles in invalid_smiles
-        if isinstance(smiles, str)
+        # if isinstance(smiles, str)
     ]
 
     return {
