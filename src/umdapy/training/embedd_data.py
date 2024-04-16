@@ -84,6 +84,8 @@ embedding_model: dict[str, Callable] = {
 
 def main(args: Args):
 
+    logger.info(f"{args=}")
+
     global invalid_smiles
 
     fullfile = pt(args.filename)
@@ -112,7 +114,7 @@ def main(args: Args):
     if not callable(apply_model):
         raise ValueError(f"Unknown embedding model: {args.embedding}")
 
-    vectors = df[args.df_column].apply(apply_model, meta=(None, "object"))
+    vectors: dd = df[args.df_column].apply(apply_model, meta=(None, "object"))
 
     if vectors is None:
         raise ValueError(f"Unknown embedding model: {args.embedding}")
@@ -121,8 +123,11 @@ def main(args: Args):
     logger.info(f"Begin computing embeddings for {fullfile.stem}...")
     time = perf_counter()
 
+    start_time = perf_counter()
+    computed_time = None
     with ProgressBar():
         vec_computed = vectors.compute()
+        computed_time = f"{(perf_counter() - start_time):.2f} s"
         np.save(location / embedd_savefile, vec_computed)
 
     logger.info(f"{vec_computed[0]=}, {vec_computed[0].shape=}")
@@ -143,4 +148,5 @@ def main(args: Args):
         "shape": vec_computed.shape[0],
         "invalid_smiles": invalid_smiles,
         "saved_file": f"{location / embedd_savefile}",
+        "computed_time": computed_time,
     }
