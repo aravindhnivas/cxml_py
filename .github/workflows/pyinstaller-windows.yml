@@ -47,8 +47,8 @@ jobs:
 
           - os: windows-latest
             TARGET: windows
-            CMD_BUILD: pyinstaller --noconfirm --onedir --console --icon src\\icons\\icon.ico --name umdapy --debug noarchive --noupx --additional-hooks-dir src\\hooks --hidden-import umdapy src\\main.py
-            ZIP_IT: powershell Compress-Archive -Path dist\\umdapy -DestinationPath dist\\umdapy-win32.zip
+            CMD_BUILD: pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name umdapy --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import umdapy src/main.py
+            ZIP_IT: powershell Compress-Archive -Path dist/umdapy -DestinationPath dist/umdapy-win32.zip
             OUT_FILE_NAME: umdapy-win32.zip
             ASSET_MIME: application/zip
 
