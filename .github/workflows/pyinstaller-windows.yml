@@ -77,10 +77,6 @@ jobs:
       - name: List contents of src/icons
         run: ls src/icons
 
-      - name: Set icon path
-        run: echo "ICON_PATH=$(python -c 'import os; print(os.path.abspath("src/icons/icon.ico"))')" >> $GITHUB_ENV
-        if: matrix.os == 'windows-latest'
-
       - name: Build with pyinstaller for ${{matrix.TARGET}}
         run: ${{matrix.CMD_BUILD}}
 
