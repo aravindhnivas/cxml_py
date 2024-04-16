@@ -37,28 +37,28 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-latest
-            TARGET: macos
-            CMD_BUILD: >
-              pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name umdapy --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import umdapy src/main.py
-            ZIP_IT: cd dist && zip -r9 umdapy-darwin.zip umdapy/
-            OUT_FILE_NAME: umdapy-darwin.zip
-            ASSET_MIME: application/zip
+          # - os: macos-latest
+          #   TARGET: macos
+          #   CMD_BUILD: >
+          #     pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name umdapy --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import umdapy src/main.py
+          #   ZIP_IT: cd dist && zip -r9 umdapy-darwin.zip umdapy/
+          #   OUT_FILE_NAME: umdapy-darwin.zip
+          #   ASSET_MIME: application/zip
 
           - os: windows-latest
             TARGET: windows
-            CMD_BUILD: pyinstaller --noconfirm --onedir --console --icon src\icons\icon.ico --name umdapy --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import umdapy src/main.py
-            ZIP_IT: powershell Compress-Archive -Path dist/umdapy -DestinationPath dist/umdapy-win32.zip
+            CMD_BUILD: pyinstaller --noconfirm --onedir --console --icon src\\icons\\icon.ico --name umdapy --debug noarchive --noupx --additional-hooks-dir src\\hooks --hidden-import umdapy src\\main.py
+            ZIP_IT: powershell Compress-Archive -Path dist\\umdapy -DestinationPath dist\\umdapy-win32.zip
             OUT_FILE_NAME: umdapy-win32.zip
             ASSET_MIME: application/zip
 
-          - os: ubuntu-latest
-            TARGET: ubuntu
-            CMD_BUILD: >
-              pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name umdapy --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import umdapy src/main.py
-            ZIP_IT: cd dist && zip -r umdapy-linux.zip umdapy/
-            OUT_FILE_NAME: umdapy-linux.zip
-            ASSET_MIME: application/zip
+          # - os: ubuntu-latest
+          #   TARGET: ubuntu
+          #   CMD_BUILD: >
+          #     pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name umdapy --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import umdapy src/main.py
+          #   ZIP_IT: cd dist && zip -r umdapy-linux.zip umdapy/
+          #   OUT_FILE_NAME: umdapy-linux.zip
+          #   ASSET_MIME: application/zip
 
     steps:
       - uses: actions/checkout@v3
