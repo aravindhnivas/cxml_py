@@ -48,10 +48,12 @@ def mol2vec(smi: str) -> list[np.ndarray]:
 
     # Molecule from SMILES will break on "bad" SMILES; this tries
     # to get around sanitization (which takes a while) if it can
+    smi = smi.replace("\xa0", "")
     mol = Chem.MolFromSmiles(smi, sanitize=False)
     if not mol:
-        invalid_smiles.append(smi)
-        return None
+        if not isinstance(smi, str):
+            return None
+        invalid_smiles.append(str(smi))
 
     mol.UpdatePropertyCache(strict=False)
     Chem.GetSymmSSSR(mol)
@@ -69,6 +71,8 @@ embedding_model: dict[str, Callable] = {
 
 
 def main(args: Args):
+
+    global invalid_smiles
 
     fullfile = pt(args.filename)
     location = fullfile.parent
@@ -114,6 +118,13 @@ def main(args: Args):
     logger.info(
         f"Embeddings computed in {(perf_counter() - time):.2f} s and saved to {embedd_savefile}"
     )
+
+    # \xa0 is a non-breaking space in Latin1 (ISO 8859-1), also known as NBSP in Unicode. It's a character that prevents an automatic line break at its position. In HTML, it's often used to create multiple spaces that are visible.
+    invalid_smiles = [
+        smiles.replace("\xa0", "").strip()
+        for smiles in invalid_smiles
+        if isinstance(smiles, str)
+    ]
 
     return {
         "name": embedd_savefile,
