@@ -21,6 +21,7 @@ class Args:
     PCA_dim: int
     df_column: str
     embedding: Literal["VICGAE", "mol2vec"]
+    pretrained_model_location: str
 
 
 def VICGAE2vec(smi: str):
@@ -36,8 +37,10 @@ def VICGAE2vec(smi: str):
         return None
 
 
-mol2vec_model = load_model("mol2vec/mol2vec_model.pkl")
-logger.info(f"Loaded mol2vec model with {mol2vec_model.vector_size} dimensions")
+# mol2vec_model = load_model("mol2vec/mol2vec_model.pkl")
+# logger.info(f"Loaded mol2vec model with {mol2vec_model.vector_size} dimensions")
+
+mol2vec_model = None
 invalid_smiles = []
 
 
@@ -86,12 +89,15 @@ def main(args: Args):
 
     logger.info(f"{args=}")
 
-    global invalid_smiles
+    global invalid_smiles, mol2vec_model
 
     fullfile = pt(args.filename)
     location = fullfile.parent
-
     logger.info(f"Reading {fullfile} as {args.filetype}")
+
+    mol2vec_model = load_model(args.pretrained_model_location)
+    logger.info(f"Loaded mol2vec model with {mol2vec_model.vector_size} dimensions")
+
     df = None
     if args.filetype == "csv":
         df = dd.read_csv(fullfile)

@@ -47,17 +47,17 @@ logger.add(
 )
 
 
-umdapy_dir = pt(umdapy.__file__).parent
-model_dir = umdapy_dir / "models"
-logger.info(f"umdapy_dir: {umdapy_dir}")
-logger.info(f"model_dir: {model_dir}")
+# umdapy_dir = pt(umdapy.__file__).parent
+# model_dir = umdapy_dir / "models"
+# logger.info(f"umdapy_dir: {umdapy_dir}")
+# logger.info(f"model_dir: {model_dir}")
 
 
 def load_model(filepath: str):
-    filepath = model_dir / filepath
+    # filepath = model_dir / filepath
 
     logger.info(f"Loading model from {filepath}")
-    if not filepath.exists():
+    if not pt(filepath).exists():
         logger.error(f"Model file not found: {filepath}")
         raise FileNotFoundError(f"Model file not found: {filepath}")
     logger.info(f"Model loaded from {filepath}")
