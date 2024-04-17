@@ -8,7 +8,7 @@ from pathlib import Path as pt
 import numpy as np
 from rdkit import Chem
 from mol2vec import features
-from umdapy.utils import load_model, logger
+from umdalib.utils import load_model, logger
 
 
 @dataclass

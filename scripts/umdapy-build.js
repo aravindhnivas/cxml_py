@@ -6,7 +6,7 @@ const icon = path.join(maindir, 'icons/icon.ico')
 const hooks = path.join(maindir, 'hooks')
 const mainfile = path.join(maindir, 'main.py')
 const args =
-    `--noconfirm --onedir --console --icon ${icon} --name bin-umdapy --debug noarchive --noupx --additional-hooks-dir ${hooks} --hidden-import umdapy --paths ${maindir} ${mainfile}`.split(
+    `--noconfirm --onedir --console --icon ${icon} --name umdapy --debug noarchive --noupx --additional-hooks-dir ${hooks} --hidden-import umdalib --paths ${maindir} ${mainfile}`.split(
         ' '
     )
 console.log(args)

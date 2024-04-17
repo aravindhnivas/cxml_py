@@ -2,7 +2,7 @@ import sys
 import json
 import warnings
 from importlib import import_module
-from umdapy.utils import logger
+from umdalib.utils import logger
 
 
 class MyClass(object):
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     #     logger.info(f"{args=}")
 
     with warnings.catch_warnings(record=True) as warn:
-        pyfunction = import_module(f"umdapy.{pyfile}")
+        pyfunction = import_module(f"umdalib.{pyfile}")
         if args:
             pyfunction.main(args)
         else:

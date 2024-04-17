@@ -6,7 +6,7 @@ from multiprocessing import cpu_count
 from loguru import logger
 from psutil import virtual_memory
 from gensim.models import word2vec
-import umdapy
+import umdalib
 
 RAM_IN_GB = virtual_memory().total / 1024**3
 NPARTITIONS = cpu_count() * 5

@@ -6,7 +6,7 @@ from importlib import import_module, reload
 from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
 from pathlib import Path as pt
-from umdapy.utils import Paths, logger
+from umdalib.utils import Paths, logger
 
 app = Flask(__name__)
 CORS(app)
@@ -57,7 +57,7 @@ def compute():
         logger.info(f"{pyfile=}\n{data['args']=}")
 
         with warnings.catch_warnings(record=True) as warnings_list:
-            pyfunction = import_module(f"umdapy.{pyfile}")
+            pyfunction = import_module(f"umdalib.{pyfile}")
             pyfunction = reload(pyfunction)
             output = pyfunction.main(args)
 

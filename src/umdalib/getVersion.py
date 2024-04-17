@@ -1,7 +1,7 @@
 import sys
-import umdapy
+import umdalib
 from multiprocessing import cpu_count
-from umdapy.utils import NPARTITIONS, RAM_IN_GB
+from umdalib.utils import NPARTITIONS, RAM_IN_GB
 
 
 def main(args=""):
@@ -9,7 +9,7 @@ def main(args=""):
     version = f"{version_info.major}.{version_info.minor}.{version_info.micro}"
     return {
         "python": version,
-        "umdapy": umdapy.__version__,
+        "umdapy": umdalib.__version__,
         "cpu_count": cpu_count(),
         "ram": RAM_IN_GB,
         "npartitions": NPARTITIONS,

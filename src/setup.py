@@ -1,9 +1,9 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="umdapy",
+    name="umdalib",
     packages=find_packages(),
-    package_data={"umdapy": ["icons/*"]},
+    package_data={"umdalib": ["icons/*"]},
     install_requires=[
         "numpy",
         "scipy",
@@ -14,7 +14,7 @@ setup(
         "waitress",
     ],
     version="0.0.2",
-    description="umdapy: a Python backend for UMDA_UI",
+    description="umdalib: a Python backend for UMDA_UI",
     author="Aravindh Nivas Marimuthu (Mcguire's group, MIT)",
     license="MIT",
 )

@@ -1,1 +1,1 @@
-hiddenimports = ["umdapy"]
+hiddenimports = ["umdalib"]
