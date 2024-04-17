@@ -1,5 +1,6 @@
 import { spawn } from 'child_process'
 import path from 'path'
+import {$} from 'bun';
 // import fs from 'fs-extra'
 const maindir = path.resolve("../src")
 const icon = path.join(maindir, 'icons/icon.ico')
@@ -14,7 +15,8 @@ console.log(args)
 const py = spawn("pyinstaller", args)
 py.stdout.on('data', (data) => console.log(data.toString('utf8')))
 py.stderr.on('data', (data) => console.log(data.toString('utf8')))
-py.on('close', () => {
+py.on('close', async () => {
     console.log('pyinstaller done')
+    await $`cd dist && zip -r9 umdapy-darwin.zip umdapy/`
 })
 py.on('error', (err) => console.log('error occured', err))
