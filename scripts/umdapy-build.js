@@ -15,8 +15,10 @@ const site_pkgs = path.resolve("/Users/aravindhnivas/anaconda3/envs/umdapy/lib/p
 const distributed = path.join(site_pkgs, "distributed/distributed.yaml")
 const dask = path.join(site_pkgs, "dask/dask.yaml")
 
+const misc = `--hidden-import wandb --hidden-import wandb_gql --add-data "${dask};./dask" --add-data "${distributed};./distributed"`
+
 const args =
-    `--noconfirm --onedir --console --icon ${icon} --name umdapy --debug noarchive --noupx --additional-hooks-dir ${hooks} --hidden-import umdalib --add-data "${dask};./dask" --add-data "${distributed};./distributed" --paths ${maindir} ${mainfile}`.split(
+    `--noconfirm --onedir --console --icon ${icon} --name umdapy --debug noarchive --noupx --additional-hooks-dir ${hooks} --hidden-import umdalib ${misc} --paths ${maindir} ${mainfile}`.split(
         ' '
     )
 
