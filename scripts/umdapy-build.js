@@ -1,7 +1,10 @@
 import { spawn } from 'child_process'
 import path from 'path'
 import { $ } from "bun";
-// import fs from 'fs-extra'
+
+await $`rm -rf build`
+await $`rm -rf dist`
+
 const maindir = path.resolve("../src")
 const icon = path.join(maindir, 'icons/icon.ico')
 const hooks = path.join(maindir, 'hooks')
