@@ -1,6 +1,6 @@
 import { spawn } from 'child_process'
 import path from 'path'
-import {$} from 'bun';
+import { $ } from "bun";
 // import fs from 'fs-extra'
 const maindir = path.resolve("../src")
 const icon = path.join(maindir, 'icons/icon.ico')
@@ -10,6 +10,7 @@ const args =
     `--noconfirm --onedir --console --icon ${icon} --name umdapy --debug noarchive --noupx --additional-hooks-dir ${hooks} --hidden-import umdalib --paths ${maindir} ${mainfile}`.split(
         ' '
     )
+
 console.log(args)
 
 const py = spawn("pyinstaller", args)
