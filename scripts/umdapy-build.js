@@ -4,6 +4,7 @@ import { $ } from "bun";
 
 await $`rm -rf build`
 await $`rm -rf dist`
+await $`rm umdapy.spec`
 
 const maindir = path.resolve("../src")
 const icon = path.join(maindir, 'icons/icon.ico')
