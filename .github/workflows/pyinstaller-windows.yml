@@ -52,13 +52,13 @@ jobs:
             OUT_FILE_NAME: umdapy-win32.zip
             ASSET_MIME: application/zip
 
-          - os: ubuntu-latest
-            TARGET: ubuntu
-            CMD_BUILD: >
-              pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name umdapy --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import umdapy src/main.py
-            ZIP_IT: cd dist && zip -r umdapy-linux.zip umdapy/
-            OUT_FILE_NAME: umdapy-linux.zip
-            ASSET_MIME: application/zip
+          # - os: ubuntu-latest
+          #   TARGET: ubuntu
+          #   CMD_BUILD: >
+          #     pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name umdapy --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import umdapy src/main.py
+          #   ZIP_IT: cd dist && zip -r umdapy-linux.zip umdapy/
+          #   OUT_FILE_NAME: umdapy-linux.zip
+          #   ASSET_MIME: application/zip
 
     steps:
       - uses: actions/checkout@v3
