@@ -2,20 +2,20 @@ import { spawn } from 'child_process'
 import path from 'path'
 import { $ } from "bun";
 
-await $`rm -rf build`
-await $`rm -rf dist`
-await $`rm umdapy.spec`
+// await $`rm -rf build`
+// await $`rm -rf dist`
+// await $`rm umdapy.spec`
 
 const maindir = path.resolve("../src")
 const icon = path.join(maindir, 'icons/icon.ico')
 const hooks = path.join(maindir, 'hooks')
 const mainfile = path.join(maindir, 'main.py')
 
-const site_pkgs = path.resolve("/Users/aravindhnivas/anaconda3/envs/umdapy/lib/python3.9/Lib/site-packages/")
+const site_pkgs = path.resolve("/Users/aravindhnivas/anaconda3/envs/umdapy/lib/python3.9/site-packages/")
 const distributed = path.join(site_pkgs, "distributed/distributed.yaml")
 const dask = path.join(site_pkgs, "dask/dask.yaml")
 
-const misc = `--hidden-import wandb --hidden-import wandb_gql --add-data "${dask};./dask" --add-data "${distributed};./distributed"`
+const misc = `--hidden-import wandb --hidden-import wandb_gql --add-data ${dask};./dask --add-data ${distributed};./distributed`
 
 const args =
     `--noconfirm --onedir --console --icon ${icon} --name umdapy --debug noarchive --noupx --additional-hooks-dir ${hooks} --hidden-import umdalib ${misc} --paths ${maindir} ${mainfile}`.split(
