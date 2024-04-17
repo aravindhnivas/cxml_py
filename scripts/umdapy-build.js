@@ -10,8 +10,13 @@ const maindir = path.resolve("../src")
 const icon = path.join(maindir, 'icons/icon.ico')
 const hooks = path.join(maindir, 'hooks')
 const mainfile = path.join(maindir, 'main.py')
+
+const site_pkgs = path.resolve("/Users/aravindhnivas/anaconda3/envs/umdapy/lib/python3.9/Lib/site-packages/")
+const distributed = path.join(site_pkgs, "distributed/distributed.yaml")
+const dask = path.join(site_pkgs, "dask/dask.yaml")
+
 const args =
-    `--noconfirm --onedir --console --icon ${icon} --name umdapy --debug noarchive --noupx --additional-hooks-dir ${hooks} --hidden-import umdalib --paths ${maindir} ${mainfile}`.split(
+    `--noconfirm --onedir --console --icon ${icon} --name umdapy --debug noarchive --noupx --additional-hooks-dir ${hooks} --hidden-import umdalib --add-data "${dask};./dask" --add-data "${distributed};./distributed" --paths ${maindir} ${mainfile}`.split(
         ' '
     )
 
