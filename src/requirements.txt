@@ -3,7 +3,7 @@ Flask-Cors
 matplotlib
 numpy
 pyinstaller
-PyQt6
+# PyQt6
 uncertainties
 waitress
 pandas
