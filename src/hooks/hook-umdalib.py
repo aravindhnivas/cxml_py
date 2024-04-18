@@ -11,7 +11,7 @@ hiddenimports = [
     "umdalib.server",
     "umdalib.getVersion",
     "umdalib.training",
-    "wandb",
+    # "wandb",
     # "wandb_gql",
 ]
 icons_dir = pt(umdalib.__file__).parent / "../icons"
@@ -20,4 +20,8 @@ icons_files = [(str(file.resolve()), "icons") for file in icons_dir.glob("*")]
 distributed_datas = [(str(distributed.resolve()), "distributed")]
 dask_datas = [(str(dask.resolve()), "dask")]
 
-datas = icons_files + distributed_datas + dask_datas
+# to include wandb and wandb_vendor (wandb_gql) in the final package
+wandb_vendor = site_pkgs / "wandb/vendor"
+wandb_vendor_datas = [(str(wandb_vendor.resolve()), "wandb/vendor")]
+
+datas = icons_files + distributed_datas + dask_datas + wandb_vendor_datas

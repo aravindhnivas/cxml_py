@@ -17,9 +17,9 @@ def home():
     return "Server running: umdapy"
 
 
-@app.errorhandler(404)
+@app.errorhandler(400)
 def pyError(error):
-    return jsonify(error=str(error)), 404
+    return jsonify(error=str(error)), 400
 
 
 class MyClass(object):
@@ -78,4 +78,4 @@ def compute():
     except Exception:
         error = traceback.format_exc(5)
         logger.error(error)
-        abort(404, description=error)
+        abort(400, description=error)
