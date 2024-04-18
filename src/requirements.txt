@@ -14,7 +14,7 @@ scipy
 tables # Note that tables is the name of the pytables package on PyPI.
 loguru
 selfies
-rdkit-pypi>=2021.9.2
+# rdkit-pypi>=2021.9.2
 astrochem-embedding
 periodictable
 h5py
