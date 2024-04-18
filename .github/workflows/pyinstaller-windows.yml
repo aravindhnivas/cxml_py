@@ -40,7 +40,7 @@ jobs:
           - os: macos-latest
             TARGET: macos
             CMD_BUILD: >
-              pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name umdapy --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import umdalib --paths src/ --target-architecture x86_64 --target-architecture arm64 src/main.py
+              pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name umdapy --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import umdalib --paths src/ --target-architecture universal2 src/main.py
             ZIP_IT: cd dist && zip -r9 umdapy-darwin.zip umdapy/
             OUT_FILE_NAME: umdapy-darwin.zip
             ASSET_MIME: application/zip
@@ -66,7 +66,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.9"
+          python-version: "3.11"
           cache: "pip" # caching pip dependencies
 
       - name: Install dependencies
