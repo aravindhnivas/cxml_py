@@ -39,23 +39,18 @@ class Paths:
     def temp_dir(self):
         return self.get_temp_dir()
 
+logfile = Paths().app_log_dir / "umdapy_server.log"
+logger.info(f"Logging to {logfile}")
 
 logger.add(
-    Paths().app_log_dir / "umdapy_server.log",
+    logfile,
     rotation="10 MB",
     compression="zip",
 )
 
 
-# umdapy_dir = pt(umdapy.__file__).parent
-# model_dir = umdapy_dir / "models"
-# logger.info(f"umdapy_dir: {umdapy_dir}")
-# logger.info(f"model_dir: {model_dir}")
-
 
 def load_model(filepath: str):
-    # filepath = model_dir / filepath
-
     logger.info(f"Loading model from {filepath}")
     if not pt(filepath).exists():
         logger.error(f"Model file not found: {filepath}")
