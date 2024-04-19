@@ -20,6 +20,8 @@ dask_datas = [(str(dask.resolve()), "dask")]
 # to include wandb and wandb_vendor (wandb_gql) in the final package
 wandb_vendor = site_pkgs / "wandb/vendor"
 wandb_vendor_datas = [(str(wandb_vendor.resolve()), "wandb/vendor")]
-datas = icons_files + distributed_datas + dask_datas + wandb_vendor_datas
 
-# datas = icons_files + distributed_datas + dask_datas
+pyarrow = site_pkgs / "pyarrow/vendored"
+pyarrow_vendor_datas = [(str(pyarrow.resolve()), "pyarrow/vendored")]
+
+datas = icons_files + distributed_datas + dask_datas + wandb_vendor_datas + pyarrow_vendor_datas
