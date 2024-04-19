@@ -1,13 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
-import sys
-sys.setrecursionlimit(5000)
-
-block_cipher = None
 
 
 a = Analysis(
     ['/Users/aravindhnivas/Documents/GitHub/umdapy/src/main.py'],
-    pathex=['/Users/aravindhnivas/Documents/GitHub/umdapy/src'],
+    pathex=[],
     binaries=[],
     datas=[],
     hiddenimports=['umdalib'],
@@ -15,12 +11,10 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
     noarchive=True,
+    optimize=0,
 )
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz,
@@ -43,7 +37,6 @@ exe = EXE(
 coll = COLLECT(
     exe,
     a.binaries,
-    a.zipfiles,
     a.datas,
     strip=False,
     upx=False,

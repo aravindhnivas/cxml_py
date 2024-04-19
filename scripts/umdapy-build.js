@@ -3,8 +3,8 @@ import path from 'path'
 import { $ } from "bun";
 
 try {
-    await $`rm -rf build`
-    await $`rm -rf dist`
+    // await $`rm -rf build`
+    // await $`rm -rf dist`
     await $`rm umdapy.spec`    
 } catch (error) {
     console.log('No build or dist directory')
@@ -12,14 +12,19 @@ try {
 
 
 const maindir = path.resolve("../src")
-const icon = path.join(maindir, 'icons/icon.ico')
-const hooks = path.join(maindir, 'hooks')
 const mainfile = path.join(maindir, 'main.py')
 
+const opts = '--noconfirm --onedir --console --debug noarchive --noupx'
+const name = `--name umdapy`
+
+const icon = `--icon ${path.join(maindir, 'icons/icon.ico')}`
+const hooks = `--additional-hooks-dir ${path.join(maindir, 'hooks')}`
+const hiddenimport = '--hidden-import umdalib'
+
 const args =
-    `--noconfirm --onedir --console --icon ${icon} --name umdapy --debug noarchive --noupx --additional-hooks-dir ${hooks} --hidden-import umdalib --paths ${maindir} ${mainfile}`.split(
+    `${opts} ${name} ${icon} ${hooks} ${hiddenimport} ${mainfile}`.split(
         ' '
-    )
+    ).filter(f => f.trim() !== '')
 
 console.log(args)
 
