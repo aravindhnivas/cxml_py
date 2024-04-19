@@ -9,7 +9,7 @@ import numpy as np
 from rdkit import Chem
 from mol2vec import features
 from umdalib.utils import load_model, logger
-
+# import pandas as pd
 
 @dataclass
 class Args:
@@ -34,15 +34,11 @@ def VICGAE2vec(smi: str):
         return model.embed_smiles(smi).numpy()
     except:
         invalid_smiles.append(smi)
-        return None
+        return np.zeros((1, 32))
 
-
-# mol2vec_model = load_model("mol2vec/mol2vec_model.pkl")
-# logger.info(f"Loaded mol2vec model with {mol2vec_model.vector_size} dimensions")
 
 mol2vec_model = None
 invalid_smiles = []
-
 
 def mol2vec(smi: str) -> list[np.ndarray]:
     """
@@ -71,12 +67,14 @@ def mol2vec(smi: str) -> list[np.ndarray]:
         sentence = features.mol2alt_sentence(mol, radius=1)
         # generate vector embedding from sentence and model
         vector = features.sentences2vec([sentence], mol2vec_model)
+        
         return vector
 
     except:
         if smi not in invalid_smiles and isinstance(smi, str):
             invalid_smiles.append(smi)
-        return None
+            
+        return np.zeros((1, mol2vec_model.vector_size))
 
 
 embedding_model: dict[str, Callable] = {
@@ -95,8 +93,9 @@ def main(args: Args):
     location = fullfile.parent
     logger.info(f"Reading {fullfile} as {args.filetype}")
 
-    mol2vec_model = load_model(args.pretrained_model_location)
-    logger.info(f"Loaded mol2vec model with {mol2vec_model.vector_size} dimensions")
+    if args.embedding == "mol2vec":
+        mol2vec_model = load_model(args.pretrained_model_location)
+        logger.info(f"Loaded mol2vec model with {mol2vec_model.vector_size} dimensions")
 
     df = None
     if args.filetype == "csv":
@@ -120,7 +119,8 @@ def main(args: Args):
     if not callable(apply_model):
         raise ValueError(f"Unknown embedding model: {args.embedding}")
 
-    vectors: dd = df[args.df_column].apply(apply_model, meta=(None, "object"))
+    vectors: dd = df[args.df_column].apply(apply_model, meta=(None, np.float32))
+    # vectors: dd = df[args.df_column].apply(apply_model, meta=pd.DataFrame({0: pd.Series(dtype='float64')}))
 
     if vectors is None:
         raise ValueError(f"Unknown embedding model: {args.embedding}")
@@ -136,7 +136,7 @@ def main(args: Args):
         computed_time = f"{(perf_counter() - start_time):.2f} s"
         np.save(location / embedd_savefile, vec_computed)
 
-    logger.info(f"{vec_computed[0]=}, {vec_computed[0].shape=}")
+    logger.info(f"{len(vec_computed[0])=}, {vec_computed[0]=}")
 
     logger.info(
         f"Embeddings computed in {(perf_counter() - time):.2f} s and saved to {embedd_savefile}"
