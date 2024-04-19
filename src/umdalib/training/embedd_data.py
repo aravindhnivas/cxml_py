@@ -8,8 +8,10 @@ from pathlib import Path as pt
 import numpy as np
 from rdkit import Chem
 from mol2vec import features
-from umdalib.utils import load_model, logger
-# import pandas as pd
+from umdalib.utils import load_model
+from umdalib.utils import logger
+
+# from loguru import logger
 
 @dataclass
 class Args:

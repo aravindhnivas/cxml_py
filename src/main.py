@@ -3,7 +3,7 @@ import json
 import warnings
 from importlib import import_module
 from umdalib.utils import logger
-
+# from loguru import logger
 
 class MyClass(object):
     @logger.catch

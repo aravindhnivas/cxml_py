@@ -1,7 +1,6 @@
 import { spawn } from 'child_process'
 import path from 'path'
 import { $ } from "bun";
-import { platform } from 'os';
 
 try {
     await $`rm -rf build`
@@ -16,11 +15,6 @@ const maindir = path.resolve("../src")
 const icon = path.join(maindir, 'icons/icon.ico')
 const hooks = path.join(maindir, 'hooks')
 const mainfile = path.join(maindir, 'main.py')
-
-// const target_arch = platform() === 'darwin' ? '--target-architecture x86_64 --target-architecture arm64' : ''
-// const target_arch = platform() === 'darwin' ? '--target-architecture universal2' : ''
-// const target_arch = platform() === 'darwin' ? '--target-architecture x86_64' : ''
-// console.log(platform(), target_arch)
 
 const args =
     `--noconfirm --onedir --console --icon ${icon} --name umdapy --debug noarchive --noupx --additional-hooks-dir ${hooks} --hidden-import umdalib --paths ${maindir} ${mainfile}`.split(

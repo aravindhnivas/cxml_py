@@ -6,7 +6,6 @@ from multiprocessing import cpu_count
 from loguru import logger
 from psutil import virtual_memory
 from gensim.models import word2vec
-import umdalib
 
 RAM_IN_GB = virtual_memory().total / 1024**3
 NPARTITIONS = cpu_count() * 5
@@ -39,11 +38,11 @@ class Paths:
     def temp_dir(self):
         return self.get_temp_dir()
 
-logfile = Paths().app_log_dir / "umdapy_server.log"
-logger.info(f"Logging to {logfile}")
+# logfile = Paths().app_log_dir / "umdapy_server.log"
+# logger.info(f"Logging to {logfile}")
 
 logger.add(
-    logfile,
+    Paths().app_log_dir / "umdapy_server.log",
     rotation="10 MB",
     compression="zip",
 )
