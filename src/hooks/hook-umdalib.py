@@ -11,6 +11,7 @@ hiddenimports = [
     "umdalib.server",
     "umdalib.getVersion",
     "umdalib.training",
+    "astrochem_embedding",
 ]
 icons_dir = pt(umdalib.__file__).parent / "../icons"
 icons_files = [(str(file.resolve()), "icons") for file in icons_dir.glob("*")]
