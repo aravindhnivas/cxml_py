@@ -3,8 +3,8 @@ import path from 'path'
 import { $ } from "bun";
 
 try {
-    // await $`rm -rf build`
-    // await $`rm -rf dist`
+    await $`rm -rf build`
+    await $`rm -rf dist`
     await $`rm umdapy.spec`    
 } catch (error) {
     console.log('No build or dist directory')
@@ -33,6 +33,6 @@ py.stdout.on('data', (data) => console.log(data.toString('utf8')))
 py.stderr.on('data', (data) => console.log(data.toString('utf8')))
 py.on('close', async () => {
     console.log('pyinstaller done')
-    // await $`cd dist && zip -r9 umdapy-darwin.zip umdapy/`
+    await $`cd dist && zip -r9 umdapy-darwin.zip umdapy/`
 })
 py.on('error', (err) => console.log('error occured', err))
