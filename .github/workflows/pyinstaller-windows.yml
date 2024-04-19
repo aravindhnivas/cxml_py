@@ -40,7 +40,7 @@ jobs:
           - os: macos-latest
             TARGET: macos
             CMD_BUILD: >
-              pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name umdapy --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import umdalib --paths src/ --target-architecture universal2 src/main.py
+              pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name umdapy --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import umdalib --paths src/ src/main.py
             ZIP_IT: cd dist && zip -r9 umdapy-darwin.zip umdapy/
             OUT_FILE_NAME: umdapy-darwin.zip
             ASSET_MIME: application/zip
