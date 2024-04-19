@@ -22,4 +22,4 @@ wandb_vendor = site_pkgs / "wandb/vendor"
 wandb_vendor_datas = [(str(wandb_vendor.resolve()), "wandb/vendor")]
 datas = icons_files + distributed_datas + dask_datas + wandb_vendor_datas
 
-datas = icons_files + distributed_datas + dask_datas
+# datas = icons_files + distributed_datas + dask_datas
