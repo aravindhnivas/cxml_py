@@ -3,6 +3,7 @@ import tempfile
 from os import environ
 from platform import system
 from multiprocessing import cpu_count
+import joblib
 from loguru import logger
 from psutil import virtual_memory
 from gensim.models import word2vec
@@ -49,10 +50,14 @@ logger.add(
 
 
 
-def load_model(filepath: str):
+def load_model(filepath: str, use_joblib: bool = False):
     logger.info(f"Loading model from {filepath}")
     if not pt(filepath).exists():
         logger.error(f"Model file not found: {filepath}")
         raise FileNotFoundError(f"Model file not found: {filepath}")
     logger.info(f"Model loaded from {filepath}")
+    
+    if use_joblib:
+        return joblib.load(filepath)
     return word2vec.Word2Vec.load(str(filepath))
+

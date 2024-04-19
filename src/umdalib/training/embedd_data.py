@@ -3,7 +3,7 @@ from time import perf_counter
 from typing import Callable, Literal
 import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
-from astrochem_embedding import VICGAE
+# from astrochem_embedding import VICGAE
 from pathlib import Path as pt
 import numpy as np
 from rdkit import Chem
@@ -31,15 +31,16 @@ def VICGAE2vec(smi: str):
     smi = str(smi).replace("\xa0", "")
     if smi == "nan":
         return None
-    model = VICGAE.from_pretrained()
+    # model = VICGAE.from_pretrained()
     try:
-        return model.embed_smiles(smi).numpy()
+        return VICGAE_model.embed_smiles(smi).numpy()
     except:
         invalid_smiles.append(smi)
         return np.zeros((1, 32))
 
 
 mol2vec_model = None
+VICGAE_model = None
 invalid_smiles = []
 
 def mol2vec(smi: str) -> list[np.ndarray]:
@@ -89,7 +90,7 @@ def main(args: Args):
 
     logger.info(f"{args=}")
 
-    global invalid_smiles, mol2vec_model
+    global invalid_smiles, mol2vec_model, VICGAE_model
 
     fullfile = pt(args.filename)
     location = fullfile.parent
@@ -98,7 +99,10 @@ def main(args: Args):
     if args.embedding == "mol2vec":
         mol2vec_model = load_model(args.pretrained_model_location)
         logger.info(f"Loaded mol2vec model with {mol2vec_model.vector_size} dimensions")
-
+    elif args.embedding == "VICGAE":
+        VICGAE_model = load_model(args.pretrained_model_location, use_joblib=True)
+        logger.info(f"Loaded VICGAE model")
+        
     df = None
     if args.filetype == "csv":
         df = dd.read_csv(fullfile)
