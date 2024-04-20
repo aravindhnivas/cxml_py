@@ -67,18 +67,27 @@ def main(args: Args):
     if args.n_jobs:
         n_jobs = args.n_jobs
 
+    logger.info(f"Generating Mol2Vec model from SMILES file. Using {n_jobs} CPU cores.")
+    logger.info(f"SMILES file: {args.smi_file}")
+
     if not pt(args.smi_file).exists():
         raise FileNotFoundError(f"SMILES file {args.smi_file} does not exist.")
 
     m2v_model = None
     pkl_file: str = None
     if args.corpus_file:
+        logger.info(f"Using existing corpus file: {args.corpus_file}")
         m2v_model, pkl_file = gen_model(
             args.corpus_file, args.vector_size, args.min_count
         )
     else:
         smi_file = pt(args.smi_file)
+
+        logger.info(f"Generating corpus file from {smi_file}")
         corpus_file = gen_corpus(smi_file, args.radius, args.sentence_type)
+        logger.success(f"Corpus file saved to {corpus_file}")
+
+        logger.info(f"Generating Mol2Vec model from corpus file {corpus_file}")
         m2v_model, pkl_file = gen_model(corpus_file, args.vector_size, args.min_count)
 
     if not pt(pkl_file).exists():
@@ -87,6 +96,6 @@ def main(args: Args):
     if not m2v_model:
         raise ValueError("Model not generated.")
 
-    logger.info(
+    logger.success(
         f"Model save to {pkl_file} with vector size {m2v_model.vector_size} dimensions."
     )
