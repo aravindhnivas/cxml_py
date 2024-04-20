@@ -71,6 +71,7 @@ def main(args: Args):
     logger.info(f"SMILES file: {args.smi_file}")
 
     if not pt(args.smi_file).exists():
+        logger.error(f"SMILES file {args.smi_file} does not exist.")
         raise FileNotFoundError(f"SMILES file {args.smi_file} does not exist.")
 
     m2v_model = None
@@ -91,9 +92,11 @@ def main(args: Args):
         m2v_model, pkl_file = gen_model(corpus_file, args.vector_size, args.min_count)
 
     if not pt(pkl_file).exists():
+        logger.error(f"Model file {pkl_file} does not exist.")
         raise FileNotFoundError(f"Model file {pkl_file} does not exist.")
 
     if not m2v_model:
+        logger.error("Model not generated.")
         raise ValueError("Model not generated.")
 
     logger.success(
