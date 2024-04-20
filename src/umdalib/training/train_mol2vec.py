@@ -29,35 +29,39 @@ from sklearn.pipeline import make_pipeline
 
 
 def gen_corpus(
-    in_file: str,
-    out_file: str,
+    smi_file: str,
+    corpus_file_out: str,
 ):
 
-    if isinstance(in_file, pt):
-        in_file = str(in_file.resolve())
+    if isinstance(smi_file, pt):
+        smi_file = str(smi_file.resolve())
 
-    if isinstance(out_file, pt):
-        out_file = str(out_file.resolve())
+    if isinstance(corpus_file_out, pt):
+        corpus_file_out = str(corpus_file_out.resolve())
 
     features.generate_corpus(
-        in_file, out_file, r=radius, sentence_type=sentence_type, n_jobs=n_workers
+        smi_file,
+        corpus_file_out,
+        r=radius,
+        sentence_type=sentence_type,
+        n_jobs=n_workers,
     )
 
 
 def gen_model(
-    in_file: str,
-    out_file: str,
+    corpus_file_in: str,
+    pkl_out: str,
 ):
 
-    if isinstance(in_file, pt):
-        in_file = str(in_file.resolve())
+    if isinstance(corpus_file_in, pt):
+        corpus_file_in = str(corpus_file_in.resolve())
 
-    if isinstance(out_file, pt):
-        out_file = str(out_file.resolve())
+    if isinstance(pkl_out, pt):
+        pkl_out = str(pkl_out.resolve())
 
     model = features.train_word2vec_model(
-        infile_name=in_file,
-        outfile_name=out_file,
+        infile_name=corpus_file_in,
+        outfile_name=pkl_out,
         vector_size=vector_size,
         min_count=min_count,
         n_jobs=n_workers,
@@ -313,7 +317,11 @@ sentence_type: str = (
 
 class Args:
     location: str
-    filename: str
+    corpus_file: str
+    smi_file: str
+    pkl_file: str
+    vec_file: str
+    PCA_reduce: bool
     radius: int
     sentence_type: str
     n_workers: int
@@ -325,7 +333,7 @@ class Args:
 
 
 def main(args: Args):
-    global m2v_model, radius, sentence_type, n_workers, vector_size, min_count, n_clusters, pca_dim, threads_per_worker
+    global m2v_model, radius, sentence_type, n_workers, vector_size, min_count, n_clusters, pca_dim, threads_per_worker, h5_target
 
     if args.radius:
         radius = args.radius
@@ -344,6 +352,28 @@ def main(args: Args):
     if args.threads_per_worker:
         threads_per_worker = args.threads_per_worker
 
-    m2v_model = gen_model(args.location, "m2v_model.pkl")
-    gen_corpus(args.location, "corpus.txt")
+    if args.PCA_reduce:
+        if not pt(args.pkl_file).exists():
+            raise FileNotFoundError(f"mol2vec.pkl file does not exist.")
+        m2v_model = load_model(args.pkl_file)
+
+        if not pt(args.vec_file).exists():
+            raise FileNotFoundError(f"Embeddings file {args.vec_file} does not exist.")
+        h5_target = args.vec_file
+        generate_embeddings()  # need to work on this - change the fn to read .npy file instead of .h5
+
+    if not pt(args.location).exists():
+        raise FileNotFoundError(f"Location {args.location} does not exist.")
+
+    if not pt(args.smi_file).exists():
+        raise FileNotFoundError(f"SMILES file {args.smi_file} does not exist.")
+
+    if args.corpus_file:
+        loc = pt(args.corpus_file).parent
+        m2v_model = gen_model(args.corpus_file, loc / "m2v_model.pkl")
+    else:
+        loc = pt(args.smi_file).parent
+        gen_corpus(args.smi_file, loc / "m2v_corpus.dat")
+        m2v_model = gen_model(loc / "m2v_corpus.dat", loc / "m2v_model.pkl")
+
     generate_embeddings()
