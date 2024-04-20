@@ -1,6 +1,14 @@
 from mol2vec import features
 from pathlib import Path as pt
-from umdalib.utils import logger
+from loguru import logger
+
+from umdalib.utils import Paths
+
+logger.add(
+    Paths().app_log_dir / "mol2vec.log",
+    rotation="10 MB",
+    compression="zip",
+)
 
 
 def gen_corpus(
@@ -63,6 +71,8 @@ class Args:
 
 def main(args: Args):
     global n_jobs
+    logger.info("#" * 80 + "\n\n")
+    logger.info(f"\n\nStarting Mol2Vec model generation with {args=}\n\n")
 
     if args.n_jobs:
         n_jobs = args.n_jobs
@@ -102,3 +112,4 @@ def main(args: Args):
     logger.success(
         f"Model save to {pkl_file} with vector size {m2v_model.vector_size} dimensions."
     )
+    logger.info("#" * 80 + "\n\n")
