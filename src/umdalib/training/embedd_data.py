@@ -3,6 +3,7 @@ from time import perf_counter
 from typing import Callable, Literal
 import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
+
 # from astrochem_embedding import VICGAE
 from pathlib import Path as pt
 import numpy as np
@@ -11,7 +12,6 @@ from mol2vec import features
 from umdalib.utils import load_model
 from umdalib.utils import logger
 
-# from loguru import logger
 
 @dataclass
 class Args:
@@ -24,6 +24,8 @@ class Args:
     df_column: str
     embedding: Literal["VICGAE", "mol2vec"]
     pretrained_model_location: str
+    test_mode: bool
+    test_smiles: str
 
 
 def VICGAE2vec(smi: str):
@@ -31,7 +33,6 @@ def VICGAE2vec(smi: str):
     smi = str(smi).replace("\xa0", "")
     if smi == "nan":
         return None
-    # model = VICGAE.from_pretrained()
     try:
         return VICGAE_model.embed_smiles(smi).numpy()
     except:
@@ -42,6 +43,7 @@ def VICGAE2vec(smi: str):
 mol2vec_model = None
 VICGAE_model = None
 invalid_smiles = []
+
 
 def mol2vec(smi: str) -> list[np.ndarray]:
     """
@@ -70,13 +72,13 @@ def mol2vec(smi: str) -> list[np.ndarray]:
         sentence = features.mol2alt_sentence(mol, radius=1)
         # generate vector embedding from sentence and model
         vector = features.sentences2vec([sentence], mol2vec_model)
-        
+
         return vector
 
     except:
         if smi not in invalid_smiles and isinstance(smi, str):
             invalid_smiles.append(smi)
-            
+
         return np.zeros((1, mol2vec_model.vector_size))
 
 
@@ -92,17 +94,26 @@ def main(args: Args):
 
     global invalid_smiles, mol2vec_model, VICGAE_model
 
-    fullfile = pt(args.filename)
-    location = fullfile.parent
-    logger.info(f"Reading {fullfile} as {args.filetype}")
-
     if args.embedding == "mol2vec":
         mol2vec_model = load_model(args.pretrained_model_location)
         logger.info(f"Loaded mol2vec model with {mol2vec_model.vector_size} dimensions")
     elif args.embedding == "VICGAE":
         VICGAE_model = load_model(args.pretrained_model_location, use_joblib=True)
         logger.info(f"Loaded VICGAE model")
-        
+
+    apply_model = embedding_model[args.embedding]
+
+    if args.test_mode:
+        logger.info(f"Testing with {args.test_smiles}")
+        vec: np.ndarray = apply_model(args.test_smiles)
+        return {
+            "embedded_vector": vec.tolist() if vec is not None else None,
+        }
+
+    fullfile = pt(args.filename)
+    location = fullfile.parent
+    logger.info(f"Reading {fullfile} as {args.filetype}")
+
     df = None
     if args.filetype == "csv":
         df = dd.read_csv(fullfile)
@@ -120,7 +131,7 @@ def main(args: Args):
 
     vectors = None
     logger.info(f"Using {args.embedding} for embedding")
-    apply_model = embedding_model[args.embedding]
+
     logger.info(f"Using {apply_model} for embedding")
     if not callable(apply_model):
         raise ValueError(f"Unknown embedding model: {args.embedding}")
