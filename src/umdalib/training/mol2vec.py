@@ -73,6 +73,7 @@ class Args:
 
 
 def main(args: Args):
+
     global n_jobs
     logger.info("#" * 80 + "\n\n")
     logger.info(f"\n\nStarting Mol2Vec model generation with {args=}\n\n")
