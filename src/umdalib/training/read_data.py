@@ -17,7 +17,6 @@ class Args:
     filename: str
     filetype: str
     key: str
-    only_columns: bool
 
 
 def main(args: Args):
@@ -40,9 +39,6 @@ def main(args: Args):
     data = {
         "columns": df.columns.values.tolist(),
     }
-
-    if args.only_columns:
-        return data
 
     with ProgressBar():
         head = df.head(10)
