@@ -35,7 +35,7 @@ def gen_corpus(
 
 
 def gen_model(
-    corpus_file_in: str,
+    corpus_file_in: pt,
     vector_size: int = 300,
     min_count: int = 1,
 ):
@@ -57,7 +57,9 @@ def gen_model(
     return model, pkl_out
 
 
-n_jobs = 32  # Number of cpu cores used for calculation
+n_jobs = 1  # Number of cpu cores used for calculation
+# warning >1 CPU core may cause memory errors
+# Need to fix this in mol2vec package
 
 
 class Args:
@@ -75,8 +77,8 @@ def main(args: Args):
     logger.info("#" * 80 + "\n\n")
     logger.info(f"\n\nStarting Mol2Vec model generation with {args=}\n\n")
 
-    if args.n_jobs:
-        n_jobs = args.n_jobs
+    # if args.n_jobs:
+    #     n_jobs = args.n_jobs
 
     logger.info(f"Generating Mol2Vec model from SMILES file. Using {n_jobs} CPU cores.")
     logger.info(f"SMILES file: {args.smi_file}")
@@ -85,8 +87,11 @@ def main(args: Args):
         logger.error(f"SMILES file {args.smi_file} does not exist.")
         raise FileNotFoundError(f"SMILES file {args.smi_file} does not exist.")
 
+    # return
+
     m2v_model = None
     pkl_file: str = None
+
     if args.corpus_file:
         logger.info(f"Using existing corpus file: {args.corpus_file}")
         m2v_model, pkl_file = gen_model(
