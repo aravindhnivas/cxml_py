@@ -16,6 +16,7 @@ def gen_corpus(
     radius: int = 1,
     sentence_type: str = "alt",
 ):
+
     smi_in_file: pt = pt(smi_file)
 
     corpus_out_file = (
@@ -34,7 +35,7 @@ def gen_corpus(
 
 
 def gen_model(
-    corpus_file_in: str | pt,
+    corpus_file_in: str,
     vector_size: int = 300,
     min_count: int = 1,
 ):
@@ -92,6 +93,7 @@ def main(args: Args):
             args.corpus_file, args.vector_size, args.min_count
         )
     else:
+
         smi_file = pt(args.smi_file)
 
         logger.info(f"Generating corpus file from {smi_file}")
