@@ -14,7 +14,7 @@ NPARTITIONS = cpu_count() * 5
 
 def read_as_ddf(filetype: str, filename: str, key: str = None, computed=False):
     ddf = None
-    if filetype == "smi":
+    if filename.endswith(".smi"):
         ddf = dd.read_csv(filename, header=None, names=["SMILES"])
     elif filetype == "csv":
         ddf = dd.read_csv(filename)
