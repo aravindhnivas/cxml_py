@@ -11,6 +11,8 @@ hiddenimports = [
     "umdalib.server",
     "umdalib.getVersion",
     "umdalib.training",
+    "umdalib.mol2vec",
+    "umdalib.pca",
     "astrochem_embedding",
 ]
 icons_dir = pt(umdalib.__file__).parent / "../icons"
