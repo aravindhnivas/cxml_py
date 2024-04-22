@@ -9,6 +9,7 @@ from pathlib import Path as pt
 import numpy as np
 from rdkit import Chem
 from mol2vec import features
+from umdalib.training.read_data import read_as_ddf
 from umdalib.utils import load_model
 from umdalib.utils import logger
 
@@ -114,20 +115,10 @@ def main(args: Args):
     location = fullfile.parent
     logger.info(f"Reading {fullfile} as {args.filetype}")
 
-    df = None
-    if args.filetype == "csv":
-        df = dd.read_csv(fullfile)
-    elif args.filetype == "parquet":
-        df = dd.read_parquet(fullfile)
-    elif args.filetype == "hdf":
-        df = dd.read_hdf(fullfile, args.key)
-    elif args.filetype == "json":
-        df = dd.read_json(fullfile)
-    else:
-        raise ValueError(f"Unknown filetype: {args.filetype}")
+    ddf = read_as_ddf(args.filetype, args.filename, args.key)
 
     logger.info(f"{args.npartitions=}")
-    df = df.repartition(npartitions=args.npartitions)
+    ddf = ddf.repartition(npartitions=args.npartitions)
 
     vectors = None
     logger.info(f"Using {args.embedding} for embedding")
@@ -136,8 +127,7 @@ def main(args: Args):
     if not callable(apply_model):
         raise ValueError(f"Unknown embedding model: {args.embedding}")
 
-    vectors: dd = df[args.df_column].apply(apply_model, meta=(None, np.float32))
-    # vectors: dd = df[args.df_column].apply(apply_model, meta=pd.DataFrame({0: pd.Series(dtype='float64')}))
+    vectors: dd = ddf[args.df_column].apply(apply_model, meta=(None, np.float32))
 
     if vectors is None:
         raise ValueError(f"Unknown embedding model: {args.embedding}")
