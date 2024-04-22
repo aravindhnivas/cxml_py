@@ -143,7 +143,7 @@ def main(args: Args):
         computed_time = f"{(perf_counter() - start_time):.2f} s"
         np.save(location / embedd_savefile, vec_computed)
 
-    logger.info(f"{len(vec_computed[0])=}, {vec_computed[0]=}")
+    logger.info(f"{vec_computed.shape=}, {len(vec_computed[0])=}, {vec_computed[0]=}")
 
     logger.info(
         f"Embeddings computed in {(perf_counter() - time):.2f} s and saved to {embedd_savefile}"
