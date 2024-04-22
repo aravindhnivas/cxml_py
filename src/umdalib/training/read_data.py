@@ -5,6 +5,7 @@ import dask.dataframe as dd
 from umdalib.utils import logger
 from dask.diagnostics import ProgressBar
 from multiprocessing import cpu_count
+from typing import Dict, Union
 
 NPARTITIONS = cpu_count() * 5
 
@@ -38,6 +39,7 @@ class Args:
     filename: str
     filetype: str
     key: str
+    rows: Dict[str, Union[int, str]]
 
 
 def main(args: Args):
@@ -52,10 +54,15 @@ def main(args: Args):
     data = {
         "columns": ddf.columns.values.tolist(),
     }
-
+    count = int(args.rows["value"])
     with ProgressBar():
-        head = ddf.head(10)
-        data["head"] = head.to_dict(orient="records")
+        # nrows = None
+        if args.rows["where"] == "head":
+            nrows = ddf.head(count).fillna("")
+        elif args.rows["where"] == "tail":
+            nrows = ddf.tail(count).fillna("")
+        data["nrows"] = nrows.to_dict(orient="records")
         data["shape"] = ddf.shape[0].compute()
+    logger.info(f"{type(data)=}")
 
     return data
