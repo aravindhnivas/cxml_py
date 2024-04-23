@@ -3,7 +3,9 @@ import json
 import warnings
 from importlib import import_module
 from umdalib.utils import logger
+
 # from loguru import logger
+
 
 class MyClass(object):
     @logger.catch
@@ -23,11 +25,12 @@ if __name__ == "__main__":
 
     logger.info(f"{pyfile=}\n")
     # if "verbose" in args and args.verbose:
-    #     logger.info(f"{args=}")
+    logger.info(f"{args=}")
 
     with warnings.catch_warnings(record=True) as warn:
         pyfunction = import_module(f"umdalib.{pyfile}")
         if args:
-            pyfunction.main(args)
+            result = pyfunction.main(args)
+            logger.success(f"{result=}")
         else:
             pyfunction.main()
