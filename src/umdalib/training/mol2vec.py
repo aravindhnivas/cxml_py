@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from mol2vec import features
 from pathlib import Path as pt
 from loguru import logger
@@ -62,6 +63,7 @@ n_jobs = 1  # Number of cpu cores used for calculation
 # Need to fix this in mol2vec package
 
 
+@dataclass
 class Args:
     smi_file: str
     corpus_file: str
