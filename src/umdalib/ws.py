@@ -19,24 +19,19 @@ class Args:
     action: str
 
 
-server = None
-
-
 def main(args: Args):
-    global server
     logger.info(f"Starting WebSocket server on port {args.wsport}")
-
-    start_server = websockets.serve(handle_connection, "localhost", 8765)
-    server = asyncio.get_event_loop().run_until_complete(start_server)
 
     if args.action == "stop":
         stop_websocket_server()
         return
 
+    start_server = websockets.serve(handle_connection, "localhost", args.wsport)
+    asyncio.get_event_loop().run_until_complete(start_server)
     asyncio.get_event_loop().run_forever()
 
 
 def stop_websocket_server():
-    server.close()
-    asyncio.get_event_loop().run_until_complete(server.wait_closed())
+
+    asyncio.get_event_loop().stop()
     logger.info("WebSocket server stopped")
