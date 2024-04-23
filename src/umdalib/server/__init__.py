@@ -1,7 +1,9 @@
 from .flask import app
 import waitress
+from dataclasses import dataclass
 
 
+@dataclass
 class Args:
     port: int
     debug: int
