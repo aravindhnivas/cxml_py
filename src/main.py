@@ -2,9 +2,9 @@ import sys
 import json
 import warnings
 from importlib import import_module
-from umdalib.utils import logger
+from umdalib.utils import logger, Paths
 
-# from loguru import logger
+log_dir = Paths().app_log_dir
 
 
 class MyClass(object):
@@ -31,6 +31,10 @@ if __name__ == "__main__":
         pyfunction = import_module(f"umdalib.{pyfile}")
         if args:
             result = pyfunction.main(args)
-            logger.success(f"{result=}")
+            if result:
+                logger.success(f"{result=}")
+                with open(log_dir / f"{pyfile}.json", "w") as f:
+                    json.dump(result, f, indent=4)
+                    logger.success(f"Result saved to {log_dir / f'{pyfile}.json'}")
         else:
             pyfunction.main()
