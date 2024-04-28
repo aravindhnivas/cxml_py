@@ -3,6 +3,7 @@ from time import perf_counter
 from typing import Callable, Literal
 import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
+from dask import array as da
 
 # from astrochem_embedding import VICGAE
 from pathlib import Path as pt
@@ -41,10 +42,9 @@ def VICGAE2vec(smi: str):
         return np.zeros((1, 32))
 
 
-def mol2vec_PCA(smi: str):
+def mol2vec_PCA(smi: str) -> da.array:
     vec = m2v_pca_model.vectorize(smi)
-    # logger.info(f"{vec=}")
-    return vec.compute()
+    return vec
 
 
 mol2vec_model = None
@@ -118,6 +118,9 @@ def main(args: Args):
     if args.test_mode:
         logger.info(f"Testing with {args.test_smiles}")
         vec: np.ndarray = apply_model(args.test_smiles)
+        if args.embedding == "mol2vec_PCA":
+            if isinstance(vec, da.Array):
+                vec = vec.compute()
         return {
             "embedded_vector": vec.tolist() if vec is not None else None,
         }
@@ -149,6 +152,7 @@ def main(args: Args):
 
     start_time = perf_counter()
     computed_time = None
+
     with ProgressBar():
         vec_computed = vectors.compute()
         computed_time = f"{(perf_counter() - start_time):.2f} s"
