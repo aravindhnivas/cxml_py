@@ -3,6 +3,7 @@ import h5py
 from mol2vec import features
 from pathlib import Path as pt
 from umdalib.utils import load_model
+from multiprocessing import cpu_count
 import numpy as np
 
 from rdkit import Chem
@@ -119,16 +120,17 @@ class EmbeddingModel(object):
 
 def generate_embeddings():
 
-    with h5py.File(h5_file, "a") as embeddings_file:
-        # output_file = h5py.File(output_target, "a")
+    with h5py.File(h5_file, "w") as embeddings_file:
+
+        np_vec = np.load(npy_file, allow_pickle=True)
+        vectors = np.vstack(np_vec)[:1000]
+        embeddings_file["vectors"] = vectors
 
         if USE_DASK:
             client = Client(threads_per_worker=threads_per_worker, n_workers=n_workers)
-            vectors = da.from_array(embeddings_file["full_dim_300/vectors"])
-        else:
-            vectors = embeddings_file["full_dim_300/vectors"][:]
+            vectors = da.from_array(np.vstack(np_vec))
 
-        print(f"{vectors.shape=}")
+        logger.info(f"{vectors.shape=}")
 
         scaler = StandardScaler()
         pca_model = IncrementalPCA(n_components=pca_dim)
@@ -146,7 +148,7 @@ def generate_embeddings():
         # perform PCA dimensionality reduction
         pca_model = IncrementalPCA(n_components=pca_dim)
 
-        pca_model, transformed, _ = train_fit_model(vectors, pca_model, n_workers)
+        pca_model, transformed, _ = train_fit_model(vectors, pca_model)
         # save both the reduced dimension vector and the full
         pca_h5_file["pca"] = transformed
         pca_h5_file["explained_variance"] = pca_model.explained_variance_ratio_
@@ -156,7 +158,7 @@ def generate_embeddings():
 
         logger.info("Performing K-means clustering on dataset")
         kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
-        kmeans, _, labels = train_fit_model(pca_h5_file["pca"], kmeans, n_workers)
+        kmeans, _, labels = train_fit_model(pca_h5_file["pca"], kmeans)
         pca_h5_file["cluster_ids"] = labels
         dump(kmeans, embeddings_save_loc / "kmeans_model.pkl")
 
@@ -169,19 +171,48 @@ def generate_embeddings():
         dump(embedder, embeddings_save_loc / "EmbeddingModel.pkl")
 
         logger.info("Embedding model saved to disk. Exiting.")
-
     return embedder
 
 
 seed = 42
 
-n_workers = 32
+n_workers = cpu_count
 radius = 1
 pca_dim = 70
 n_clusters = 20
 threads_per_worker = 2
 
-embeddings_save_loc: str = None
-m2v_model = None
+embeddings_save_loc: pt = None
+model_file: str = None
 
-h5_file: str = None
+h5_file: pt = None
+npy_file: pt = None
+
+
+class Args:
+    pca_dim: int = 70
+    n_clusters: int = 20
+    threads_per_worker: int = 2
+    n_workers: int = 32
+    radius: int = 1
+    embeddings_save_loc: str = None
+    model_file: str = None
+    npy_file: str = None
+
+
+def main(args: Args):
+
+    global pca_dim, n_clusters, threads_per_worker, n_workers, radius, embeddings_save_loc, m2v_model, h5_file, npy_file
+
+    pca_dim = args.pca_dim
+    n_clusters = args.n_clusters
+    threads_per_worker = args.threads_per_worker
+    n_workers = args.n_workers
+    radius = args.radius
+
+    embeddings_save_loc = pt(args.embeddings_save_loc)
+    m2v_model = load_model(args.model_file)
+    h5_file = embeddings_save_loc / f"embeddings_PCA_{pca_dim}.h5"
+    npy_file = pt(args.npy_file)
+
+    generate_embeddings()
