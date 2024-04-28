@@ -42,7 +42,9 @@ def VICGAE2vec(smi: str):
 
 
 def mol2vec_PCA(smi: str):
-    return m2v_pca_model.vectorize(smi)
+    vec = m2v_pca_model.vectorize(smi)
+    logger.info(f"{vec=}")
+    return vec.compute()
 
 
 mol2vec_model = None
