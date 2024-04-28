@@ -67,10 +67,10 @@ class EmbeddingModel(object):
     def radius(self):
         return self._radius
 
-    def vectorize(self, smi: str):
+    def vectorize(self, smi: str, model, compute_kmeans=False):
 
         try:
-            vector = smi_to_vector(smi, model=self._model)
+            vector = smi_to_vector(smi, model)
 
             if self._transform is not None:
                 if compute_kmeans:
