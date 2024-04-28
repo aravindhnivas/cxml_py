@@ -41,8 +41,13 @@ def VICGAE2vec(smi: str):
         return np.zeros((1, 32))
 
 
+def mol2vec_PCA(smi: str):
+    return m2v_pca_model.vectorize(smi)
+
+
 mol2vec_model = None
 VICGAE_model = None
+m2v_pca_model = None
 invalid_smiles = []
 
 
@@ -86,6 +91,7 @@ def mol2vec(smi: str) -> list[np.ndarray]:
 embedding_model: dict[str, Callable] = {
     "VICGAE": VICGAE2vec,
     "mol2vec": mol2vec,
+    "mol2vec_PCA": mol2vec_PCA,
 }
 
 
@@ -93,7 +99,7 @@ def main(args: Args):
 
     logger.info(f"{args=}")
 
-    global invalid_smiles, mol2vec_model, VICGAE_model
+    global invalid_smiles, mol2vec_model, VICGAE_model, m2v_pca_model
 
     if args.embedding == "mol2vec":
         mol2vec_model = load_model(args.pretrained_model_location)
@@ -101,6 +107,9 @@ def main(args: Args):
     elif args.embedding == "VICGAE":
         VICGAE_model = load_model(args.pretrained_model_location, use_joblib=True)
         logger.info(f"Loaded VICGAE model")
+    elif args.embedding == "mol2vec_PCA":
+        m2v_pca_model = load_model(args.pretrained_model_location, use_joblib=True)
+        logger.info(f"Loaded mol2vec PCA model")
 
     apply_model = embedding_model[args.embedding]
 
