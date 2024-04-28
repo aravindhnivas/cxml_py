@@ -30,30 +30,27 @@ class Args:
     test_smiles: str
 
 
-def VICGAE2vec(smi: str):
+def VICGAE2vec(smi: str, model):
     global invalid_smiles
     smi = str(smi).replace("\xa0", "")
     if smi == "nan":
         return None
     try:
-        return VICGAE_model.embed_smiles(smi).numpy()
+        return model.embed_smiles(smi).numpy()
     except:
         invalid_smiles.append(smi)
         return np.zeros((1, 32))
 
 
-def mol2vec_PCA(smi: str) -> da.array:
-    vec = m2v_pca_model.vectorize(smi)
+def mol2vec_PCA(smi: str, model) -> da.array:
+    vec = model.vectorize(smi)
     return vec
 
 
-mol2vec_model = None
-VICGAE_model = None
-m2v_pca_model = None
 invalid_smiles = []
 
 
-def mol2vec(smi: str) -> list[np.ndarray]:
+def mol2vec(smi: str, model, radius=1) -> list[np.ndarray]:
     """
     Given a model, convert a SMILES string into the corresponding
     NumPy vector.
@@ -77,9 +74,9 @@ def mol2vec(smi: str) -> list[np.ndarray]:
         mol.UpdatePropertyCache(strict=False)
         Chem.GetSymmSSSR(mol)
         # generate a sentence from rdkit molecule
-        sentence = features.mol2alt_sentence(mol, radius=1)
+        sentence = features.mol2alt_sentence(mol, radius)
         # generate vector embedding from sentence and model
-        vector = features.sentences2vec([sentence], mol2vec_model)
+        vector = features.sentences2vec([sentence], model)
 
         return vector
 
@@ -87,7 +84,7 @@ def mol2vec(smi: str) -> list[np.ndarray]:
         if smi not in invalid_smiles and isinstance(smi, str):
             invalid_smiles.append(smi)
 
-        return np.zeros((1, mol2vec_model.vector_size))
+        return np.zeros((1, model.vector_size))
 
 
 embedding_model: dict[str, Callable] = {
@@ -101,23 +98,23 @@ def main(args: Args):
 
     logger.info(f"{args=}")
 
-    global invalid_smiles, mol2vec_model, VICGAE_model, m2v_pca_model
+    global invalid_smiles
 
     if args.embedding == "mol2vec":
-        mol2vec_model = load_model(args.pretrained_model_location)
-        logger.info(f"Loaded mol2vec model with {mol2vec_model.vector_size} dimensions")
+        model = load_model(args.pretrained_model_location)
+        logger.info(f"Loaded mol2vec model with {model.vector_size} dimensions")
     elif args.embedding == "VICGAE":
-        VICGAE_model = load_model(args.pretrained_model_location, use_joblib=True)
+        model = load_model(args.pretrained_model_location, use_joblib=True)
         logger.info(f"Loaded VICGAE model")
     elif args.embedding == "mol2vec_PCA":
-        m2v_pca_model = load_model(args.pretrained_model_location, use_joblib=True)
+        model = load_model(args.pretrained_model_location, use_joblib=True)
         logger.info(f"Loaded mol2vec PCA model")
 
-    apply_model = embedding_model[args.embedding]
+    smi_to_vector = embedding_model[args.embedding]
 
     if args.test_mode:
         logger.info(f"Testing with {args.test_smiles}")
-        vec: np.ndarray = apply_model(args.test_smiles)
+        vec: np.ndarray = smi_to_vector(args.test_smiles, model)
         if args.embedding == "mol2vec_PCA":
             if isinstance(vec, da.Array):
                 vec = vec.compute()
@@ -137,11 +134,13 @@ def main(args: Args):
     vectors = None
     logger.info(f"Using {args.embedding} for embedding")
 
-    logger.info(f"Using {apply_model} for embedding")
-    if not callable(apply_model):
+    logger.info(f"Using {smi_to_vector} for embedding")
+    if not callable(smi_to_vector):
         raise ValueError(f"Unknown embedding model: {args.embedding}")
 
-    vectors: dd = ddf[args.df_column].apply(apply_model, meta=(None, np.float32))
+    vectors: dd = ddf[args.df_column].apply(
+        smi_to_vector, args=(model,), meta=(None, np.float32)
+    )
 
     if vectors is None:
         raise ValueError(f"Unknown embedding model: {args.embedding}")

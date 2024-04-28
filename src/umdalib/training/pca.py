@@ -5,13 +5,7 @@ from mol2vec import features
 from pathlib import Path as pt
 from umdalib.utils import load_model
 
-# from multiprocessing import cpu_count
 import numpy as np
-
-from rdkit import Chem
-
-# from gensim.models import word2vec
-# from tqdm.auto import tqdm
 
 USE_DASK = True
 from dask import array as da
@@ -28,29 +22,8 @@ else:
 
 from umdalib.utils import logger
 from joblib import load, dump, parallel_backend
-
 from sklearn.pipeline import make_pipeline
-
-
-def smi_to_vector(smi: str, model, radius: int) -> list[np.ndarray]:
-    """
-    Given a model, convert a SMILES string into the corresponding
-    NumPy vector.
-    """
-    # Molecule from SMILES will break on "bad" SMILES; this tries
-    # to get around sanitization (which takes a while) if it can
-    mol = Chem.MolFromSmiles(smi, sanitize=False)
-
-    if not mol:
-        return None
-
-    mol.UpdatePropertyCache(strict=False)
-    Chem.GetSymmSSSR(mol)
-    # generate a sentence from rdkit molecule
-    sentence = features.mol2alt_sentence(mol, radius)
-    # generate vector embedding from sentence and model
-    vector = features.sentences2vec([sentence], model)
-    return vector
+from .embedd_data import embedding_model, invalid_smiles
 
 
 def train_fit_model(data: np.ndarray, model: IncrementalPCA):
@@ -97,12 +70,17 @@ class EmbeddingModel(object):
     def vectorize(self, smi: str):
 
         try:
-            vector = smi_to_vector(smi, self.model, self.radius)
+            vector = smi_to_vector(smi, model=self._model)
 
             if self._transform is not None:
-                # the clustering is always the last step, which we ignore
-                for step in self.transform.steps[: len(self.transform.steps) - 1]:
-                    vector = step[1].transform(vector)
+                if compute_kmeans:
+                    # the clustering is always the last step, which we ignore
+                    for step in self.transform.steps[: len(self.transform.steps) - 1]:
+                        vector = step[1].transform(vector)
+                else:
+                    for step in self.transform.steps:
+                        vector = step[1].transform(vector)
+
             return vector[0]
         except:
             return da.from_array(np.zeros(pca_dim))
@@ -138,7 +116,7 @@ def generate_embeddings():
 
         try:
 
-            logger.info(f"{vectors.shape=}")
+            # logger.info(f"{vectors.shape=}")
 
             scaler = StandardScaler()
             pca_model = IncrementalPCA(n_components=pca_dim)
@@ -164,19 +142,27 @@ def generate_embeddings():
             logger.info("Saving the trained PCA model.")
             dump(pca_model, embeddings_save_loc / "pca_model.pkl")
 
-            logger.info("Performing K-means clustering on dataset")
-            kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
-            kmeans, _, labels = train_fit_model(pca_h5_file["pca"], kmeans)
-            pca_h5_file["cluster_ids"] = labels
-            dump(kmeans, embeddings_save_loc / "kmeans_model.pkl")
+            if compute_kmeans:
+                logger.info("Performing K-means clustering on dataset")
+                kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
+                kmeans, _, labels = train_fit_model(pca_h5_file["pca"], kmeans)
+                pca_h5_file["cluster_ids"] = labels
+                dump(kmeans, embeddings_save_loc / f"kmeans_model.pkl")
 
             logger.info("Combining the models into a pipeline")
-            pipe = make_pipeline(scaler, pca_model, kmeans)
-            dump(pipe, embeddings_save_loc / "embedding_pipeline.pkl")
+
+            if compute_kmeans:
+                pipe = make_pipeline(scaler, pca_model, kmeans)
+                pipeline_file = embeddings_save_loc / f"pipeline.pkl"
+            else:
+                pipe = make_pipeline(scaler, pca_model)
+                pipeline_file = embeddings_save_loc / f"pipeline_without_Kmeans.pkl"
+
+            dump(pipe, pipeline_file)
 
             # generate a convenient wrapper for all the functionality
             embedder = EmbeddingModel(model, transform=pipe)
-            embedder_file = embeddings_save_loc / "EmbeddingModel.pkl"
+            embedder_file = embeddings_save_loc / f"EmbeddingModel.pkl"
 
             dump(embedder, embedder_file)
             logger.info(f"Embedding model saved to disk ({embedder_file}). Exiting.")
@@ -205,6 +191,9 @@ model_file: str = None
 model = None
 h5_file: pt = None
 npy_file: pt = None
+compute_kmeans = True
+original_model = "mol2vec"
+smi_to_vector = None
 
 
 class Args:
@@ -215,20 +204,36 @@ class Args:
     model_file: str = None
     npy_file: str = None
     embedding_pipeline_loc: str = None
+    compute_kmeans: bool = False
+    original_model: str = "mol2vec"
 
 
 def main(args: Args):
 
-    global pca_dim, n_clusters, radius, embeddings_save_loc, model, h5_file, npy_file
+    global original_model, smi_to_vector, pca_dim, n_clusters, radius, embeddings_save_loc, model, h5_file, npy_file, compute_kmeans
 
     pca_dim = args.pca_dim
     n_clusters = args.n_clusters
     radius = args.radius
+    compute_kmeans = args.compute_kmeans
+    logger.info(f"Computing kmeans: {compute_kmeans}")
 
-    embeddings_save_loc = pt(args.embeddings_save_loc)
+    original_model = args.original_model
+    embeddings_save_loc = pt(args.embeddings_save_loc) / original_model
 
-    model = load_model(args.model_file)
-    h5_file = embeddings_save_loc / f"embeddings_PCA_{pca_dim}dim.h5"
+    if not embeddings_save_loc.exists():
+        embeddings_save_loc.mkdir(parents=True)
+
+    logger.info(f"Embedding model: {embedding_model}")
+    smi_to_vector = embedding_model[original_model]
+
+    logger.info(f"Using model: {original_model} from {args.model_file}")
+    if original_model == "mol2vec":
+        model = load_model(args.model_file)
+    else:
+        model = load_model(args.model_file, use_joblib=True)
+
+    h5_file = embeddings_save_loc / f"data.h5"
     npy_file = pt(args.npy_file)
 
     if args.embedding_pipeline_loc:
@@ -238,7 +243,7 @@ def main(args: Args):
             args.model_file, transform_path=args.embedding_pipeline_loc
         )
 
-        embedder_file = embeddings_save_loc / "mol2vec_pca_new.pkl"
+        embedder_file = embeddings_save_loc / "EmbeddingModel.pkl"
         dump(embedder, embedder_file)
 
         logger.info(f"Embedding model saved to disk ({embedder_file}). Exiting.")
