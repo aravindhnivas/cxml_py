@@ -1,3 +1,4 @@
+from time import sleep
 import numpy as np
 import h5py
 from mol2vec import features
@@ -135,51 +136,60 @@ def generate_embeddings():
             client = Client(threads_per_worker=threads_per_worker, n_workers=n_workers)
             vectors = da.from_array(np.vstack(np_vec))
 
-        logger.info(f"{vectors.shape=}")
+        try:
 
-        scaler = StandardScaler()
-        pca_model = IncrementalPCA(n_components=pca_dim)
-        kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
+            logger.info(f"{vectors.shape=}")
 
-        # preprocess the embeddings
-        vectors = scaler.fit_transform(vectors)
+            scaler = StandardScaler()
+            pca_model = IncrementalPCA(n_components=pca_dim)
+            kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
 
-        if "pca" in embeddings_file:
-            del embeddings_file["pca"]
+            # preprocess the embeddings
+            vectors = scaler.fit_transform(vectors)
 
-        pca_h5_file = embeddings_file.create_group("pca")
+            if "pca" in embeddings_file:
+                del embeddings_file["pca"]
 
-        logger.info("Beginning PCA dimensionality reduction")
-        # perform PCA dimensionality reduction
-        pca_model = IncrementalPCA(n_components=pca_dim)
+            pca_h5_file = embeddings_file.create_group("pca")
 
-        pca_model, transformed, _ = train_fit_model(vectors, pca_model)
-        # save both the reduced dimension vector and the full
-        pca_h5_file["pca"] = transformed
-        pca_h5_file["explained_variance"] = pca_model.explained_variance_ratio_
+            logger.info("Beginning PCA dimensionality reduction")
+            # perform PCA dimensionality reduction
+            pca_model = IncrementalPCA(n_components=pca_dim)
 
-        logger.info("Saving the trained PCA model.")
-        dump(pca_model, embeddings_save_loc / "pca_model.pkl")
+            pca_model, transformed, _ = train_fit_model(vectors, pca_model)
+            # save both the reduced dimension vector and the full
+            pca_h5_file["pca"] = transformed
+            pca_h5_file["explained_variance"] = pca_model.explained_variance_ratio_
 
-        logger.info("Performing K-means clustering on dataset")
-        kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
-        kmeans, _, labels = train_fit_model(pca_h5_file["pca"], kmeans)
-        pca_h5_file["cluster_ids"] = labels
-        dump(kmeans, embeddings_save_loc / "kmeans_model.pkl")
+            logger.info("Saving the trained PCA model.")
+            dump(pca_model, embeddings_save_loc / "pca_model.pkl")
 
-        logger.info("Combining the models into a pipeline")
-        pipe = make_pipeline(scaler, pca_model, kmeans)
-        dump(pipe, embeddings_save_loc / "embedding_pipeline.pkl")
+            logger.info("Performing K-means clustering on dataset")
+            kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
+            kmeans, _, labels = train_fit_model(pca_h5_file["pca"], kmeans)
+            pca_h5_file["cluster_ids"] = labels
+            dump(kmeans, embeddings_save_loc / "kmeans_model.pkl")
 
-        # generate a convenient wrapper for all the functionality
+            logger.info("Combining the models into a pipeline")
+            pipe = make_pipeline(scaler, pca_model, kmeans)
+            dump(pipe, embeddings_save_loc / "embedding_pipeline.pkl")
 
-        embedder = EmbeddingModel(m2v_model, transform=pipe)
-        embedder_file = embeddings_save_loc / "EmbeddingModel.pkl"
+            # generate a convenient wrapper for all the functionality
+            embedder = EmbeddingModel(model, transform=pipe)
+            embedder_file = embeddings_save_loc / "EmbeddingModel.pkl"
 
-        dump(embedder, embedder_file)
-        logger.info(f"Embedding model saved to disk ({embedder_file}). Exiting.")
+            dump(embedder, embedder_file)
+            logger.info(f"Embedding model saved to disk ({embedder_file}). Exiting.")
 
-    return embedder
+            return embedder
+
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            raise e
+
+        finally:
+            if client:
+                client.close()
 
 
 seed = 42
@@ -192,7 +202,7 @@ threads_per_worker = 2
 
 embeddings_save_loc: pt = None
 model_file: str = None
-
+model = None
 h5_file: pt = None
 npy_file: pt = None
 
@@ -209,25 +219,28 @@ class Args:
 
 def main(args: Args):
 
-    global pca_dim, n_clusters, radius, embeddings_save_loc, m2v_model, h5_file, npy_file
+    global pca_dim, n_clusters, radius, embeddings_save_loc, model, h5_file, npy_file
 
     pca_dim = args.pca_dim
     n_clusters = args.n_clusters
     radius = args.radius
 
     embeddings_save_loc = pt(args.embeddings_save_loc)
-    m2v_model = load_model(args.model_file)
+
+    model = load_model(args.model_file)
     h5_file = embeddings_save_loc / f"embeddings_PCA_{pca_dim}dim.h5"
     npy_file = pt(args.npy_file)
 
     if args.embedding_pipeline_loc:
         logger.info("Loading existing pipeline.")
 
-        pipe = load(args.embedding_pipeline_loc)
-        embedder = EmbeddingModel(m2v_model, transform=pipe)
-        embedder_file = embeddings_save_loc / "mol2vec_pca.pkl"
+        embedder = EmbeddingModel.from_pkl(
+            args.model_file, transform_path=args.embedding_pipeline_loc
+        )
 
+        embedder_file = embeddings_save_loc / "mol2vec_pca_new.pkl"
         dump(embedder, embedder_file)
+
         logger.info(f"Embedding model saved to disk ({embedder_file}). Exiting.")
 
         return
