@@ -94,13 +94,17 @@ class EmbeddingModel(object):
         return self._radius
 
     def vectorize(self, smi: str):
-        vector = smi_to_vector(smi, self.model, self.radius)
 
-        if self._transform is not None:
-            # the clustering is always the last step, which we ignore
-            for step in self.transform.steps[: len(self.transform.steps) - 1]:
-                vector = step[1].transform(vector)
-        return vector[0]
+        try:
+            vector = smi_to_vector(smi, self.model, self.radius)
+
+            if self._transform is not None:
+                # the clustering is always the last step, which we ignore
+                for step in self.transform.steps[: len(self.transform.steps) - 1]:
+                    vector = step[1].transform(vector)
+            return vector[0]
+        except:
+            return da.from_array(np.zeros(pca_dim))
 
     def __call__(self, smi: str):
         return self.vectorize(smi)
@@ -168,9 +172,13 @@ def generate_embeddings():
         dump(pipe, embeddings_save_loc / "embedding_pipeline.pkl")
 
         # generate a convenient wrapper for all the functionality
+
         embedder = EmbeddingModel(m2v_model, transform=pipe)
-        dump(embedder, embeddings_save_loc / "EmbeddingModel.pkl")
-        logger.info("Embedding model saved to disk. Exiting.")
+        embedder_file = embeddings_save_loc / "EmbeddingModel.pkl"
+
+        dump(embedder, embedder_file)
+        logger.info(f"Embedding model saved to disk ({embedder_file}). Exiting.")
+
     return embedder
 
 
@@ -192,27 +200,36 @@ npy_file: pt = None
 class Args:
     pca_dim: int = 70
     n_clusters: int = 20
-    threads_per_worker: int = 2
-    n_workers: int = 32
     radius: int = 1
     embeddings_save_loc: str = None
     model_file: str = None
     npy_file: str = None
+    embedding_pipeline_loc: str = None
 
 
 def main(args: Args):
 
-    global pca_dim, n_clusters, threads_per_worker, n_workers, radius, embeddings_save_loc, m2v_model, h5_file, npy_file
+    global pca_dim, n_clusters, radius, embeddings_save_loc, m2v_model, h5_file, npy_file
 
     pca_dim = args.pca_dim
     n_clusters = args.n_clusters
-    # threads_per_worker = args.threads_per_worker
-    # n_workers = args.n_workers
     radius = args.radius
 
     embeddings_save_loc = pt(args.embeddings_save_loc)
     m2v_model = load_model(args.model_file)
     h5_file = embeddings_save_loc / f"embeddings_PCA_{pca_dim}dim.h5"
     npy_file = pt(args.npy_file)
+
+    if args.embedding_pipeline_loc:
+        logger.info("Loading existing pipeline.")
+
+        pipe = load(args.embedding_pipeline_loc)
+        embedder = EmbeddingModel(m2v_model, transform=pipe)
+        embedder_file = embeddings_save_loc / "mol2vec_pca.pkl"
+
+        dump(embedder, embedder_file)
+        logger.info(f"Embedding model saved to disk ({embedder_file}). Exiting.")
+
+        return
 
     generate_embeddings()
