@@ -9,7 +9,6 @@ setup(
         "scipy",
         "uncertainties",
         "matplotlib",
-        "PyQt6",
         "flask_cors",
         "waitress",
     ],
