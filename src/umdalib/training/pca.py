@@ -123,7 +123,7 @@ def generate_embeddings():
     with h5py.File(h5_file, "w") as embeddings_file:
 
         np_vec = np.load(npy_file, allow_pickle=True)
-        vectors = np.vstack(np_vec)[:1000]
+        vectors = np.vstack(np_vec)
         embeddings_file["vectors"] = vectors
 
         if USE_DASK:
@@ -176,7 +176,7 @@ def generate_embeddings():
 
 seed = 42
 
-n_workers = cpu_count
+n_workers = 1
 radius = 1
 pca_dim = 70
 n_clusters = 20
@@ -206,8 +206,8 @@ def main(args: Args):
 
     pca_dim = args.pca_dim
     n_clusters = args.n_clusters
-    threads_per_worker = args.threads_per_worker
-    n_workers = args.n_workers
+    # threads_per_worker = args.threads_per_worker
+    # n_workers = args.n_workers
     radius = args.radius
 
     embeddings_save_loc = pt(args.embeddings_save_loc)
