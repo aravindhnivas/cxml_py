@@ -3,7 +3,8 @@ import h5py
 from mol2vec import features
 from pathlib import Path as pt
 from umdalib.utils import load_model
-from multiprocessing import cpu_count
+
+# from multiprocessing import cpu_count
 import numpy as np
 
 from rdkit import Chem
@@ -30,7 +31,7 @@ from joblib import load, dump, parallel_backend
 from sklearn.pipeline import make_pipeline
 
 
-def smi_to_vector(smi: str, model) -> list[np.ndarray]:
+def smi_to_vector(smi: str, model, radius: int) -> list[np.ndarray]:
     """
     Given a model, convert a SMILES string into the corresponding
     NumPy vector.
@@ -94,7 +95,7 @@ class EmbeddingModel(object):
 
     def vectorize(self, smi: str):
         vector = smi_to_vector(smi, self.model, self.radius)
-        #
+
         if self._transform is not None:
             # the clustering is always the last step, which we ignore
             for step in self.transform.steps[: len(self.transform.steps) - 1]:
@@ -169,7 +170,6 @@ def generate_embeddings():
         # generate a convenient wrapper for all the functionality
         embedder = EmbeddingModel(m2v_model, transform=pipe)
         dump(embedder, embeddings_save_loc / "EmbeddingModel.pkl")
-
         logger.info("Embedding model saved to disk. Exiting.")
     return embedder
 
@@ -212,7 +212,7 @@ def main(args: Args):
 
     embeddings_save_loc = pt(args.embeddings_save_loc)
     m2v_model = load_model(args.model_file)
-    h5_file = embeddings_save_loc / f"embeddings_PCA_{pca_dim}.h5"
+    h5_file = embeddings_save_loc / f"embeddings_PCA_{pca_dim}dim.h5"
     npy_file = pt(args.npy_file)
 
     generate_embeddings()
