@@ -232,4 +232,5 @@ def main(args: Args):
 
         return
 
+    logger.info(f"No existing pipeline found. Generating new embeddings.")
     generate_embeddings()
