@@ -43,7 +43,7 @@ def VICGAE2vec(smi: str, model):
 
 
 def mol2vec_PCA(smi: str, model) -> da.array:
-    vec = model.vectorize(smi)
+    vec = model.vectorize(smi, model)
     return vec
 
 
