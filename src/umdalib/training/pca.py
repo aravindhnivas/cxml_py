@@ -21,7 +21,7 @@ else:
 from umdalib.utils import logger
 from joblib import load, dump, parallel_backend
 from sklearn.pipeline import make_pipeline
-from .embedd_data import embedding_model
+from .embedd_data import smi_to_vec_dict
 
 
 def train_fit_model(data: np.ndarray, model: IncrementalPCA):
@@ -159,8 +159,8 @@ def main(args: Args):
     if not embeddings_save_loc.exists():
         embeddings_save_loc.mkdir(parents=True)
 
-    logger.info(f"Embedding model: {embedding_model}")
-    smi_to_vector = embedding_model[original_model]
+    logger.info(f"Embedding model: {smi_to_vec_dict}")
+    smi_to_vector = smi_to_vec_dict[original_model]
 
     logger.info(f"Using model: {original_model} from {args.model_file}")
     if original_model == "mol2vec":
