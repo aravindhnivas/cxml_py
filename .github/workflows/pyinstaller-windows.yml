@@ -74,6 +74,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r src/requirements.txt
 
+      - name: hdf5 (macos)
+        if: matrix.os == 'macos-latest'
+        run: brew install hdf5
+
       - name: List contents of src/icons
         run: ls src/icons
 
