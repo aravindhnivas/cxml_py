@@ -100,6 +100,7 @@ def get_smi_to_vec_after_pca(smi: str, model):
     pipeline_model = load_model(PCA_pipeline_location, use_joblib=True)
     for step in pipeline_model.steps:
         vector = step[1].transform(vector)
+
     return vector
 
 
@@ -121,6 +122,7 @@ def main(args: Args):
     PCA_pipeline_location = args.PCA_pipeline_location
 
     if PCA_pipeline_location:
+        logger.info(f"Using PCA pipeline from {PCA_pipeline_location}")
         smi_to_vector = get_smi_to_vec_after_pca
     else:
         smi_to_vector = smi_to_vec_dict[embedding]
@@ -131,9 +133,8 @@ def main(args: Args):
 
     if args.test_mode:
         logger.info(f"Testing with {args.test_smiles}")
-
         vec: np.ndarray = smi_to_vector(args.test_smiles, model)
-        if args.embedding == "mol2vec_PCA":
+        if PCA_pipeline_location:
             if isinstance(vec, da.Array):
                 vec = vec.compute()
         return {
