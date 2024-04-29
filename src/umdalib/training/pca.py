@@ -43,6 +43,7 @@ def train_fit_model(data: np.ndarray, model: IncrementalPCA):
         labels = getattr(model, "labels_", None)
         if USE_DASK and labels is not None:
             labels = labels.compute()
+
     return (model, transform, labels)
 
 
@@ -95,10 +96,10 @@ def generate_embeddings():
 
             if compute_kmeans:
                 pipe = make_pipeline(scaler, pca_model, kmeans)
-                pipeline_file = embeddings_save_loc / f"pipeline.pkl"
+                pipeline_file = embeddings_save_loc / f"pca_pipeline.pkl"
             else:
                 pipe = make_pipeline(scaler, pca_model)
-                pipeline_file = embeddings_save_loc / f"pipeline_without_Kmeans.pkl"
+                pipeline_file = embeddings_save_loc / f"pca_pipeline_without_Kmeans.pkl"
 
             dump(pipe, pipeline_file)
 
@@ -169,20 +170,6 @@ def main(args: Args):
 
     h5_file = embeddings_save_loc / f"data.h5"
     npy_file = pt(args.npy_file)
-
-    # if args.embedding_pipeline_loc:
-    #     logger.info("Loading existing pipeline.")
-
-    #     embedder = EmbeddingModel.from_pkl(
-    #         model, transform_path=args.embedding_pipeline_loc
-    #     )
-
-    #     embedder_file = embeddings_save_loc / "EmbeddingModel.pkl"
-    #     dump(embedder, embedder_file)
-
-    #     logger.info(f"Embedding model saved to disk ({embedder_file}). Exiting.")
-
-    #     return
 
     logger.info(f"No existing pipeline found. Generating new embeddings.")
     generate_embeddings()
