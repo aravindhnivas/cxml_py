@@ -28,6 +28,7 @@ class Args:
     pretrained_model_location: str
     test_mode: bool
     test_smiles: str
+    PCA_pipeline_location: str
 
 
 def VICGAE2vec(smi: str, model):
@@ -40,11 +41,6 @@ def VICGAE2vec(smi: str, model):
     except:
         invalid_smiles.append(smi)
         return np.zeros((1, 32))
-
-
-def mol2vec_PCA(smi: str, model) -> da.array:
-    vec = model.vectorize(smi, model)
-    return vec
 
 
 invalid_smiles = []
@@ -87,33 +83,55 @@ def mol2vec(smi: str, model, radius=1) -> list[np.ndarray]:
         return np.zeros((1, model.vector_size))
 
 
-embedding_model: dict[str, Callable] = {
+smi_to_vec_dict: dict[str, Callable] = {
     "VICGAE": VICGAE2vec,
     "mol2vec": mol2vec,
-    "mol2vec_PCA": mol2vec_PCA,
 }
+
+embedding: str = "mol2vec"
+PCA_pipeline_location: str = None
+
+
+def get_smi_to_vec_after_pca(smi: str, model):
+
+    fn = smi_to_vec_dict[embedding]
+    vector = fn(smi, model)
+
+    pipeline_model = load_model(PCA_pipeline_location, use_joblib=True)
+    for step in pipeline_model.steps:
+        vector = step[1].transform(vector)
+    return vector
 
 
 def main(args: Args):
 
     logger.info(f"{args=}")
 
-    global invalid_smiles
+    global invalid_smiles, embedding, PCA_pipeline_location
+    invalid_smiles = []
+    embedding = args.embedding
 
-    if args.embedding == "mol2vec":
+    if embedding == "mol2vec":
         model = load_model(args.pretrained_model_location)
         logger.info(f"Loaded mol2vec model with {model.vector_size} dimensions")
-    elif args.embedding == "VICGAE":
+    elif embedding == "VICGAE":
         model = load_model(args.pretrained_model_location, use_joblib=True)
         logger.info(f"Loaded VICGAE model")
-    elif args.embedding == "mol2vec_PCA":
-        model = load_model(args.pretrained_model_location, use_joblib=True)
-        logger.info(f"Loaded mol2vec PCA model")
 
-    smi_to_vector = embedding_model[args.embedding]
+    PCA_pipeline_location = args.PCA_pipeline_location
+
+    if PCA_pipeline_location:
+        smi_to_vector = get_smi_to_vec_after_pca
+    else:
+        smi_to_vector = smi_to_vec_dict[embedding]
+
+    logger.warning(f"{smi_to_vector=}")
+    if not callable(smi_to_vector):
+        raise ValueError(f"Unknown embedding model: {args.embedding}")
 
     if args.test_mode:
         logger.info(f"Testing with {args.test_smiles}")
+
         vec: np.ndarray = smi_to_vector(args.test_smiles, model)
         if args.embedding == "mol2vec_PCA":
             if isinstance(vec, da.Array):
