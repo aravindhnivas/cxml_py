@@ -3,18 +3,16 @@ Flask-Cors
 matplotlib
 numpy
 pyinstaller
-# PyQt6
 uncertainties
 waitress
 pandas
 dask
 dask-ml
 scikit-learn
-scipy
+scipy==1.11.0
 tables # Note that tables is the name of the pytables package on PyPI.
 loguru
 selfies
-# rdkit-pypi>=2021.9.2
 astrochem-embedding
 periodictable
 h5py
