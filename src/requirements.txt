@@ -1,21 +1,21 @@
-Flask
-Flask-Cors
+Flask==2.2.5
+Flask-Cors==4.0.0
 matplotlib
-numpy
-pyinstaller
-uncertainties
-waitress
-pandas
-dask
-dask-ml
-scikit-learn
-scipy==1.11.0
+numpy==1.26.4
+pyinstaller==6.2.0
+uncertainties==3.1.7
+waitress==2.0.0
+pandas==2.2.1
+dask==2023.11.0
+dask-ml==2023.3.24
+scikit-learn==1.3.0
+scipy==1.12.0
 tables # Note that tables is the name of the pytables package on PyPI.
-loguru
-selfies
-astrochem-embedding
-periodictable
-h5py
+loguru==0.5.3
+selfies==2.1.1
+astrochem-embedding==0.2.0
+periodictable==1.7.0
+h5py==3.9.0
 pyarrow-hotfix  # temporary fix for pyarrow 11.0.0
 git+https://github.com/aravindhnivas/mol2vec.git@gensim_v4
 prompt-toolkit==3.0.36
