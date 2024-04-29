@@ -1,10 +1,8 @@
 from time import sleep
 import numpy as np
 import h5py
-from mol2vec import features
 from pathlib import Path as pt
 from umdalib.utils import load_model
-
 import numpy as np
 
 USE_DASK = True
@@ -23,7 +21,7 @@ else:
 from umdalib.utils import logger
 from joblib import load, dump, parallel_backend
 from sklearn.pipeline import make_pipeline
-from .embedd_data import embedding_model, invalid_smiles
+from .embedd_data import embedding_model
 
 
 def train_fit_model(data: np.ndarray, model: IncrementalPCA):
@@ -48,60 +46,6 @@ def train_fit_model(data: np.ndarray, model: IncrementalPCA):
     return (model, transform, labels)
 
 
-class EmbeddingModel(object):
-    def __init__(self, w2vec_obj, transform=None, radius: int = 1) -> None:
-        self._model = w2vec_obj
-        self._transform = transform
-        self._radius = radius
-        self._covariance = None
-
-    @property
-    def model(self):
-        return self._model
-
-    @property
-    def transform(self):
-        return self._transform
-
-    @property
-    def radius(self):
-        return self._radius
-
-    def vectorize(self, smi: str, model, compute_kmeans=False):
-
-        try:
-            vector = smi_to_vector(smi, model)
-
-            if self._transform is not None:
-                if compute_kmeans:
-                    # the clustering is always the last step, which we ignore
-                    for step in self.transform.steps[: len(self.transform.steps) - 1]:
-                        vector = step[1].transform(vector)
-                else:
-                    for step in self.transform.steps:
-                        vector = step[1].transform(vector)
-
-            return vector[0]
-        except:
-            return da.from_array(np.zeros(pca_dim))
-
-    def __call__(self, smi: str):
-        return self.vectorize(smi)
-
-    @classmethod
-    def from_pkl(cls, w2vec_path, transform_path=None, **kwargs):
-        w2vec_obj = load_model(w2vec_path)
-        if transform_path:
-            transform_obj = load(transform_path)
-        else:
-            transform_obj = None
-        return cls(w2vec_obj, transform_obj, **kwargs)
-
-    def save(self, path: str):
-        dump(self, path)
-        logger.info(f"Saved model to {path}.")
-
-
 def generate_embeddings():
 
     with h5py.File(h5_file, "w") as embeddings_file:
@@ -115,8 +59,6 @@ def generate_embeddings():
             vectors = da.from_array(np.vstack(np_vec))
 
         try:
-
-            # logger.info(f"{vectors.shape=}")
 
             scaler = StandardScaler()
             pca_model = IncrementalPCA(n_components=pca_dim)
@@ -160,15 +102,6 @@ def generate_embeddings():
 
             dump(pipe, pipeline_file)
 
-            # generate a convenient wrapper for all the functionality
-            embedder = EmbeddingModel(model, transform=pipe)
-            embedder_file = embeddings_save_loc / f"EmbeddingModel.pkl"
-
-            dump(embedder, embedder_file)
-            logger.info(f"Embedding model saved to disk ({embedder_file}). Exiting.")
-
-            return embedder
-
         except Exception as e:
             logger.error(f"Error: {e}")
             raise e
@@ -206,6 +139,7 @@ class Args:
     embedding_pipeline_loc: str = None
     compute_kmeans: bool = False
     original_model: str = "mol2vec"
+    PCA_pipeline_location: str = None
 
 
 def main(args: Args):
@@ -236,19 +170,19 @@ def main(args: Args):
     h5_file = embeddings_save_loc / f"data.h5"
     npy_file = pt(args.npy_file)
 
-    if args.embedding_pipeline_loc:
-        logger.info("Loading existing pipeline.")
+    # if args.embedding_pipeline_loc:
+    #     logger.info("Loading existing pipeline.")
 
-        embedder = EmbeddingModel.from_pkl(
-            args.model_file, transform_path=args.embedding_pipeline_loc
-        )
+    #     embedder = EmbeddingModel.from_pkl(
+    #         model, transform_path=args.embedding_pipeline_loc
+    #     )
 
-        embedder_file = embeddings_save_loc / "EmbeddingModel.pkl"
-        dump(embedder, embedder_file)
+    #     embedder_file = embeddings_save_loc / "EmbeddingModel.pkl"
+    #     dump(embedder, embedder_file)
 
-        logger.info(f"Embedding model saved to disk ({embedder_file}). Exiting.")
+    #     logger.info(f"Embedding model saved to disk ({embedder_file}). Exiting.")
 
-        return
+    #     return
 
     logger.info(f"No existing pipeline found. Generating new embeddings.")
     generate_embeddings()
