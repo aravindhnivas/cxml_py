@@ -39,11 +39,16 @@ def train_fit_model(data: np.ndarray, model: IncrementalPCA):
         model.fit(data)
         transform = model.transform(data)
         if USE_DASK:
-            transform = transform.compute()
-        # if we are fitting a clustering model we grab the labels
-        labels = getattr(model, "labels_", None)
-        if USE_DASK and labels is not None:
-            labels = labels.compute()
+            with ProgressBar():
+                transform = transform.compute()
+
+        labels = None
+        if compute_kmeans:
+            # if we are fitting a clustering model we grab the labels
+            labels = getattr(model, "labels_", None)
+            if USE_DASK and labels is not None:
+                with ProgressBar():
+                    labels = labels.compute()
 
     return (model, transform, labels)
 
