@@ -24,8 +24,3 @@ distributed_http = site_pkgs / "distributed/http"
 distributed_http_datas = [(str(distributed_http.resolve()), "distributed/http")]
 
 datas = icons_files + distributed_datas + dask_datas + distributed_http_datas
-
-# to include wandb and wandb_vendor (wandb_gql) in the final package
-# pyarrow_vendored = site_pkgs / "pyarrow/vendored"
-# pyarrow_vendored_datas = [(str(pyarrow_vendored.resolve()), "pyarrow/vendored")]
-# datas = icons_files + distributed_datas + dask_datas + pyarrow_vendored_datas
