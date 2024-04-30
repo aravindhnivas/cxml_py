@@ -7,6 +7,7 @@ import numpy as np
 
 USE_DASK = True
 from dask import array as da
+from dask.diagnostics import ProgressBar
 from dask.distributed import Client
 
 if USE_DASK:
@@ -96,7 +97,7 @@ def generate_embeddings():
 
             if compute_kmeans:
                 pipe = make_pipeline(scaler, pca_model, kmeans)
-                pipeline_file = embeddings_save_loc / f"pca_pipeline.pkl"
+                pipeline_file = embeddings_save_loc / f"pca_pipeline_with_kmeans.pkl"
             else:
                 pipe = make_pipeline(scaler, pca_model)
                 pipeline_file = embeddings_save_loc / f"pca_pipeline_without_Kmeans.pkl"
@@ -151,6 +152,7 @@ def main(args: Args):
     n_clusters = args.n_clusters
     radius = args.radius
     compute_kmeans = args.compute_kmeans
+
     logger.info(f"Computing kmeans: {compute_kmeans}")
 
     original_model = args.original_model
@@ -163,13 +165,13 @@ def main(args: Args):
     smi_to_vector = smi_to_vec_dict[original_model]
 
     logger.info(f"Using model: {original_model} from {args.model_file}")
+
     if original_model == "mol2vec":
         model = load_model(args.model_file)
     else:
         model = load_model(args.model_file, use_joblib=True)
-
     h5_file = embeddings_save_loc / f"data.h5"
     npy_file = pt(args.npy_file)
 
-    logger.info(f"No existing pipeline found. Generating new embeddings.")
-    generate_embeddings()
+    with ProgressBar():
+        generate_embeddings()
