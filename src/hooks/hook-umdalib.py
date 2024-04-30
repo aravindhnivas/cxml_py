@@ -20,7 +20,10 @@ icons_files = [(str(file.resolve()), "icons") for file in icons_dir.glob("*")]
 distributed_datas = [(str(distributed.resolve()), "distributed")]
 dask_datas = [(str(dask.resolve()), "dask")]
 
-datas = icons_files + distributed_datas + dask_datas
+distributed_http = site_pkgs / "distributed/http"
+distributed_http_datas = [(str(distributed_http.resolve()), "distributed/http")]
+
+datas = icons_files + distributed_datas + dask_datas + distributed_http_datas
 
 # to include wandb and wandb_vendor (wandb_gql) in the final package
 # pyarrow_vendored = site_pkgs / "pyarrow/vendored"
