@@ -111,6 +111,7 @@ def generate_embeddings():
         finally:
             if client:
                 client.close()
+                logger.info("\n\nDask Client closed!!\n\n")
 
 
 seed = 42
