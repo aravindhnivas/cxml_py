@@ -99,15 +99,17 @@ def generate_embeddings():
                 dump(kmeans, embeddings_save_loc / f"kmeans_model.pkl")
 
             logger.info("Combining the models into a pipeline")
-
-            if compute_kmeans:
-                pipe = make_pipeline(scaler, pca_model, kmeans)
-                pipeline_file = embeddings_save_loc / f"pca_pipeline_with_kmeans.pkl"
-            else:
-                pipe = make_pipeline(scaler, pca_model)
-                pipeline_file = embeddings_save_loc / f"pca_pipeline_without_Kmeans.pkl"
-
+            pipe = make_pipeline(scaler, pca_model)
+            pipeline_file = embeddings_save_loc / f"pca_pipeline.pkl"
             dump(pipe, pipeline_file)
+
+            # if compute_kmeans:
+            #     pipe = make_pipeline(scaler, pca_model, kmeans)
+            #     pipeline_file = embeddings_save_loc / f"pca_pipeline_with_kmeans.pkl"
+            # else:
+            #     pipe = make_pipeline(scaler, pca_model)
+            #     pipeline_file = embeddings_save_loc / f"pca_pipeline_without_Kmeans.pkl"
+            # dump(pipe, pipeline_file)
 
         except Exception as e:
             logger.error(f"Error: {e}")
