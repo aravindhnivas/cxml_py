@@ -87,7 +87,10 @@ def generate_embeddings():
             # save both the reduced dimension vector and the full
             pca_h5_file["pca"] = transformed
             pca_h5_file["explained_variance"] = pca_model.explained_variance_ratio_
-
+            np.savetxt(
+                embeddings_save_loc / "explained_variance.txt",
+                pca_model.explained_variance_ratio_,
+            )
             logger.info("Saving the trained PCA model.")
             dump(pca_model, embeddings_save_loc / "pca_model.pkl")
 
