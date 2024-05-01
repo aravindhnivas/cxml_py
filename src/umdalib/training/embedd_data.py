@@ -189,10 +189,18 @@ def main(args: Args):
         # if isinstance(smiles, str)
     ]
 
+    with open(
+        location
+        / f"[INVALID_entries]_{fullfile.stem}_{args.df_column}_{args.embedding}.txt",
+        "w",
+    ) as f:
+        for smi in invalid_smiles:
+            f.write(f"{smi}\n")
+
     return {
         "name": embedd_savefile,
         "shape": vec_computed.shape[0],
-        "invalid_smiles": invalid_smiles,
+        "invalid_smiles": len(invalid_smiles),
         "saved_file": f"{location / embedd_savefile}",
         "computed_time": computed_time,
     }
