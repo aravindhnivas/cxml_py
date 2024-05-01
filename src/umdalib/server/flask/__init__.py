@@ -7,7 +7,6 @@ from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
 from pathlib import Path as pt
 from umdalib.utils import Paths
-# from loguru import logger
 from umdalib.utils import logger
 
 app = Flask(__name__)
