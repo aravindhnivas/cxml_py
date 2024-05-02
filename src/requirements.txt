@@ -1,6 +1,6 @@
 Flask==2.2.*
 Flask-Cors==4.0.*
-# matplotlib
+matplotlib
 numpy==1.26.*
 pyinstaller==6.2.*
 uncertainties==3.1.*
