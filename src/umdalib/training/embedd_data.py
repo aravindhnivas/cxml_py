@@ -189,13 +189,14 @@ def main(args: Args):
         # if isinstance(smiles, str)
     ]
 
-    with open(
-        location
-        / f"[INVALID_entries]_{fullfile.stem}_{args.df_column}_{args.embedding}.txt",
-        "w",
-    ) as f:
-        for smi in invalid_smiles:
-            f.write(f"{smi}\n")
+    if len(invalid_smiles) > 0:
+        with open(
+            location
+            / f"[INVALID_entries]_{fullfile.stem}_{args.df_column}_{args.embedding}.txt",
+            "w",
+        ) as f:
+            for smi in invalid_smiles:
+                f.write(f"{smi}\n")
 
     return {
         "name": embedd_savefile,
