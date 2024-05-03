@@ -23,6 +23,7 @@ from umdalib.utils import logger
 from joblib import load, dump, parallel_backend
 from sklearn.pipeline import make_pipeline
 from .embedd_data import smi_to_vec_dict
+from multiprocessing import cpu_count
 
 
 def train_fit_model(data: np.ndarray, model: IncrementalPCA):
@@ -63,8 +64,12 @@ def generate_embeddings():
 
         if USE_DASK:
             client = Client(threads_per_worker=threads_per_worker, n_workers=n_workers)
-            vectors = da.from_array(np.vstack(np_vec))
 
+            # logger.info(client.scheduler_info)
+            logger.info(
+                f"Dask Client started with {n_workers} workers and {threads_per_worker} threads per worker"
+            )
+            vectors = da.from_array(np.vstack(np_vec))
         try:
 
             scaler = StandardScaler()
@@ -119,11 +124,12 @@ def generate_embeddings():
 
 seed = 42
 
-n_workers = 1
 radius = 1
 pca_dim = 70
 n_clusters = 20
-threads_per_worker = 2
+
+n_workers = int(cpu_count() * 0.7)
+threads_per_worker = 1
 
 embeddings_save_loc: pt = None
 model_file: str = None
