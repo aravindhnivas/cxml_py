@@ -1,6 +1,7 @@
 from .flask import app
 import waitress
 from dataclasses import dataclass
+from umdalib.utils import logger
 
 
 @dataclass
@@ -10,10 +11,11 @@ class Args:
 
 
 def main(args: Args):
-    PORT = int(args.port)
-    DEBUG = int(args.debug)
-    if DEBUG:
-        app.run(port=PORT, debug=True)
-        print("Server running in debug mode", flush=True)
+    logger.info(f"Starting server on port {args.port}")
+    if args.debug:
+        app.run(port=args.port, debug=True)
+        logger.warning("Server running in debug mode")
         return
-    waitress.serve(app, port=PORT, url_scheme="http")
+
+    logger.info("Server running in production mode")
+    waitress.serve(app, port=args.port, url_scheme="http")
