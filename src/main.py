@@ -20,12 +20,9 @@ if __name__ == "__main__":
     if len(sys.argv) > 2:
         args = json.loads(sys.argv[2])
 
-    args = MyClass(**args)
-    logger.info(f"{pyfile=}\n{args=}")
-
-    logger.info(f"{pyfile=}\n")
-    # if "verbose" in args and args.verbose:
     logger.info(f"{args=}")
+    logger.info(f"{pyfile=}\n")
+    args = MyClass(**args)
 
     with warnings.catch_warnings(record=True) as warn:
         pyfunction = import_module(f"umdalib.{pyfile}")
