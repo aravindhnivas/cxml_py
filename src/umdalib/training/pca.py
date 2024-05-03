@@ -1,4 +1,4 @@
-from time import sleep
+from time import perf_counter, sleep
 import numpy as np
 import h5py
 from pathlib import Path as pt
@@ -105,14 +105,7 @@ def generate_embeddings():
             pipe = make_pipeline(scaler, pca_model)
             pipeline_file = embeddings_save_loc / f"pca_pipeline.pkl"
             dump(pipe, pipeline_file)
-
-            # if compute_kmeans:
-            #     pipe = make_pipeline(scaler, pca_model, kmeans)
-            #     pipeline_file = embeddings_save_loc / f"pca_pipeline_with_kmeans.pkl"
-            # else:
-            #     pipe = make_pipeline(scaler, pca_model)
-            #     pipeline_file = embeddings_save_loc / f"pca_pipeline_without_Kmeans.pkl"
-            # dump(pipe, pipeline_file)
+            logger.success(f"Pipeline saved to {pipeline_file}")
 
         except Exception as e:
             logger.error(f"Error: {e}")
@@ -121,7 +114,7 @@ def generate_embeddings():
         finally:
             if client:
                 client.close()
-                logger.info("\n\nDask Client closed!!\n\n")
+                logger.info("Dask Client closed!!\n#################\n")
 
 
 seed = 42
@@ -184,5 +177,9 @@ def main(args: Args):
     h5_file = embeddings_save_loc / f"data.h5"
     npy_file = pt(args.npy_file)
 
-    with ProgressBar():
-        generate_embeddings()
+    time_start = perf_counter()
+    generate_embeddings()
+    logger.success(f"Time taken: {perf_counter() - time_start:.2f} seconds")
+    logger.success(
+        f"Embeddings are saved to {embeddings_save_loc}\n#################\n"
+    )
