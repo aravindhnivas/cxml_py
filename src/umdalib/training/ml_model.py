@@ -53,7 +53,7 @@ class Args:
     model: str
     labels_file: str
     vectors_file: str
-    test_split_ratio: float
+    test_size: float
     bootstrap: bool
     bootstrap_nsamples: int
     parameters: Dict[str, Union[str, int]]
@@ -79,7 +79,7 @@ def main(args: Args):
 
     # split data
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=float(args.test_split_ratio), random_state=rng
+        X, y, test_size=float(args.test_size), random_state=rng
     )
 
     # train model
