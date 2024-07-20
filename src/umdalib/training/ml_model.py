@@ -73,11 +73,12 @@ def main(args: Args):
 
     # bootstrap data
     if args.bootstrap:
+        args.bootstrap_nsamples = int(args.bootstrap_nsamples)
         X, y = resample(X, y, n_samples=args.bootstrap_nsamples, random_state=rng)
 
     # split data
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=args.test_split_ratio, random_state=rng
+        X, y, test_size=float(args.test_split_ratio), random_state=rng
     )
 
     # train model
