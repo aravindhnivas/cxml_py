@@ -57,6 +57,7 @@ class Args:
     bootstrap: bool
     bootstrap_nsamples: int
     parameters: Dict[str, Union[str, int]]
+    pre_trained_file: str
 
 
 def main(args: Args):
@@ -93,6 +94,6 @@ def main(args: Args):
     logger.info(f"R2: {r2:.2f}, MSE: {mse:.2f}, MAE: {mae:.2f}")
 
     # save model
-    dump(estimator, f"{args.model}.joblib")
+    dump(estimator, args.pre_trained_file)
 
     return {"r2": r2, "mse": mse, "rmse": rmse, "mae": mae}
