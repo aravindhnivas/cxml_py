@@ -43,6 +43,8 @@ models = {
     "gpr": GaussianProcessRegressor,
 }
 
+random_state_supported_models = ["rfr", "gbr", "gpr"]
+
 seed = 42
 # rng = np.random.default_rng(seed)
 rng = np.random.RandomState(seed)
@@ -62,6 +64,10 @@ class Args:
 
 def main(args: Args):
     logger.info(f"Training {args.model} model")
+
+    if args.model in random_state_supported_models:
+        args.parameters["random_state"] = rng
+
     estimator = models[args.model](**args.parameters)
 
     # load data
