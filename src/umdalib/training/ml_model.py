@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Dict, Union
 
 import numpy as np
-
+from pathlib import Path as pt
 
 # for processing
 # from sklearn.preprocessing import StandardScaler
@@ -66,6 +66,12 @@ class Args:
 def main(args: Args):
     logger.info(f"Training {args.model} model")
 
+    pre_trained_file = pt(args.pre_trained_file)
+
+    # check and add .pkl extension
+    if pre_trained_file.suffix != ".pkl":
+        pre_trained_file = pre_trained_file.with_suffix(".pkl")
+
     estimator = None
     grid_search = None
 
@@ -106,7 +112,7 @@ def main(args: Args):
         estimator = grid_search.best_estimator_
 
         # save grid search
-        dump(grid_search, args.pre_trained_file + "_grid_search")
+        dump(grid_search, pre_trained_file.with_suffix(".grid_search.pkl"))
 
     else:
         estimator = models[args.model](**args.parameters)
@@ -123,7 +129,7 @@ def main(args: Args):
     logger.info(f"R2: {r2:.2f}, MSE: {mse:.2f}, MAE: {mae:.2f}")
 
     # save model
-    dump(estimator, args.pre_trained_file)
+    dump(estimator, pre_trained_file)
 
     results = {"r2": r2, "mse": mse, "rmse": rmse, "mae": mae}
     if args.fine_tune_model:
