@@ -87,13 +87,7 @@ def main(args: Args):
     if args.model in random_state_supported_models:
         args.parameters["random_state"] = rng
 
-    params_grid: list[Dict] = []
-
     if args.fine_tune_model:
-        for key, value in args.fine_tuned_hyperparameters.items():
-            params_grid.append({key: [value]})
-
-        # make estimator and pass in the arguments except the fine tuned hyperparameters
         opts = {
             k: v
             for k, v in args.parameters.items()
@@ -104,7 +98,9 @@ def main(args: Args):
 
         # Grid-search
         kfold = KFold(n_splits=args.kfold_nsamples, shuffle=True, random_state=rng)
-        grid_search = GridSearchCV(initial_estimator, params_grid, cv=kfold)
+        grid_search = GridSearchCV(
+            initial_estimator, args.fine_tuned_hyperparameters, cv=kfold
+        )
 
         # run grid search
         grid_search.fit(X_train, y_train)
