@@ -68,7 +68,6 @@ def main(args: Args):
 
     estimator = None
     grid_search = None
-    best_params = None
 
     # load data
     X = np.load(args.vectors_file, allow_pickle=True)
@@ -105,7 +104,9 @@ def main(args: Args):
         # run grid search
         grid_search.fit(X_train, y_train)
         estimator = grid_search.best_estimator_
-        best_params = grid_search.best_params_
+
+        # save grid search
+        dump(grid_search, args.pre_trained_file + "_grid_search")
 
     else:
         estimator = models[args.model](**args.parameters)
@@ -126,6 +127,6 @@ def main(args: Args):
 
     results = {"r2": r2, "mse": mse, "rmse": rmse, "mae": mae}
     if args.fine_tune_model:
-        results["best_params"] = best_params
+        results["best_params"] = grid_search.best_params_
 
     return results
