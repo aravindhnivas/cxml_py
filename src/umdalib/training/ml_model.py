@@ -104,7 +104,7 @@ def main(args: Args):
 
         # Grid-search
         kfold = KFold(n_splits=args.kfold_nsamples, shuffle=True, random_state=rng)
-        grid_search = GridSearchCV(initial_estimator, params_grid, cv=kfold, n_jobs=-1)
+        grid_search = GridSearchCV(initial_estimator, params_grid, cv=kfold)
 
         # run grid search
         grid_search.fit(X_train, y_train)
