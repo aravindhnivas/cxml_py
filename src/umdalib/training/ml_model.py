@@ -24,12 +24,10 @@ from sklearn.gaussian_process import GaussianProcessRegressor, kernels
 
 # Cross-validation and others
 # from sklearn.model_selection import KFold, GridSearchCV, ShuffleSplit
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold, train_test_split, GridSearchCV
 
 # for saving models
 from joblib import dump
-
-# bootstrap
 from sklearn.utils import resample
 
 # models_dict
@@ -62,28 +60,71 @@ class Args:
     fine_tuned_hyperparameters: Dict[str, Union[str, int, float, None]]
     fine_tune_model: bool
     pre_trained_file: str
+    kfold_nsamples: int
 
 
 def main(args: Args):
     logger.info(f"Training {args.model} model")
 
-    if args.model in random_state_supported_models:
-        args.parameters["random_state"] = rng
-
-    estimator = models[args.model](**args.parameters)
+    estimator = None
 
     # load data
     X = np.load(args.vectors_file, allow_pickle=True)
     y = np.loadtxt(args.labels_file)
 
-    # sparse = False
-    # if sparse:
-    #     X = coo_matrix(X)
-
     # bootstrap data
     if args.bootstrap:
         args.bootstrap_nsamples = int(args.bootstrap_nsamples)
         X, y = resample(X, y, n_samples=args.bootstrap_nsamples, random_state=rng)
+
+    if args.model in random_state_supported_models:
+        args.parameters["random_state"] = rng
+
+    params_grid: list[Dict] = []
+
+    if args.fine_tune_model:
+        for key, value in args.fine_tuned_hyperparameters.items():
+            params_grid.append({key: [value]})
+
+        # make estimator and pass in the arguments except the fine tuned hyperparameters
+        opts = {
+            k: v
+            for k, v in args.parameters.items()
+            if k not in args.fine_tuned_hyperparameters.keys()
+        }
+        logger.info(f"{opts=}")
+        estimator = models[args.model](**opts)
+
+        # Grid-search
+        kfold = KFold(n_splits=args.kfold_nsamples, shuffle=True, random_state=rng)
+        grid_search = GridSearchCV(estimator, params_grid, cv=kfold, n_jobs=-1)
+
+        # run grid search
+        grid_search.fit(X, y)
+
+        best_estimator = grid_search.best_estimator_
+        best_params = grid_search.best_params_
+
+        # some stats
+        y_pred = best_estimator.predict(X)
+        r2 = metrics.r2_score(y, y_pred)
+        mse = metrics.mean_squared_error(y, y_pred)
+        rmse = np.sqrt(mse)
+        mae = metrics.mean_absolute_error(y, y_pred)
+        logger.info(f"R2: {r2:.2f}, MSE: {mse:.2f}, MAE: {mae:.2f}")
+        logger.info(f"Best hyperparameters: {best_params}")
+
+        # save model
+        dump(best_estimator, args.pre_trained_file)
+        return {
+            "r2": r2,
+            "mse": mse,
+            "rmse": rmse,
+            "mae": mae,
+            "best_params": best_params,
+        }
+
+    estimator = models[args.model](**args.parameters)
 
     # split data
     X_train, X_test, y_train, y_test = train_test_split(
