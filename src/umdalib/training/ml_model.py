@@ -58,7 +58,9 @@ class Args:
     test_size: float
     bootstrap: bool
     bootstrap_nsamples: int
-    parameters: Dict[str, Union[str, int]]
+    parameters: Dict[str, Union[str, int, None]]
+    fine_tuned_hyperparameters: Dict[str, Union[str, int, float, None]]
+    fine_tune_model: bool
     pre_trained_file: str
 
 
