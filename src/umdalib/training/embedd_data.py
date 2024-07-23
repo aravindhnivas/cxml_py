@@ -29,6 +29,7 @@ class Args:
     test_mode: bool
     test_smiles: str
     PCA_pipeline_location: str
+    embedd_savefile: str
 
 
 def VICGAE2vec(smi: str, model):
@@ -164,7 +165,7 @@ def main(args: Args):
     if vectors is None:
         raise ValueError(f"Unknown embedding model: {args.embedding}")
 
-    embedd_savefile = f"{fullfile.stem}_{args.df_column}_{args.embedding}.npy"
+    embedd_savefile = f"{args.embedd_savefile}.npy"
     logger.info(f"Begin computing embeddings for {fullfile.stem}...")
     time = perf_counter()
 
