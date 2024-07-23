@@ -195,8 +195,7 @@ def main(args: Args):
             location / f"[INVALID_entries]_{embedd_savefile}.txt",
             "w",
         ) as f:
-            for smi in invalid_smiles:
-                f.write(f"{smi}\n")
+            f.writelines(invalid_smiles)
 
     return {
         "name": embedd_savefile,
