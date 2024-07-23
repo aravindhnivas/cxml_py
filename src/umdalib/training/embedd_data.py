@@ -192,8 +192,7 @@ def main(args: Args):
 
     if len(invalid_smiles) > 0:
         with open(
-            location
-            / f"[INVALID_entries]_{fullfile.stem}_{args.df_column}_{args.embedding}.txt",
+            location / f"[INVALID_entries]_{embedd_savefile}.txt",
             "w",
         ) as f:
             for smi in invalid_smiles:
