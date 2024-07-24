@@ -98,6 +98,14 @@ def main(args: Args):
     valid_mask[invalid_indices] = False  # Mark invalid indices as False
     X = X[valid_mask]  # Keep only the rows that are marked as True in the valid_mask
 
+    # reshaping the array
+    n_samples = X.shape[0]
+    n_features = X[0].shape[1]
+
+    logger.info(f"Before reshaping data: {X[0].shape=}")
+    X = np.vstack(X).reshape(n_samples, n_features)
+    logger.info(f"After reshaping data: {X[0].shape=}")
+
     # load training data from file
     ddf = read_as_ddf(
         args.training_file["filetype"],
@@ -117,6 +125,7 @@ def main(args: Args):
         X, y = resample(X, y, n_samples=args.bootstrap_nsamples, random_state=rng)
 
     logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
+
     # return
 
     # split data
@@ -172,7 +181,12 @@ def main(args: Args):
     savefile = pre_trained_file.with_name(f"{current_time}_{pre_trained_file.name}")
     dump(estimator, savefile)
 
-    results = {"r2": r2, "mse": mse, "rmse": rmse, "mae": mae}
+    results = {
+        "r2": f"{r2:.2f}",
+        "mse": f"{mse:.2e}",
+        "rmse": f"{rmse:.2e}",
+        "mae": f"{mae:.2e}",
+    }
     if args.fine_tune_model:
         results["best_params"] = grid_search.best_params_
 
