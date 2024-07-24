@@ -89,8 +89,14 @@ def main(args: Args):
     grid_search = None
 
     # load data
+
     # load vectors
+
     X = np.load(args.vectors_file, allow_pickle=True)
+    invalid_indices = [i for i, arr in enumerate(X) if np.any(arr == 0)]
+    valid_mask = np.ones(len(X), dtype=bool)  # Initially, mark all as valid
+    valid_mask[invalid_indices] = False  # Mark invalid indices as False
+    X = X[valid_mask]  # Keep only the rows that are marked as True in the valid_mask
 
     # load training data from file
     ddf = read_as_ddf(
@@ -99,9 +105,11 @@ def main(args: Args):
         args.training_file["key"],
     )
     ddf = ddf.repartition(npartitions=args.npartitions)
-    y: dd = None
+    y: np.ndarray = None
     with ProgressBar():
         y = ddf[args.training_column_name_y].compute()
+
+    y = y[valid_mask]
 
     logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
 
