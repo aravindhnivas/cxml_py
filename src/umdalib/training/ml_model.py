@@ -79,7 +79,8 @@ class Args:
 def main(args: Args):
     logger.info(f"Training {args.model} model")
     logger.info(f"{args.training_file['filename']}")
-
+    # logger.info("testing...")
+    # return
     pre_trained_file = pt(args.pre_trained_file)
     # check and add .pkl extension
     if pre_trained_file.suffix != ".pkl":
@@ -123,7 +124,10 @@ def main(args: Args):
         args.bootstrap_nsamples = int(args.bootstrap_nsamples)
         X, y = resample(X, y, n_samples=args.bootstrap_nsamples, random_state=rng)
 
-    # X = np.vstack(X)  # stack the arrays (n_samples, n_features)
+    # stack the arrays (n_samples, n_features)
+    if len(X.shape) == 1:
+        X = np.vstack(X)
+
     logger.info(f"Loaded data: {X[0].shape=}")
     logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
 
