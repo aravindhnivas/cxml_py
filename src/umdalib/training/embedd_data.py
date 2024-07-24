@@ -176,6 +176,9 @@ def main(args: Args):
 
     with ProgressBar():
         vec_computed = vectors.compute()
+        vec_computed = np.vstack(
+            vec_computed
+        )  # stack the arrays (n_samples, n_features)
         computed_time = f"{(perf_counter() - start_time):.2f} s"
         np.save(embedd_savefile, vec_computed)
 
