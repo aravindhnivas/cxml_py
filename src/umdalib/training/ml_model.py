@@ -118,9 +118,8 @@ def main(args: Args):
         y = ddf[args.training_column_name_y].compute()
 
     y = y.to_numpy()
-    logger.info(f"{y[:5]=}, {type(y)=}")
-
     y = y[valid_mask]
+    logger.info(f"{y[:5]=}, {type(y)=}")
 
     # bootstrap data
     if args.bootstrap:
