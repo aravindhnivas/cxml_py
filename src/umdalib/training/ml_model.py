@@ -4,7 +4,7 @@ except ImportError:
     from loguru import logger
 
 from dataclasses import dataclass
-from typing import Dict, Union
+from typing import Dict, Union, TypedDict
 
 import numpy as np
 from pathlib import Path as pt
@@ -31,6 +31,10 @@ from sklearn.model_selection import KFold, train_test_split, GridSearchCV
 from joblib import dump
 from sklearn.utils import resample
 
+from umdalib.training.read_data import read_as_ddf
+from dask.diagnostics import ProgressBar
+import dask.dataframe as dd
+
 # models_dict
 models = {
     "linear_regression": LinearRegression,
@@ -49,11 +53,15 @@ seed = 42
 rng = np.random.RandomState(seed)
 
 
+class TrainingFile(TypedDict):
+    filename: str
+    filetype: str
+    key: str
+
+
 @dataclass
 class Args:
     model: str
-    labels_file: str
-    vectors_file: str
     test_size: float
     bootstrap: bool
     bootstrap_nsamples: int
@@ -62,10 +70,21 @@ class Args:
     fine_tune_model: bool
     pre_trained_file: str
     kfold_nsamples: int
+    training_file: TrainingFile
+    training_column_name_y: str
+    npartitions: int
+    vectors_file: str
 
 
 def main(args: Args):
     logger.info(f"Training {args.model} model")
+    logger.info(f"{args.training_file['filename']}")
+
+    ddf = read_as_ddf(
+        args.training_file["filetype"],
+        args.training_file["filename"],
+        args.training_file["key"],
+    )
 
     pre_trained_file = pt(args.pre_trained_file)
     # check and add .pkl extension
@@ -77,7 +96,15 @@ def main(args: Args):
 
     # load data
     X = np.load(args.vectors_file, allow_pickle=True)
-    y = np.loadtxt(args.labels_file)
+
+    ddf = ddf.repartition(npartitions=args.npartitions)
+    y: dd = None
+    with ProgressBar():
+        y = ddf[args.training_column_name_y].compute()
+
+    logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
+
+    return
 
     # bootstrap data
     if args.bootstrap:
