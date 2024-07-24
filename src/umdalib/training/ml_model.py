@@ -111,14 +111,13 @@ def main(args: Args):
 
     y = y[valid_mask]
 
-    logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
-
-    return
-
     # bootstrap data
     if args.bootstrap:
         args.bootstrap_nsamples = int(args.bootstrap_nsamples)
         X, y = resample(X, y, n_samples=args.bootstrap_nsamples, random_state=rng)
+
+    logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
+    # return
 
     # split data
     X_train, X_test, y_train, y_test = train_test_split(
