@@ -140,7 +140,9 @@ def main(args: Args):
             if isinstance(vec, da.Array):
                 vec = vec.compute()
         return {
-            "embedded_vector": vec.tolist() if vec is not None else None,
+            "test_mode": {
+                "embedded_vector": vec.tolist() if vec is not None else None,
+            }
         }
 
     fullfile = pt(args.filename)
@@ -206,9 +208,11 @@ def main(args: Args):
             f.writelines(invalid_smiles)
 
     return {
-        "name": embedd_savefile.name,
-        "shape": vec_computed.shape[0],
-        "invalid_smiles": len(invalid_smiles),
-        "saved_file": str(embedd_savefile),
-        "computed_time": computed_time,
+        "file_mode": {
+            "name": embedd_savefile.name,
+            "shape": vec_computed.shape[0],
+            "invalid_smiles": len(invalid_smiles),
+            "saved_file": str(embedd_savefile),
+            "computed_time": computed_time,
+        }
     }
