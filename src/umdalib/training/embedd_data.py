@@ -165,7 +165,8 @@ def main(args: Args):
     if vectors is None:
         raise ValueError(f"Unknown embedding model: {args.embedding}")
 
-    embedd_savefile = f"{args.embedd_savefile}.npy"
+    # embedd_savefile = f"{args.embedd_savefile}.npy"
+    embedd_savefile = fullfile.with_name(args.embedd_savefile).with_suffix(".npy")
     logger.info(f"Begin computing embeddings for {fullfile.stem}...")
     time = perf_counter()
 
@@ -175,12 +176,12 @@ def main(args: Args):
     with ProgressBar():
         vec_computed = vectors.compute()
         computed_time = f"{(perf_counter() - start_time):.2f} s"
-        np.save(location / embedd_savefile, vec_computed)
+        np.save(embedd_savefile, vec_computed)
 
     logger.info(f"{vec_computed.shape=}, {len(vec_computed[0])=}, {vec_computed[0]=}")
 
     logger.info(
-        f"Embeddings computed in {(perf_counter() - time):.2f} s and saved to {embedd_savefile}"
+        f"Embeddings computed in {(perf_counter() - time):.2f} s and saved to {embedd_savefile.name}"
     )
 
     # \xa0 is a non-breaking space in Latin1 (ISO 8859-1), also known as NBSP in Unicode. It's a character that prevents an automatic line break at its position. In HTML, it's often used to create multiple spaces that are visible.
@@ -192,15 +193,18 @@ def main(args: Args):
 
     if len(invalid_smiles) > 0:
         with open(
-            location / f"[INVALID_entries]_{embedd_savefile}.txt",
+            # location / f"[INVALID_entries]_{embedd_savefile}.txt",
+            fullfile.with_name(f"[INVALID_entries]_{args.embedd_savefile}").with_suffix(
+                ".txt"
+            ),
             "w",
         ) as f:
             f.writelines(invalid_smiles)
 
     return {
-        "name": embedd_savefile,
+        "name": embedd_savefile.name,
         "shape": vec_computed.shape[0],
         "invalid_smiles": len(invalid_smiles),
-        "saved_file": f"{location / embedd_savefile}",
+        "saved_file": str(embedd_savefile),
         "computed_time": computed_time,
     }
