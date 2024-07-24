@@ -211,7 +211,8 @@ def main(args: Args):
         "file_mode": {
             "name": embedd_savefile.name,
             "shape": vec_computed.shape[0],
-            "invalid_smiles": len(invalid_smiles),
+            # "invalid_smiles": len(invalid_smiles),
+            "invalid_smiles": invalid_smiles,
             "saved_file": str(embedd_savefile),
             "computed_time": computed_time,
         }
