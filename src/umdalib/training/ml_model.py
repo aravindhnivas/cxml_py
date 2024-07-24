@@ -123,7 +123,7 @@ def main(args: Args):
         args.bootstrap_nsamples = int(args.bootstrap_nsamples)
         X, y = resample(X, y, n_samples=args.bootstrap_nsamples, random_state=rng)
 
-    X = np.vstack(X)  # stack the arrays (n_samples, n_features)
+    # X = np.vstack(X)  # stack the arrays (n_samples, n_features)
     logger.info(f"Loaded data: {X[0].shape=}")
     logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
 
