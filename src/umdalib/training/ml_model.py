@@ -117,6 +117,9 @@ def main(args: Args):
     with ProgressBar():
         y = ddf[args.training_column_name_y].compute()
 
+    y = y.to_numpy()
+    logger.info(f"{y[:5]=}, {type(y)=}")
+
     y = y[valid_mask]
 
     # bootstrap data
@@ -195,4 +198,5 @@ def main(args: Args):
     if args.fine_tune_model:
         results["best_params"] = grid_search.best_params_
 
+    logger.info(f"{results=}")
     return results
