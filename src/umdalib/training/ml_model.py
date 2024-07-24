@@ -99,12 +99,11 @@ def main(args: Args):
     X = X[valid_mask]  # Keep only the rows that are marked as True in the valid_mask
 
     # reshaping the array
-    n_samples = X.shape[0]
-    n_features = X[0].shape[1]
-
-    logger.info(f"Before reshaping data: {X[0].shape=}")
-    X = np.vstack(X).reshape(n_samples, n_features)
-    logger.info(f"After reshaping data: {X[0].shape=}")
+    # n_samples = X.shape[0]
+    # n_features = X[0].shape[1]
+    # logger.info(f"Before reshaping data: {X[0].shape=}")
+    # X = np.vstack(X).reshape(n_samples, n_features)
+    # logger.info(f"After reshaping data: {X[0].shape=}")
 
     # load training data from file
     ddf = read_as_ddf(
@@ -124,6 +123,8 @@ def main(args: Args):
         args.bootstrap_nsamples = int(args.bootstrap_nsamples)
         X, y = resample(X, y, n_samples=args.bootstrap_nsamples, random_state=rng)
 
+    X = np.vstack(X)  # stack the arrays (n_samples, n_features)
+    logger.info(f"Loaded data: {X[0].shape=}")
     logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
 
     # return

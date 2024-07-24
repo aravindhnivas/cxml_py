@@ -38,10 +38,10 @@ def VICGAE2vec(smi: str, model):
     if smi == "nan":
         return None
     try:
-        return model.embed_smiles(smi).numpy()
+        return model.embed_smiles(smi).numpy().reshape(-1)
     except:
         invalid_smiles.append(smi)
-        return np.zeros((1, 32))
+        return np.zeros(32)
 
 
 invalid_smiles = []
@@ -75,13 +75,14 @@ def mol2vec(smi: str, model, radius=1) -> list[np.ndarray]:
         # generate vector embedding from sentence and model
         vector = features.sentences2vec([sentence], model)
 
-        return vector
+        return vector.reshape(-1)
 
     except:
         if smi not in invalid_smiles and isinstance(smi, str):
             invalid_smiles.append(smi)
 
-        return np.zeros((1, model.vector_size))
+        # return np.zeros((1, model.vector_size))
+        return np.zeros(model.vector_size)
 
 
 smi_to_vec_dict: dict[str, Callable] = {
