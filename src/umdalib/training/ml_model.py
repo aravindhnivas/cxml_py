@@ -80,12 +80,6 @@ def main(args: Args):
     logger.info(f"Training {args.model} model")
     logger.info(f"{args.training_file['filename']}")
 
-    ddf = read_as_ddf(
-        args.training_file["filetype"],
-        args.training_file["filename"],
-        args.training_file["key"],
-    )
-
     pre_trained_file = pt(args.pre_trained_file)
     # check and add .pkl extension
     if pre_trained_file.suffix != ".pkl":
@@ -95,8 +89,15 @@ def main(args: Args):
     grid_search = None
 
     # load data
+    # load vectors
     X = np.load(args.vectors_file, allow_pickle=True)
 
+    # load training data from file
+    ddf = read_as_ddf(
+        args.training_file["filetype"],
+        args.training_file["filename"],
+        args.training_file["key"],
+    )
     ddf = ddf.repartition(npartitions=args.npartitions)
     y: dd = None
     with ProgressBar():
