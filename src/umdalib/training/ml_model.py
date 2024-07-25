@@ -29,7 +29,6 @@ from sklearn.model_selection import (
     KFold,
     train_test_split,
     GridSearchCV,
-    cross_val_score,
 )
 
 # for saving models
@@ -200,6 +199,10 @@ def main(args: Args):
     if not args.fine_tune_model:
         logger.info("Training model")
         estimator.fit(X_train, y_train)
+
+    # remove last element from test data for testing
+    # X_test = X_test[:-1]
+    # y_test = y_test[:-1]
 
     y_pred: np.ndarray = estimator.predict(X_test)
 
