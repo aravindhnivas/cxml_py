@@ -127,6 +127,7 @@ def main(args: Args):
         y = ddf[args.training_column_name_y].compute()
 
     y = y.to_numpy()
+    y = np.log10(y)
     y = y[valid_mask]
     logger.info(f"{y[:5]=}, {type(y)=}")
 
@@ -200,7 +201,7 @@ def main(args: Args):
         logger.info("Training model")
         estimator.fit(X_train, y_train)
 
-    y_pred = estimator.predict(X_test)
+    y_pred: np.ndarray = estimator.predict(X_test)
 
     logger.info("Evaluating model")
     # evaluate model
