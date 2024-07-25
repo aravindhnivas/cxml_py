@@ -39,6 +39,8 @@ from sklearn.utils import resample
 from umdalib.training.read_data import read_as_ddf
 from dask.diagnostics import ProgressBar
 
+import json
+
 # import dask.dataframe as dd
 
 # models_dict
@@ -194,8 +196,10 @@ def main(args: Args):
     # logger.info(f"CV Scores: Mean={scores.mean():.2f}, Std={scores.std():.2f}")
 
     # train model
-    logger.info("Training model")
-    estimator.fit(X_train, y_train)
+    if not args.fine_tune_model:
+        logger.info("Training model")
+        estimator.fit(X_train, y_train)
+
     y_pred = estimator.predict(X_test)
 
     logger.info("Evaluating model")
@@ -219,10 +223,35 @@ def main(args: Args):
         "mse": f"{mse:.2e}",
         "rmse": f"{rmse:.2e}",
         "mae": f"{mae:.2e}",
+        "y_true": y_test.tolist(),
+        "y_pred": y_pred.tolist(),
     }
+
     if args.fine_tune_model:
         results["best_params"] = grid_search.best_params_
+        results["best_score"] = f"{grid_search.best_score_:.2f}"
+
+        logger.info(grid_search.cv_results_)
+        # serialize cv_results
+
+        logger.info("Serializing cv_results")
+        cv_results = {}
+        for key, value in grid_search.cv_results_.items():
+            if isinstance(value, np.ndarray) or isinstance(value, np.ma.MaskedArray):
+                cv_results[key] = value.tolist()
+            else:
+                cv_results[key] = value
+        results["cv_results"] = cv_results
 
     logger.info(f"{results=}")
     logger.info("Training complete")
+
+    # saving results to file
+
+    with open(
+        pre_trained_file.with_suffix(".json"),
+        "w",
+    ) as f:
+        json.dump(results, f, indent=4)
+
     return results
