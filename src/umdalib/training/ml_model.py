@@ -25,7 +25,12 @@ from sklearn.gaussian_process import GaussianProcessRegressor, kernels
 
 # Cross-validation and others
 # from sklearn.model_selection import KFold, GridSearchCV, ShuffleSplit
-from sklearn.model_selection import KFold, train_test_split, GridSearchCV
+from sklearn.model_selection import (
+    KFold,
+    train_test_split,
+    GridSearchCV,
+    cross_val_score,
+)
 
 # for saving models
 from joblib import dump
@@ -75,6 +80,7 @@ class Args:
     training_column_name_y: str
     npartitions: int
     vectors_file: str
+    noise_scale: float
 
 
 def main(args: Args):
@@ -127,14 +133,15 @@ def main(args: Args):
         args.bootstrap_nsamples = int(args.bootstrap_nsamples)
         X, y = resample(X, y, n_samples=args.bootstrap_nsamples, random_state=rng)
 
+        # adding noise to the y values
+        y += rng.normal(0, float(args.noise_scale), y.shape)
+
     # stack the arrays (n_samples, n_features)
     if len(X.shape) == 1:
         X = np.vstack(X)
 
-    logger.info(f"Loaded data: {X[0].shape=}")
+    logger.info(f"{X[0].shape=}\n{y[0]=}")
     logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
-
-    # return
 
     # split data
     X_train, X_test, y_train, y_test = train_test_split(
@@ -154,7 +161,7 @@ def main(args: Args):
         initial_estimator = models[args.model](**opts)
 
         # Grid-search
-        kfold = KFold(n_splits=args.kfold_nsamples, shuffle=True, random_state=rng)
+        kfold = KFold(n_splits=int(args.kfold_nsamples), shuffle=True, random_state=rng)
         grid_search = GridSearchCV(
             initial_estimator, args.fine_tuned_hyperparameters, cv=kfold
         )
@@ -172,6 +179,10 @@ def main(args: Args):
 
     else:
         estimator = models[args.model](**args.parameters)
+
+    # Cross-validation
+    # scores = cross_val_score(estimator, X, y, cv=4)
+    # logger.info(f"CV Scores: Mean={scores.mean():.2f}, Std={scores.std():.2f}")
 
     # train model
     estimator.fit(X_train, y_train)
