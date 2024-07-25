@@ -179,8 +179,6 @@ def main(args: Args):
         logger.info(f"Best parameters: {grid_search.best_params_}")
 
         # save grid search
-        logger.info(f"Saving grid search to {grid_savefile}")
-
         current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
         grid_savefile = pre_trained_file.with_name(
             f"{current_time}_{pre_trained_file.name}_grid_search"
