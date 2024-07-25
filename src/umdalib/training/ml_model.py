@@ -221,9 +221,9 @@ def main(args: Args):
 
     results = {
         "r2": f"{r2:.2f}",
-        "mse": f"{mse:.2e}",
-        "rmse": f"{rmse:.2e}",
-        "mae": f"{mae:.2e}",
+        "mse": f"{mse:.2f}",
+        "rmse": f"{rmse:.2f}",
+        "mae": f"{mae:.2f}",
         "y_true": y_test.tolist(),
         "y_pred": y_pred.tolist(),
     }
