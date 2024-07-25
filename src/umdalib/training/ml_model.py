@@ -152,30 +152,41 @@ def main(args: Args):
         args.parameters["random_state"] = rng
 
     if args.fine_tune_model:
+
+        logger.info("Fine-tuning model")
+
         opts = {
             k: v
             for k, v in args.parameters.items()
             if k not in args.fine_tuned_hyperparameters.keys()
         }
-
         initial_estimator = models[args.model](**opts)
 
+        logger.info("Running grid search")
         # Grid-search
         kfold = KFold(n_splits=int(args.kfold_nsamples), shuffle=True, random_state=rng)
         grid_search = GridSearchCV(
             initial_estimator, args.fine_tuned_hyperparameters, cv=kfold
         )
+        logger.info("Fitting grid search")
 
         # run grid search
         grid_search.fit(X_train, y_train)
         estimator = grid_search.best_estimator_
 
+        logger.info("Grid search complete")
+        logger.info(f"Best score: {grid_search.best_score_}")
+        logger.info(f"Best parameters: {grid_search.best_params_}")
+
         # save grid search
+        logger.info(f"Saving grid search to {grid_savefile}")
+
         current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
         grid_savefile = pre_trained_file.with_name(
             f"{current_time}_{pre_trained_file.name}_grid_search"
         )
         dump(grid_search, grid_savefile)
+        logger.info(f"Grid search saved to {grid_savefile}")
 
     else:
         estimator = models[args.model](**args.parameters)
@@ -185,9 +196,11 @@ def main(args: Args):
     # logger.info(f"CV Scores: Mean={scores.mean():.2f}, Std={scores.std():.2f}")
 
     # train model
+    logger.info("Training model")
     estimator.fit(X_train, y_train)
     y_pred = estimator.predict(X_test)
 
+    logger.info("Evaluating model")
     # evaluate model
     r2 = metrics.r2_score(y_test, y_pred)
     mse = metrics.mean_squared_error(y_test, y_pred)
@@ -198,6 +211,7 @@ def main(args: Args):
     logger.info(f"R2: {r2:.2f}, MSE: {mse:.2f}, MAE: {mae:.2f}")
 
     # save model
+    logger.info(f"Saving model to {pre_trained_file}")
     current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
     savefile = pre_trained_file.with_name(f"{current_time}_{pre_trained_file.name}")
     dump(estimator, savefile)
@@ -212,4 +226,5 @@ def main(args: Args):
         results["best_params"] = grid_search.best_params_
 
     logger.info(f"{results=}")
+    logger.info("Training complete")
     return results
