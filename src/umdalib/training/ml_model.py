@@ -40,7 +40,14 @@ from dask.diagnostics import ProgressBar
 
 import json
 
+from scipy.optimize import curve_fit
+
 # import dask.dataframe as dd
+
+
+def linear(x, m, c):
+    return m * x + c
+
 
 # models_dict
 models = {
@@ -222,6 +229,9 @@ def main(args: Args):
     savefile = pre_trained_file.with_name(f"{current_time}_{pre_trained_file.name}")
     dump(estimator, savefile)
 
+    pop, poc = curve_fit(linear, y_test, y_pred)
+    y_linear_fit = linear(y_test, *pop)
+
     results = {
         "r2": f"{r2:.2f}",
         "mse": f"{mse:.2f}",
@@ -229,6 +239,7 @@ def main(args: Args):
         "mae": f"{mae:.2f}",
         "y_true": y_test.tolist(),
         "y_pred": y_pred.tolist(),
+        "y_linear_fit": y_linear_fit.tolist(),
     }
 
     if args.fine_tune_model:
