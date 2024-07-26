@@ -240,10 +240,19 @@ def main(args: Args):
         "mse": f"{mse:.2f}",
         "rmse": f"{rmse:.2f}",
         "mae": f"{mae:.2f}",
-        "y_true": y_test.tolist(),
-        "y_pred": y_pred.tolist(),
-        "y_linear_fit": y_linear_fit.tolist(),
+        "model": args.model,
+        "bootstrap": args.bootstrap,
+        "bootstrap_nsamples": args.bootstrap_nsamples,
+        # "y_true": y_test.tolist(),
+        # "y_pred": y_pred.tolist(),
+        # "y_linear_fit": y_linear_fit.tolist(),
     }
+
+    with open(f"{pre_trained_file.with_suffix('.dat')}", "w") as f:
+        f.write(f"# Model: {args.model}\n")
+        f.write("# obs\tpred\tfitted\n")
+        for obs, pred, fitted in zip(y_test, y_pred, y_linear_fit):
+            f.write(f"{obs:.4f}\t{pred:.4f}\t{fitted:.4f}\n")
 
     # Additional validation step
     if args.bootstrap:
