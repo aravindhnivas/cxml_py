@@ -243,9 +243,6 @@ def main(args: Args):
         "model": args.model,
         "bootstrap": args.bootstrap,
         "bootstrap_nsamples": args.bootstrap_nsamples,
-        # "y_true": y_test.tolist(),
-        # "y_pred": y_pred.tolist(),
-        # "y_linear_fit": y_linear_fit.tolist(),
     }
 
     with open(f"{pre_trained_file.with_suffix('.dat.json')}", "w") as f:
@@ -258,14 +255,9 @@ def main(args: Args):
             f,
             indent=4,
         )
-        # f.write(f"# Model: {args.model}\n")
-        # f.write("# obs\tpred\tfitted\n")
-        # for obs, pred, fitted in zip(y_test, y_pred, y_linear_fit):
-        #     f.write(f"{obs:.4f}\t{pred:.4f}\t{fitted:.4f}\n")
 
     # Additional validation step
     if args.bootstrap:
-
         kfold = KFold(n_splits=int(args.kfold_nsamples), shuffle=True, random_state=rng)
         cv_scores = cross_val_score(estimator, X, y, cv=kfold, scoring="r2")
         logger.info(f"Cross-validation R2 scores: {cv_scores}")
@@ -273,13 +265,15 @@ def main(args: Args):
             f"Mean CV R2 score: {cv_scores.mean():.4f} (+/- {cv_scores.std() * 2:.4f})"
         )
         results["cv_scores"] = {
-            "mean": f"{cv_scores.mean():.4f}",
-            "std": f"{cv_scores.std() * 2:.4f}",
+            "mean": f"{cv_scores.mean():.2f}",
+            "std": f"{cv_scores.std() * 2:.2f}",
             "scores": cv_scores.tolist(),
         }
 
     if args.fine_tune_model:
         results["best_params"] = grid_search.best_params_
+        results["best_score"] = grid_search.best_score_
+
         logger.info(grid_search.cv_results_)
     results["timeframe"] = current_time
     logger.info(f"{results=}")
