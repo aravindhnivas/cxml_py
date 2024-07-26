@@ -28,6 +28,7 @@ from sklearn.gaussian_process import GaussianProcessRegressor, kernels
 # from sklearn.model_selection import KFold, GridSearchCV, ShuffleSplit
 from sklearn.model_selection import (
     KFold,
+    cross_val_score,
     train_test_split,
     GridSearchCV,
 )
@@ -92,22 +93,35 @@ class Args:
     noise_scale: float
 
 
+def bootstrap_small_dataset(X, y, n_samples=800, noise_scale=0.0):
+    """
+    Bootstrap a small dataset to create a larger training set.
+
+    :X: Feature matrix
+    :y: Target vector
+    :n_samples: Number of samples in the bootstrapped dataset
+    :noise_scale: Scale of Gaussian noise to add to y
+    :return: Bootstrapped X and y
+    """
+
+    X_boot, y_boot = resample(X, y, n_samples=n_samples, replace=True, random_state=rng)
+
+    if noise_scale > 0:
+        y_boot += rng.normal(0, noise_scale, y_boot.shape)
+
+    return X_boot, y_boot
+
+
 def main(args: Args):
     logger.info(f"Training {args.model} model")
     logger.info(f"{args.training_file['filename']}")
-    # logger.info("testing...")
-    # return
+
     pre_trained_file = pt(args.pre_trained_file)
-    # check and add .pkl extension
     if pre_trained_file.suffix != ".pkl":
         pre_trained_file = pre_trained_file.with_suffix(".pkl")
 
     estimator = None
     grid_search = None
-
-    # load data
-
-    # load vectors
 
     X = np.load(args.vectors_file, allow_pickle=True)
     invalid_indices = [i for i, arr in enumerate(X) if np.any(arr == 0)]
@@ -133,11 +147,12 @@ def main(args: Args):
 
     # bootstrap data
     if args.bootstrap:
-        args.bootstrap_nsamples = int(args.bootstrap_nsamples)
-        X, y = resample(X, y, n_samples=args.bootstrap_nsamples, random_state=rng)
-
-        # adding noise to the y values
-        y += rng.normal(0, float(args.noise_scale), y.shape)
+        X, y = bootstrap_small_dataset(
+            X,
+            y,
+            n_samples=int(args.bootstrap_nsamples),
+            noise_scale=float(args.noise_scale),
+        )
 
     # stack the arrays (n_samples, n_features)
     if len(X.shape) == 1:
@@ -155,9 +170,7 @@ def main(args: Args):
         args.parameters["random_state"] = rng
 
     if args.fine_tune_model:
-
         logger.info("Fine-tuning model")
-
         opts = {
             k: v
             for k, v in args.parameters.items()
@@ -194,18 +207,10 @@ def main(args: Args):
     else:
         estimator = models[args.model](**args.parameters)
 
-    # Cross-validation
-    # scores = cross_val_score(estimator, X, y, cv=4)
-    # logger.info(f"CV Scores: Mean={scores.mean():.2f}, Std={scores.std():.2f}")
-
     # train model
     if not args.fine_tune_model:
         logger.info("Training model")
         estimator.fit(X_train, y_train)
-
-    # remove last element from test data for testing
-    # X_test = X_test[:-1]
-    # y_test = y_test[:-1]
 
     y_pred: np.ndarray = estimator.predict(X_test)
 
@@ -237,11 +242,25 @@ def main(args: Args):
         "y_linear_fit": y_linear_fit.tolist(),
     }
 
+    # Additional validation step
+    if args.bootstrap:
+        cv_scores = cross_val_score(estimator, X, y, cv=5, scoring="r2")
+        logger.info(f"Cross-validation R2 scores: {cv_scores}")
+        logger.info(
+            f"Mean CV R2 score: {cv_scores.mean():.4f} (+/- {cv_scores.std() * 2:.4f})"
+        )
+        results["cv_scores"] = {
+            "mean": f"{cv_scores.mean():.4f}",
+            "std": f"{cv_scores.std() * 2:.4f}",
+            "scores": cv_scores.tolist(),
+        }
+
     if args.fine_tune_model:
         results["best_params"] = grid_search.best_params_
         logger.info(grid_search.cv_results_)
 
     logger.info(f"{results=}")
+
     logger.info("Training complete")
 
     with open(
