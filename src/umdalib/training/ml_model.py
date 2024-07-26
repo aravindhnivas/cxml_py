@@ -24,7 +24,6 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.gaussian_process import GaussianProcessRegressor, kernels
 
-# Cross-validation and others
 # from sklearn.model_selection import KFold, GridSearchCV, ShuffleSplit
 from sklearn.model_selection import (
     KFold,
@@ -41,10 +40,7 @@ from umdalib.training.read_data import read_as_ddf
 from dask.diagnostics import ProgressBar
 
 import json
-
 from scipy.optimize import curve_fit
-
-# import dask.dataframe as dd
 
 
 def linear(x, m, c):
@@ -64,9 +60,9 @@ models = {
 
 random_state_supported_models = ["rfr", "gbr", "gpr"]
 
-seed = 42
-# rng = np.random.default_rng(seed)
-rng = np.random.RandomState(seed)
+# seed = 2024
+# rng = np.random.RandomState(seed)
+rng = None
 
 
 class TrainingFile(TypedDict):
@@ -107,7 +103,10 @@ def bootstrap_small_dataset(X, y, n_samples=800, noise_scale=0.0):
     X_boot, y_boot = resample(X, y, n_samples=n_samples, replace=True, random_state=rng)
 
     if noise_scale > 0:
-        y_boot += rng.normal(0, noise_scale, y_boot.shape)
+        if rng is None:
+            y_boot += np.random.normal(0, noise_scale, y_boot.shape)
+        else:
+            y_boot += rng.normal(0, noise_scale, y_boot.shape)
 
     return X_boot, y_boot
 
@@ -166,7 +165,11 @@ def main(args: Args):
         X, y, test_size=float(args.test_size), random_state=rng
     )
 
-    if args.model in random_state_supported_models:
+    if (
+        args.model in random_state_supported_models
+        and "random_state" not in args.parameters
+        and rng is not None
+    ):
         args.parameters["random_state"] = rng
 
     if args.fine_tune_model:
@@ -244,7 +247,9 @@ def main(args: Args):
 
     # Additional validation step
     if args.bootstrap:
-        cv_scores = cross_val_score(estimator, X, y, cv=5, scoring="r2")
+
+        kfold = KFold(n_splits=int(args.kfold_nsamples), shuffle=True, random_state=rng)
+        cv_scores = cross_val_score(estimator, X, y, cv=kfold, scoring="r2")
         logger.info(f"Cross-validation R2 scores: {cv_scores}")
         logger.info(
             f"Mean CV R2 score: {cv_scores.mean():.4f} (+/- {cv_scores.std() * 2:.4f})"
@@ -258,15 +263,13 @@ def main(args: Args):
     if args.fine_tune_model:
         results["best_params"] = grid_search.best_params_
         logger.info(grid_search.cv_results_)
-
+    results["timeframe"] = current_time
     logger.info(f"{results=}")
 
     logger.info("Training complete")
-
     with open(
         pre_trained_file.with_suffix(".json"),
         "w",
     ) as f:
         json.dump(results, f, indent=4)
-
     return results
