@@ -248,11 +248,20 @@ def main(args: Args):
         # "y_linear_fit": y_linear_fit.tolist(),
     }
 
-    with open(f"{pre_trained_file.with_suffix('.dat')}", "w") as f:
-        f.write(f"# Model: {args.model}\n")
-        f.write("# obs\tpred\tfitted\n")
-        for obs, pred, fitted in zip(y_test, y_pred, y_linear_fit):
-            f.write(f"{obs:.4f}\t{pred:.4f}\t{fitted:.4f}\n")
+    with open(f"{pre_trained_file.with_suffix('.dat.json')}", "w") as f:
+        json.dump(
+            {
+                "y_true": y_test.tolist(),
+                "y_pred": y_pred.tolist(),
+                "y_linear_fit": y_linear_fit.tolist(),
+            },
+            f,
+            indent=4,
+        )
+        # f.write(f"# Model: {args.model}\n")
+        # f.write("# obs\tpred\tfitted\n")
+        # for obs, pred, fitted in zip(y_test, y_pred, y_linear_fit):
+        #     f.write(f"{obs:.4f}\t{pred:.4f}\t{fitted:.4f}\n")
 
     # Additional validation step
     if args.bootstrap:
