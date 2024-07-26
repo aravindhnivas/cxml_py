@@ -182,10 +182,10 @@ def main(args: Args):
         logger.info(f"Best parameters: {grid_search.best_params_}")
 
         # save grid search
-        current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
+        # current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
         grid_savefile = pre_trained_file.with_name(
-            f"{current_time}_{pre_trained_file.name}_grid_search"
-        )
+            f"{pre_trained_file.stem}_grid_search"
+        ).with_suffix(".pkl")
         dump(grid_search, grid_savefile)
         df = pd.DataFrame(grid_search.cv_results_)
         df.to_csv(grid_savefile.with_suffix(".csv"))
@@ -221,7 +221,7 @@ def main(args: Args):
 
     logger.info(f"Saving model to {pre_trained_file}")
     current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
-    savefile = pre_trained_file.with_name(f"{current_time}_{pre_trained_file.name}")
+    savefile = pre_trained_file.with_name(f"{pre_trained_file.name}")
     dump(estimator, savefile)
 
     pop, _ = curve_fit(linear, y_test, y_pred)
