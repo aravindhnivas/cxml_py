@@ -6,6 +6,7 @@ except ImportError:
 from dataclasses import dataclass
 from typing import Dict, Union, TypedDict
 
+
 import numpy as np
 from pathlib import Path as pt
 from datetime import datetime
@@ -31,6 +32,7 @@ from sklearn.model_selection import (
     train_test_split,
     GridSearchCV,
 )
+from dask_ml.model_selection import GridSearchCV as DaskGridSearchCV
 
 # for saving models
 from joblib import dump
@@ -41,6 +43,11 @@ from dask.diagnostics import ProgressBar
 
 import json
 from scipy.optimize import curve_fit
+
+from dask.distributed import Client
+
+# Set up Dask client
+client = Client()  # This will start a local cluster
 
 
 def linear(x, m, c):
@@ -184,7 +191,8 @@ def main(args: Args):
         logger.info("Running grid search")
         # Grid-search
         kfold = KFold(n_splits=int(args.kfold_nsamples), shuffle=True, random_state=rng)
-        grid_search = GridSearchCV(
+        # grid_search = GridSearchCV(
+        grid_search = DaskGridSearchCV(
             initial_estimator, args.fine_tuned_hyperparameters, cv=kfold
         )
         logger.info("Fitting grid search")
@@ -196,6 +204,8 @@ def main(args: Args):
         logger.info("Grid search complete")
         logger.info(f"Best score: {grid_search.best_score_}")
         logger.info(f"Best parameters: {grid_search.best_params_}")
+
+        client.close()
 
         # save grid search
         # current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
