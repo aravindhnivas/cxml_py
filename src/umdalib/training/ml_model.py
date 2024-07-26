@@ -13,6 +13,7 @@ from datetime import datetime
 # for processing
 # from sklearn.preprocessing import StandardScaler
 # from sklearn.metrics.pairwise import cosine_distances, euclidean_distances
+import pandas as pd
 from sklearn import metrics
 
 # models
@@ -114,13 +115,6 @@ def main(args: Args):
     valid_mask[invalid_indices] = False  # Mark invalid indices as False
     X = X[valid_mask]  # Keep only the rows that are marked as True in the valid_mask
 
-    # reshaping the array
-    # n_samples = X.shape[0]
-    # n_features = X[0].shape[1]
-    # logger.info(f"Before reshaping data: {X[0].shape=}")
-    # X = np.vstack(X).reshape(n_samples, n_features)
-    # logger.info(f"After reshaping data: {X[0].shape=}")
-
     # load training data from file
     ddf = read_as_ddf(
         args.training_file["filetype"],
@@ -193,6 +187,8 @@ def main(args: Args):
             f"{current_time}_{pre_trained_file.name}_grid_search"
         )
         dump(grid_search, grid_savefile)
+        df = pd.DataFrame(grid_search.cv_results_)
+        df.to_csv(grid_savefile.with_suffix(".csv"))
         logger.info(f"Grid search saved to {grid_savefile}")
 
     else:
@@ -223,13 +219,12 @@ def main(args: Args):
     logger.info(f"{y_test[:5]=}, {y_pred[:5]=}")
     logger.info(f"R2: {r2:.2f}, MSE: {mse:.2f}, MAE: {mae:.2f}")
 
-    # save model
     logger.info(f"Saving model to {pre_trained_file}")
     current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
     savefile = pre_trained_file.with_name(f"{current_time}_{pre_trained_file.name}")
     dump(estimator, savefile)
 
-    pop, poc = curve_fit(linear, y_test, y_pred)
+    pop, _ = curve_fit(linear, y_test, y_pred)
     y_linear_fit = linear(y_test, *pop)
 
     results = {
@@ -244,24 +239,10 @@ def main(args: Args):
 
     if args.fine_tune_model:
         results["best_params"] = grid_search.best_params_
-        results["best_score"] = f"{grid_search.best_score_:.2f}"
-
         logger.info(grid_search.cv_results_)
-        # serialize cv_results
-
-        logger.info("Serializing cv_results")
-        cv_results = {}
-        for key, value in grid_search.cv_results_.items():
-            if isinstance(value, np.ndarray) or isinstance(value, np.ma.MaskedArray):
-                cv_results[key] = value.tolist()
-            else:
-                cv_results[key] = value
-        results["cv_results"] = cv_results
 
     logger.info(f"{results=}")
     logger.info("Training complete")
-
-    # saving results to file
 
     with open(
         pre_trained_file.with_suffix(".json"),
