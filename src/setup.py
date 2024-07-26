@@ -12,7 +12,7 @@ setup(
         "flask_cors",
         "waitress",
     ],
-    version="0.0.3",
+    version="1.0.0",
     description="umdalib: a Python backend for UMDA_UI",
     author="Aravindh Nivas Marimuthu (Mcguire's group, MIT)",
     license="MIT",
