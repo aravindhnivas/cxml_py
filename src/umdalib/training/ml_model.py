@@ -159,6 +159,7 @@ def main(args: Args):
 
     # bootstrap data
     if args.bootstrap:
+        logger.info("Bootstrapping data")
         X, y = bootstrap_small_dataset(
             X,
             y,
@@ -168,6 +169,7 @@ def main(args: Args):
 
     # stack the arrays (n_samples, n_features)
     if len(X.shape) == 1:
+        logger.info("Reshaping X")
         X = np.vstack(X)
 
     logger.info(f"{X[0].shape=}\n{y[0]=}")
@@ -180,6 +182,7 @@ def main(args: Args):
         y = scaler.fit_transform(y.reshape(-1, 1)).flatten()
 
     # split data
+    logger.info("Splitting data for training and testing")
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=float(args.test_size), random_state=rng
     )
@@ -241,6 +244,7 @@ def main(args: Args):
 
     # inverse transform if data was scaled
     if args.scaleYdata and scaler is not None:
+        logger.info("Inverse transforming Y-data")
         y = scaler.inverse_transform(y.reshape(-1, 1)).flatten()
         y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
         y_test = scaler.inverse_transform(y_test.reshape(-1, 1)).flatten()
@@ -300,9 +304,10 @@ def main(args: Args):
 
     if args.fine_tune_model:
         results["best_params"] = grid_search.best_params_
-        results["best_score"] = grid_search.best_score_
+        results["best_score"] = f"{grid_search.best_score_:.2f}"
 
         logger.info(grid_search.cv_results_)
+
     results["timeframe"] = current_time
     logger.info(f"{results=}")
 
@@ -312,4 +317,6 @@ def main(args: Args):
         "w",
     ) as f:
         json.dump(results, f, indent=4)
+        logger.info(f"Results saved to {pre_trained_file.with_suffix('.json')}")
+
     return results
