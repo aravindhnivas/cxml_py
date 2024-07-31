@@ -97,6 +97,8 @@ class Args:
     noise_scale: float
     logYscale: bool
     scaleYdata: bool
+    embedding: str
+    pca: bool
 
 
 def bootstrap_small_dataset(X, y, n_samples=800, noise_scale=0.0):
@@ -261,13 +263,20 @@ def main(args: Args):
 
     logger.info(f"Saving model to {pre_trained_file}")
     current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
-    savefile = pre_trained_file.with_name(f"{pre_trained_file.name}")
-    dump(estimator, savefile)
+    dump(estimator, pre_trained_file)
+    parameters_file = pre_trained_file.with_suffix(".parameters.json")
+    with open(parameters_file, "w") as f:
+        json.dump(args.parameters, f, indent=4)
+        logger.info(f"Model parameters saved to {parameters_file.name}")
 
     pop, _ = curve_fit(linear, y_test, y_pred)
     y_linear_fit = linear(y_test, *pop)
 
     results = {
+        "embedding": args.embedding,
+        "PCA": args.pca,
+        "data_size": len(y),
+        "kfolds": args.kfold_nsamples,
         "r2": f"{r2:.2f}",
         "mse": f"{mse:.2f}",
         "rmse": f"{rmse:.2f}",
@@ -289,7 +298,6 @@ def main(args: Args):
         )
 
     # Additional validation step
-    # if args.bootstrap:
     kfold = KFold(n_splits=int(args.kfold_nsamples), shuffle=True, random_state=rng)
     cv_scores = cross_val_score(estimator, X, y, cv=kfold, scoring="r2")
     logger.info(f"Cross-validation R2 scores: {cv_scores}")
