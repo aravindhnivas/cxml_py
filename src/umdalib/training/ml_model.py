@@ -89,7 +89,8 @@ class Args:
     fine_tuned_hyperparameters: Dict[str, Union[str, int, float, None]]
     fine_tune_model: bool
     pre_trained_file: str
-    kfold_nsamples: int
+    cv_fold: int
+    cross_validation: bool
     training_file: TrainingFile
     training_column_name_y: str
     npartitions: int
@@ -207,10 +208,10 @@ def main(args: Args):
 
         logger.info("Running grid search")
         # Grid-search
-        kfold = KFold(n_splits=int(args.kfold_nsamples), shuffle=True, random_state=rng)
+        cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True, random_state=rng)
         # grid_search = GridSearchCV(
         grid_search = DaskGridSearchCV(
-            initial_estimator, args.fine_tuned_hyperparameters, cv=kfold
+            initial_estimator, args.fine_tuned_hyperparameters, cv=cv_fold
         )
         logger.info("Fitting grid search")
 
@@ -276,7 +277,6 @@ def main(args: Args):
         "embedding": args.embedding,
         "PCA": args.pca,
         "data_size": len(y),
-        "kfolds": args.kfold_nsamples,
         "r2": f"{r2:.2f}",
         "mse": f"{mse:.2f}",
         "rmse": f"{rmse:.2f}",
@@ -284,8 +284,8 @@ def main(args: Args):
         "model": args.model,
     }
 
+    results["bootstrap"] = args.bootstrap
     if args.bootstrap:
-        results["bootstrap"] = args.bootstrap
         results["bootstrap_nsamples"] = args.bootstrap_nsamples
         results["noise_scale"] = args.noise_scale
 
@@ -301,23 +301,27 @@ def main(args: Args):
         )
 
     # Additional validation step
-    kfold = KFold(n_splits=int(args.kfold_nsamples), shuffle=True, random_state=rng)
-    cv_scores = cross_val_score(estimator, X, y, cv=kfold, scoring="r2")
-    logger.info(f"Cross-validation R2 scores: {cv_scores}")
-    logger.info(
-        f"Mean CV R2 score: {cv_scores.mean():.4f} (+/- {cv_scores.std() * 2:.4f})"
-    )
-    results["cv_scores"] = {
-        "mean": f"{cv_scores.mean():.2f}",
-        "std": f"{cv_scores.std() * 2:.2f}",
-        "scores": cv_scores.tolist(),
-    }
+    results["cross_validation"] = args.cross_validation
+    if args.cross_validation:
+        logger.info("Cross-validating model")
+
+        results["cv_fold"] = args.cv_fold
+
+        cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True, random_state=rng)
+        cv_scores = cross_val_score(estimator, X, y, cv=cv_fold, scoring="r2")
+        logger.info(f"Cross-validation R2 scores: {cv_scores}")
+        logger.info(
+            f"Mean CV R2 score: {cv_scores.mean():.4f} (+/- {cv_scores.std() * 2:.4f})"
+        )
+        results["cv_scores"] = {
+            "mean": f"{cv_scores.mean():.2f}",
+            "std": f"{cv_scores.std() * 2:.2f}",
+            "scores": cv_scores.tolist(),
+        }
 
     if args.fine_tune_model:
         results["best_params"] = grid_search.best_params_
         results["best_score"] = f"{grid_search.best_score_:.2f}"
-
-        logger.info(grid_search.cv_results_)
 
     results["timeframe"] = current_time
 
