@@ -282,9 +282,12 @@ def main(args: Args):
         "rmse": f"{rmse:.2f}",
         "mae": f"{mae:.2f}",
         "model": args.model,
-        "bootstrap": args.bootstrap,
-        "bootstrap_nsamples": args.bootstrap_nsamples,
     }
+
+    if args.bootstrap:
+        results["bootstrap"] = args.bootstrap
+        results["bootstrap_nsamples"] = args.bootstrap_nsamples
+        results["noise_scale"] = args.noise_scale
 
     with open(f"{pre_trained_file.with_suffix('.dat.json')}", "w") as f:
         json.dump(
@@ -317,11 +320,12 @@ def main(args: Args):
         logger.info(grid_search.cv_results_)
 
     results["timeframe"] = current_time
-    logger.info(f"{results=}")
 
+    logger.info(f"{results=}")
     logger.info("Training complete")
+
     with open(
-        pre_trained_file.with_suffix(".json"),
+        pre_trained_file.with_suffix(".results.json"),
         "w",
     ) as f:
         json.dump(results, f, indent=4)
