@@ -242,6 +242,8 @@ def main(args: Args):
     if not args.fine_tune_model:
         logger.info("Training model")
         estimator.fit(X_train, y_train)
+    else:
+        logger.info("Using best estimator from grid search")
 
     y_pred: np.ndarray = estimator.predict(X_test)
 
