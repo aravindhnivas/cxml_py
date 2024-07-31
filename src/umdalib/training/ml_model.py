@@ -259,7 +259,7 @@ def main(args: Args):
     rmse = np.sqrt(mse)
     mae = metrics.mean_absolute_error(y_test, y_pred)
 
-    logger.info(f"{y_test[:5]=}, {y_pred[:5]=}")
+    # logger.info(f"{y_test[:5]=}, {y_pred[:5]=}")
     logger.info(f"R2: {r2:.2f}, MSE: {mse:.2f}, MAE: {mae:.2f}")
 
     logger.info(f"Saving model to {pre_trained_file}")
