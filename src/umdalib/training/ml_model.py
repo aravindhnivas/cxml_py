@@ -32,6 +32,7 @@ from sklearn.model_selection import (
     train_test_split,
     GridSearchCV,
 )
+from sklearn.preprocessing import StandardScaler
 from dask_ml.model_selection import GridSearchCV as DaskGridSearchCV
 
 # for saving models
@@ -94,6 +95,8 @@ class Args:
     npartitions: int
     vectors_file: str
     noise_scale: float
+    logYscale: bool
+    scaleYdata: bool
 
 
 def bootstrap_small_dataset(X, y, n_samples=800, noise_scale=0.0):
@@ -147,8 +150,11 @@ def main(args: Args):
         y = ddf[args.training_column_name_y].compute()
 
     y = y.to_numpy()
-    y = np.log10(y)
+    if args.logYscale:
+        y = np.log10(y)
+
     y = y[valid_mask]
+
     logger.info(f"{y[:5]=}, {type(y)=}")
 
     # bootstrap data
@@ -166,6 +172,12 @@ def main(args: Args):
 
     logger.info(f"{X[0].shape=}\n{y[0]=}")
     logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
+
+    # scale data if needed
+    scaler = None
+    if args.scaleYdata:
+        scaler = StandardScaler()
+        y = scaler.fit_transform(y.reshape(-1, 1)).flatten()
 
     # split data
     X_train, X_test, y_train, y_test = train_test_split(
@@ -227,6 +239,12 @@ def main(args: Args):
 
     y_pred: np.ndarray = estimator.predict(X_test)
 
+    # inverse transform if data was scaled
+    if args.scaleYdata and scaler is not None:
+        y = scaler.inverse_transform(y.reshape(-1, 1)).flatten()
+        y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
+        y_test = scaler.inverse_transform(y_test.reshape(-1, 1)).flatten()
+
     logger.info("Evaluating model")
     # evaluate model
     r2 = metrics.r2_score(y_test, y_pred)
@@ -267,18 +285,18 @@ def main(args: Args):
         )
 
     # Additional validation step
-    if args.bootstrap:
-        kfold = KFold(n_splits=int(args.kfold_nsamples), shuffle=True, random_state=rng)
-        cv_scores = cross_val_score(estimator, X, y, cv=kfold, scoring="r2")
-        logger.info(f"Cross-validation R2 scores: {cv_scores}")
-        logger.info(
-            f"Mean CV R2 score: {cv_scores.mean():.4f} (+/- {cv_scores.std() * 2:.4f})"
-        )
-        results["cv_scores"] = {
-            "mean": f"{cv_scores.mean():.2f}",
-            "std": f"{cv_scores.std() * 2:.2f}",
-            "scores": cv_scores.tolist(),
-        }
+    # if args.bootstrap:
+    kfold = KFold(n_splits=int(args.kfold_nsamples), shuffle=True, random_state=rng)
+    cv_scores = cross_val_score(estimator, X, y, cv=kfold, scoring="r2")
+    logger.info(f"Cross-validation R2 scores: {cv_scores}")
+    logger.info(
+        f"Mean CV R2 score: {cv_scores.mean():.4f} (+/- {cv_scores.std() * 2:.4f})"
+    )
+    results["cv_scores"] = {
+        "mean": f"{cv_scores.mean():.2f}",
+        "std": f"{cv_scores.std() * 2:.2f}",
+        "scores": cv_scores.tolist(),
+    }
 
     if args.fine_tune_model:
         results["best_params"] = grid_search.best_params_

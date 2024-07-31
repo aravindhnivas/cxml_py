@@ -146,7 +146,7 @@ def main(args: Args):
         }
 
     fullfile = pt(args.filename)
-    location = fullfile.parent
+    # location = fullfile.parent
     logger.info(f"Reading {fullfile} as {args.filetype}")
 
     ddf = read_as_ddf(args.filetype, args.filename, args.key)
@@ -168,8 +168,8 @@ def main(args: Args):
     if vectors is None:
         raise ValueError(f"Unknown embedding model: {args.embedding}")
 
-    # embedd_savefile = f"{args.embedd_savefile}.npy"
     embedd_savefile = fullfile.with_name(args.embedd_savefile).with_suffix(".npy")
+    logger.info(f"{embedd_savefile=}")
     logger.info(f"Begin computing embeddings for {fullfile.stem}...")
     time = perf_counter()
 
@@ -178,6 +178,7 @@ def main(args: Args):
 
     with ProgressBar():
         vec_computed = vectors.compute()
+        logger.info(f"{vec_computed.shape=}\n{vec_computed[0]=}")
         vec_computed = np.vstack(
             vec_computed
         )  # stack the arrays (n_samples, n_features)
