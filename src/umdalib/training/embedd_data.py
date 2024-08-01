@@ -203,7 +203,8 @@ def main(args: Args):
     ).with_suffix(".txt")
     if len(invalid_smiles) > 0:
         with open(invalid_smiles_filename, "w") as f:
-            f.writelines(invalid_smiles)
+            for smiles in invalid_smiles:
+                f.write(smiles + "\n")
 
     return {
         "file_mode": {
