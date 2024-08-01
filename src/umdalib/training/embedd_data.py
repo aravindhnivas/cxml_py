@@ -198,23 +198,19 @@ def main(args: Args):
         for smiles in invalid_smiles
         # if isinstance(smiles, str)
     ]
-
+    invalid_smiles_filename = fullfile.with_name(
+        f"[INVALID_entries]_{args.embedd_savefile}"
+    ).with_suffix(".txt")
     if len(invalid_smiles) > 0:
-        with open(
-            # location / f"[INVALID_entries]_{embedd_savefile}.txt",
-            fullfile.with_name(f"[INVALID_entries]_{args.embedd_savefile}").with_suffix(
-                ".txt"
-            ),
-            "w",
-        ) as f:
+        with open(invalid_smiles_filename, "w") as f:
             f.writelines(invalid_smiles)
 
     return {
         "file_mode": {
             "name": embedd_savefile.name,
             "shape": vec_computed.shape[0],
-            # "invalid_smiles": len(invalid_smiles),
-            "invalid_smiles": invalid_smiles,
+            "invalid_smiles": len(invalid_smiles),
+            "invalid_smiles_file": str(invalid_smiles_filename),
             "saved_file": str(embedd_savefile),
             "computed_time": computed_time,
         }
