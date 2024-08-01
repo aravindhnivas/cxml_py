@@ -101,6 +101,7 @@ class Args:
     scaleYdata: bool
     embedding: str
     pca: bool
+    save_pretrained_model: bool
 
 
 def bootstrap_small_dataset(X, y, n_samples=800, noise_scale=0.0):
@@ -229,13 +230,16 @@ def main(args: Args):
 
         # save grid search
         # current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
-        grid_savefile = pre_trained_file.with_name(
-            f"{pre_trained_file.stem}_grid_search"
-        ).with_suffix(".pkl")
-        dump(grid_search, grid_savefile)
-        df = pd.DataFrame(grid_search.cv_results_)
-        df.to_csv(grid_savefile.with_suffix(".csv"))
-        logger.info(f"Grid search saved to {grid_savefile}")
+        if args.save_pretrained_model:
+            grid_savefile = pre_trained_file.with_name(
+                f"{pre_trained_file.stem}_grid_search"
+            ).with_suffix(".pkl")
+            dump(grid_search, grid_savefile)
+
+            df = pd.DataFrame(grid_search.cv_results_)
+            df = df.sort_values(by="rank_test_score")
+            df.to_csv(grid_savefile.with_suffix(".csv"))
+            logger.info(f"Grid search saved to {grid_savefile}")
 
     else:
         estimator = models[args.model](**args.parameters)
@@ -268,11 +272,15 @@ def main(args: Args):
 
     logger.info(f"Saving model to {pre_trained_file}")
     current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
-    dump(estimator, pre_trained_file)
+
+    if args.save_pretrained_model:
+        dump(estimator, pre_trained_file)
+
     parameters_file = pre_trained_file.with_suffix(".parameters.json")
-    with open(parameters_file, "w") as f:
-        json.dump(args.parameters, f, indent=4)
-        logger.info(f"Model parameters saved to {parameters_file.name}")
+    if args.save_pretrained_model:
+        with open(parameters_file, "w") as f:
+            json.dump(args.parameters, f, indent=4)
+            logger.info(f"Model parameters saved to {parameters_file.name}")
 
     pop, _ = curve_fit(linear, y_test, y_pred)
     y_linear_fit = linear(y_test, *pop)
@@ -293,6 +301,7 @@ def main(args: Args):
         results["bootstrap_nsamples"] = args.bootstrap_nsamples
         results["noise_scale"] = args.noise_scale
 
+    # if args.save_pretrained_model:
     with open(f"{pre_trained_file.with_suffix('.dat.json')}", "w") as f:
         json.dump(
             {
@@ -332,13 +341,16 @@ def main(args: Args):
     logger.info(f"{results=}")
     logger.info("Training complete")
 
+    # if args.save_pretrained_model:
     with open(
         pre_trained_file.with_suffix(".results.json"),
         "w",
     ) as f:
         json.dump(results, f, indent=4)
         logger.info(f"Results saved to {pre_trained_file.with_suffix('.json')}")
+
     end_time = perf_counter()
     logger.info(f"Training completed in {(end_time - start_time):.2f} s")
     results["time"] = f"{(end_time - start_time):.2f} s"
+
     return results
