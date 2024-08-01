@@ -338,19 +338,15 @@ def main(args: Args):
 
     results["timeframe"] = current_time
 
-    logger.info(f"{results=}")
-    logger.info("Training complete")
+    end_time = perf_counter()
+    logger.info(f"Training completed in {(end_time - start_time):.2f} s")
+    results["time"] = f"{(end_time - start_time):.2f} s"
 
-    # if args.save_pretrained_model:
     with open(
         pre_trained_file.with_suffix(".results.json"),
         "w",
     ) as f:
         json.dump(results, f, indent=4)
         logger.info(f"Results saved to {pre_trained_file.with_suffix('.json')}")
-
-    end_time = perf_counter()
-    logger.info(f"Training completed in {(end_time - start_time):.2f} s")
-    results["time"] = f"{(end_time - start_time):.2f} s"
 
     return results
