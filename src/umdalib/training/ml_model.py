@@ -4,6 +4,7 @@ except ImportError:
     from loguru import logger
 
 from dataclasses import dataclass
+from time import perf_counter
 from typing import Dict, Union, TypedDict
 
 
@@ -125,6 +126,7 @@ def bootstrap_small_dataset(X, y, n_samples=800, noise_scale=0.0):
 
 
 def main(args: Args):
+    start_time = perf_counter()
     logger.info(f"Training {args.model} model")
     logger.info(f"{args.training_file['filename']}")
 
@@ -336,5 +338,7 @@ def main(args: Args):
     ) as f:
         json.dump(results, f, indent=4)
         logger.info(f"Results saved to {pre_trained_file.with_suffix('.json')}")
-
+    end_time = perf_counter()
+    logger.info(f"Training completed in {(end_time - start_time):.2f} s")
+    results["time"] = f"{(end_time - start_time):.2f} s"
     return results
