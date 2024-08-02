@@ -89,12 +89,18 @@ kernels_dict = {
 }
 
 grid_search_dict = {
-    "GridSearchCV": GridSearchCV,
-    "HalvingGridSearchCV": HalvingGridSearchCV,
-    "RandomizedSearchCV": RandomizedSearchCV,
-    "HalvingRandomSearchCV": HalvingRandomSearchCV,
-    "DaskGridSearchCV": DaskGridSearchCV,
-    "DaskRandomizedSearchCV": DaskRandomizedSearchCV,
+    "GridSearchCV": {"function": GridSearchCV, "parameters": []},
+    "HalvingGridSearchCV": {"function": HalvingGridSearchCV, "parameters": ["factor"]},
+    "RandomizedSearchCV": {"function": RandomizedSearchCV, "parameters": ["n_iter"]},
+    "HalvingRandomSearchCV": {
+        "function": HalvingRandomSearchCV,
+        "parameters": ["factor"],
+    },
+    "DaskGridSearchCV": {"function": DaskGridSearchCV, "parameters": ["factor"]},
+    "DaskRandomizedSearchCV": {
+        "function": DaskRandomizedSearchCV,
+        "parameters": ["n_iter"],
+    },
 }
 
 random_state_supported_models = ["rfr", "gbr", "gpr"]
@@ -118,7 +124,6 @@ class Args:
     bootstrap_nsamples: int
     parameters: Dict[str, Union[str, int, None]]
     fine_tuned_hyperparameters: Dict[str, Union[str, int, float, None]]
-    fine_tune_model: bool
     pre_trained_file: str
     cv_fold: int
     cross_validation: bool
@@ -132,7 +137,9 @@ class Args:
     embedding: str
     pca: bool
     save_pretrained_model: bool
+    fine_tune_model: bool
     grid_search_method: str
+    grid_search_parameters: Dict[str, int]
 
 
 def augment_data(X: np.ndarray, y: np.ndarray, n_samples: int, noise_percentage: float):
@@ -295,12 +302,22 @@ def main(args: Args):
 
             logger.info("Running grid search")
             # Grid-search
-            cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True, random_state=rng)
-            grid_search = GridSearchCV(
+            # cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True, random_state=rng)
+            cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True)
+            GridCV = grid_search_dict[args.grid_search_method]["function"]
+            GridCV_parameters = {}
+            for param in grid_search_dict[args.grid_search_method]["parameters"]:
+                if param in args.grid_search_parameters:
+                    GridCV_parameters[param] = args.grid_search_parameters[param]
+
+            logger.info(f"{GridCV=}, {GridCV_parameters=}")
+
+            grid_search = GridCV(
                 initial_estimator,
                 args.fine_tuned_hyperparameters,
                 cv=cv_fold,
                 n_jobs=n_jobs,
+                **GridCV_parameters,
             )
             logger.info("Fitting grid search")
 
