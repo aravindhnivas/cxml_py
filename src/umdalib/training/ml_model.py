@@ -245,7 +245,7 @@ def main(args: Args):
     if args.model == "gpr":
         logger.info("Using Gaussian Process Regressor with custom kernel")
 
-        if args.parameters["kernel"]:
+        if "kernel" in args.parameters and args.parameters["kernel"]:
             kernel = make_custom_kernels(args.parameters["kernel"])
             args.parameters.pop("kernel", None)
             # return {"error": "Kernel not implemented yet"}
