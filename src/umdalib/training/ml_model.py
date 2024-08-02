@@ -6,7 +6,7 @@ except ImportError:
 from dataclasses import dataclass
 from time import perf_counter
 from typing import Dict, Union, TypedDict
-
+from joblib import parallel_backend
 
 import numpy as np
 from pathlib import Path as pt
@@ -36,7 +36,8 @@ from sklearn.model_selection import (
     GridSearchCV,
 )
 from sklearn.preprocessing import StandardScaler
-from dask_ml.model_selection import GridSearchCV as DaskGridSearchCV
+
+# from dask_ml.model_selection import GridSearchCV as DaskGridSearchCV
 
 # for saving models
 from joblib import dump
@@ -206,202 +207,205 @@ def main(args: Args):
 
     logger.info(f"{y[:5]=}, {type(y)=}")
 
-    # bootstrap data
-    if args.bootstrap:
-        logger.info("Bootstrapping data")
-        X, y = bootstrap_small_dataset(
-            X,
-            y,
-            n_samples=int(args.bootstrap_nsamples),
-            noise_scale=float(args.noise_scale),
+    with parallel_backend("multiprocessing", n_jobs=-1):
+        # bootstrap data
+        if args.bootstrap:
+            logger.info("Bootstrapping data")
+            X, y = bootstrap_small_dataset(
+                X,
+                y,
+                n_samples=int(args.bootstrap_nsamples),
+                noise_scale=float(args.noise_scale),
+            )
+
+        # stack the arrays (n_samples, n_features)
+        if len(X.shape) == 1:
+            logger.info("Reshaping X")
+            X = np.vstack(X)
+
+        logger.info(f"{X[0].shape=}\n{y[0]=}")
+        logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
+
+        # scale data if needed
+        scaler = None
+        if args.scaleYdata:
+            scaler = StandardScaler()
+            y = scaler.fit_transform(y.reshape(-1, 1)).flatten()
+
+        # split data
+        logger.info("Splitting data for training and testing")
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=float(args.test_size), random_state=rng
         )
 
-    # stack the arrays (n_samples, n_features)
-    if len(X.shape) == 1:
-        logger.info("Reshaping X")
-        X = np.vstack(X)
+        if (
+            args.model in random_state_supported_models
+            and "random_state" not in args.parameters
+            and rng is not None
+        ):
+            args.parameters["random_state"] = rng
 
-    logger.info(f"{X[0].shape=}\n{y[0]=}")
-    logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
+        kernel = None
+        if args.model == "gpr":
+            logger.info("Using Gaussian Process Regressor with custom kernel")
 
-    # scale data if needed
-    scaler = None
-    if args.scaleYdata:
-        scaler = StandardScaler()
-        y = scaler.fit_transform(y.reshape(-1, 1)).flatten()
+            if "kernel" in args.parameters and args.parameters["kernel"]:
+                kernel = make_custom_kernels(args.parameters["kernel"])
+                args.parameters.pop("kernel", None)
+                # return {"error": "Kernel not implemented yet"}
 
-    # split data
-    logger.info("Splitting data for training and testing")
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=float(args.test_size), random_state=rng
-    )
+        if args.fine_tune_model:
+            logger.info("Fine-tuning model")
+            opts = {
+                k: v
+                for k, v in args.parameters.items()
+                if k not in args.fine_tuned_hyperparameters.keys()
+            }
+            initial_estimator = models[args.model](**opts)
 
-    if (
-        args.model in random_state_supported_models
-        and "random_state" not in args.parameters
-        and rng is not None
-    ):
-        args.parameters["random_state"] = rng
+            logger.info("Running grid search")
+            # Grid-search
+            cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True, random_state=rng)
+            grid_search = GridSearchCV(
+                # grid_search = DaskGridSearchCV(
+                initial_estimator,
+                args.fine_tuned_hyperparameters,
+                cv=cv_fold,
+            )
+            logger.info("Fitting grid search")
 
-    kernel = None
-    if args.model == "gpr":
-        logger.info("Using Gaussian Process Regressor with custom kernel")
+            # run grid search
+            grid_search.fit(X_train, y_train)
+            estimator = grid_search.best_estimator_
 
-        if "kernel" in args.parameters and args.parameters["kernel"]:
-            kernel = make_custom_kernels(args.parameters["kernel"])
-            args.parameters.pop("kernel", None)
-            # return {"error": "Kernel not implemented yet"}
+            logger.info("Grid search complete")
+            logger.info(f"Best score: {grid_search.best_score_}")
+            logger.info(f"Best parameters: {grid_search.best_params_}")
 
-    if args.fine_tune_model:
-        logger.info("Fine-tuning model")
-        opts = {
-            k: v
-            for k, v in args.parameters.items()
-            if k not in args.fine_tuned_hyperparameters.keys()
-        }
-        initial_estimator = models[args.model](**opts)
+            client.close()
 
-        logger.info("Running grid search")
-        # Grid-search
-        cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True, random_state=rng)
-        # grid_search = GridSearchCV(
-        grid_search = DaskGridSearchCV(
-            initial_estimator, args.fine_tuned_hyperparameters, cv=cv_fold
-        )
-        logger.info("Fitting grid search")
+            # save grid search
+            # current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
+            if args.save_pretrained_model:
+                grid_savefile = pre_trained_file.with_name(
+                    f"{pre_trained_file.stem}_grid_search"
+                ).with_suffix(".pkl")
+                dump(grid_search, grid_savefile)
 
-        # run grid search
-        grid_search.fit(X_train, y_train)
-        estimator = grid_search.best_estimator_
-
-        logger.info("Grid search complete")
-        logger.info(f"Best score: {grid_search.best_score_}")
-        logger.info(f"Best parameters: {grid_search.best_params_}")
-
-        client.close()
-
-        # save grid search
-        # current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
-        if args.save_pretrained_model:
-            grid_savefile = pre_trained_file.with_name(
-                f"{pre_trained_file.stem}_grid_search"
-            ).with_suffix(".pkl")
-            dump(grid_search, grid_savefile)
-
-            df = pd.DataFrame(grid_search.cv_results_)
-            df = df.sort_values(by="rank_test_score")
-            df.to_csv(grid_savefile.with_suffix(".csv"))
-            logger.info(f"Grid search saved to {grid_savefile}")
-    else:
-        if args.model == "gpr" and kernel is not None:
-            estimator = models[args.model](kernel, **args.parameters)
+                df = pd.DataFrame(grid_search.cv_results_)
+                df = df.sort_values(by="rank_test_score")
+                df.to_csv(grid_savefile.with_suffix(".csv"))
+                logger.info(f"Grid search saved to {grid_savefile}")
         else:
-            estimator = models[args.model](**args.parameters)
+            if args.model == "gpr" and kernel is not None:
+                estimator = models[args.model](kernel, **args.parameters)
+            else:
+                estimator = models[args.model](**args.parameters)
 
-    # train model
-    if not args.fine_tune_model:
-        logger.info("Training model")
-        estimator.fit(X_train, y_train)
-        logger.info("Training complete")
-    else:
-        logger.info("Using best estimator from grid search")
+        # train model
+        if not args.fine_tune_model:
+            logger.info("Training model")
+            estimator.fit(X_train, y_train)
+            logger.info("Training complete")
+        else:
+            logger.info("Using best estimator from grid search")
 
-    y_pred: np.ndarray = estimator.predict(X_test)
+        y_pred: np.ndarray = estimator.predict(X_test)
 
-    # inverse transform if data was scaled
-    if args.scaleYdata and scaler is not None:
-        logger.info("Inverse transforming Y-data")
-        y = scaler.inverse_transform(y.reshape(-1, 1)).flatten()
-        y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
-        y_test = scaler.inverse_transform(y_test.reshape(-1, 1)).flatten()
+        # inverse transform if data was scaled
+        if args.scaleYdata and scaler is not None:
+            logger.info("Inverse transforming Y-data")
+            y = scaler.inverse_transform(y.reshape(-1, 1)).flatten()
+            y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
+            y_test = scaler.inverse_transform(y_test.reshape(-1, 1)).flatten()
 
-    logger.info("Evaluating model")
-    # evaluate model
-    r2 = metrics.r2_score(y_test, y_pred)
-    mse = metrics.mean_squared_error(y_test, y_pred)
-    rmse = np.sqrt(mse)
-    mae = metrics.mean_absolute_error(y_test, y_pred)
+        logger.info("Evaluating model")
+        # evaluate model
+        r2 = metrics.r2_score(y_test, y_pred)
+        mse = metrics.mean_squared_error(y_test, y_pred)
+        rmse = np.sqrt(mse)
+        mae = metrics.mean_absolute_error(y_test, y_pred)
 
-    # logger.info(f"{y_test[:5]=}, {y_pred[:5]=}")
-    logger.info(f"R2: {r2:.2f}, MSE: {mse:.2f}, MAE: {mae:.2f}")
+        # logger.info(f"{y_test[:5]=}, {y_pred[:5]=}")
+        logger.info(f"R2: {r2:.2f}, MSE: {mse:.2f}, MAE: {mae:.2f}")
 
-    logger.info(f"Saving model to {pre_trained_file}")
-    current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
+        logger.info(f"Saving model to {pre_trained_file}")
+        current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 
-    if args.save_pretrained_model:
-        dump(estimator, pre_trained_file)
+        if args.save_pretrained_model:
+            dump(estimator, pre_trained_file)
 
-    parameters_file = pre_trained_file.with_suffix(".parameters.json")
-    if args.save_pretrained_model:
-        with open(parameters_file, "w") as f:
-            json.dump(args.parameters, f, indent=4)
-            logger.info(f"Model parameters saved to {parameters_file.name}")
+        parameters_file = pre_trained_file.with_suffix(".parameters.json")
+        if args.save_pretrained_model:
+            with open(parameters_file, "w") as f:
+                json.dump(args.parameters, f, indent=4)
+                logger.info(f"Model parameters saved to {parameters_file.name}")
 
-    pop, _ = curve_fit(linear, y_test, y_pred)
-    y_linear_fit = linear(y_test, *pop)
+        pop, _ = curve_fit(linear, y_test, y_pred)
+        y_linear_fit = linear(y_test, *pop)
 
-    results = {
-        "embedding": args.embedding,
-        "PCA": args.pca,
-        "data_size": len(y),
-        "r2": f"{r2:.2f}",
-        "mse": f"{mse:.2f}",
-        "rmse": f"{rmse:.2f}",
-        "mae": f"{mae:.2f}",
-        "model": args.model,
-    }
-
-    results["bootstrap"] = args.bootstrap
-    if args.bootstrap:
-        results["bootstrap_nsamples"] = args.bootstrap_nsamples
-        results["noise_scale"] = args.noise_scale
-
-    # if args.save_pretrained_model:
-    with open(f"{pre_trained_file.with_suffix('.dat.json')}", "w") as f:
-        json.dump(
-            {
-                "y_true": y_test.tolist(),
-                "y_pred": y_pred.tolist(),
-                "y_linear_fit": y_linear_fit.tolist(),
-            },
-            f,
-            indent=4,
-        )
-
-    # Additional validation step
-    results["cross_validation"] = args.cross_validation
-    if args.cross_validation:
-        logger.info("Cross-validating model")
-
-        results["cv_fold"] = args.cv_fold
-
-        cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True, random_state=rng)
-        cv_scores = cross_val_score(estimator, X, y, cv=cv_fold, scoring="r2")
-        logger.info(f"Cross-validation R2 scores: {cv_scores}")
-        logger.info(
-            f"Mean CV R2 score: {cv_scores.mean():.4f} (+/- {cv_scores.std() * 2:.4f})"
-        )
-        results["cv_scores"] = {
-            "mean": f"{cv_scores.mean():.2f}",
-            "std": f"{cv_scores.std() * 2:.2f}",
-            "scores": cv_scores.tolist(),
+        results = {
+            "embedding": args.embedding,
+            "PCA": args.pca,
+            "data_size": len(y),
+            "r2": f"{r2:.2f}",
+            "mse": f"{mse:.2f}",
+            "rmse": f"{rmse:.2f}",
+            "mae": f"{mae:.2f}",
+            "model": args.model,
         }
 
-    if args.fine_tune_model:
-        results["best_params"] = grid_search.best_params_
-        results["best_score"] = f"{grid_search.best_score_:.2f}"
+        results["bootstrap"] = args.bootstrap
+        if args.bootstrap:
+            results["bootstrap_nsamples"] = args.bootstrap_nsamples
+            results["noise_scale"] = args.noise_scale
 
-    results["timeframe"] = current_time
+        # if args.save_pretrained_model:
+        with open(f"{pre_trained_file.with_suffix('.dat.json')}", "w") as f:
+            json.dump(
+                {
+                    "y_true": y_test.tolist(),
+                    "y_pred": y_pred.tolist(),
+                    "y_linear_fit": y_linear_fit.tolist(),
+                },
+                f,
+                indent=4,
+            )
 
-    end_time = perf_counter()
-    logger.info(f"Training completed in {(end_time - start_time):.2f} s")
-    results["time"] = f"{(end_time - start_time):.2f} s"
+        # Additional validation step
+        results["cross_validation"] = args.cross_validation
+        if args.cross_validation:
+            logger.info("Cross-validating model")
 
-    with open(
-        pre_trained_file.with_suffix(".results.json"),
-        "w",
-    ) as f:
-        json.dump(results, f, indent=4)
-        logger.info(f"Results saved to {pre_trained_file.with_suffix('.json')}")
+            results["cv_fold"] = args.cv_fold
+
+            cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True, random_state=rng)
+            cv_scores = cross_val_score(estimator, X, y, cv=cv_fold, scoring="r2")
+            logger.info(f"Cross-validation R2 scores: {cv_scores}")
+            logger.info(
+                f"Mean CV R2 score: {cv_scores.mean():.4f} (+/- {cv_scores.std() * 2:.4f})"
+            )
+            results["cv_scores"] = {
+                "mean": f"{cv_scores.mean():.2f}",
+                "std": f"{cv_scores.std() * 2:.2f}",
+                "scores": cv_scores.tolist(),
+            }
+
+        if args.fine_tune_model:
+            results["best_params"] = grid_search.best_params_
+            results["best_score"] = f"{grid_search.best_score_:.2f}"
+
+        results["timeframe"] = current_time
+
+        end_time = perf_counter()
+        logger.info(f"Training completed in {(end_time - start_time):.2f} s")
+        results["time"] = f"{(end_time - start_time):.2f} s"
+
+        with open(
+            pre_trained_file.with_suffix(".results.json"),
+            "w",
+        ) as f:
+            json.dump(results, f, indent=4)
+            logger.info(f"Results saved to {pre_trained_file.with_suffix('.json')}")
 
     return results
