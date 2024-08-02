@@ -34,10 +34,16 @@ from sklearn.model_selection import (
     cross_val_score,
     train_test_split,
     GridSearchCV,
+    RandomizedSearchCV,
+    HalvingGridSearchCV,
+    HalvingRandomSearchCV,
 )
 from sklearn.preprocessing import StandardScaler
 
-# from dask_ml.model_selection import GridSearchCV as DaskGridSearchCV
+from dask_ml.model_selection import (
+    GridSearchCV as DaskGridSearchCV,
+    RandomizedSearchCV as DaskRandomizedSearchCV,
+)
 
 # for saving models
 from joblib import dump
@@ -81,6 +87,15 @@ kernels_dict = {
     "WhiteKernel": kernels.WhiteKernel,
 }
 
+grid_search_dict = {
+    "GridSearchCV": GridSearchCV,
+    "HalvingGridSearchCV": HalvingGridSearchCV,
+    "RandomizedSearchCV": RandomizedSearchCV,
+    "HalvingRandomSearchCV": HalvingRandomSearchCV,
+    "DaskGridSearchCV": DaskGridSearchCV,
+    "DaskRandomizedSearchCV": DaskRandomizedSearchCV,
+}
+
 random_state_supported_models = ["rfr", "gbr", "gpr"]
 
 # seed = 2024
@@ -116,6 +131,7 @@ class Args:
     embedding: str
     pca: bool
     save_pretrained_model: bool
+    grid_search_method: str
 
 
 def augment_data(X: np.ndarray, y: np.ndarray, n_samples: int, noise_percentage: float):
