@@ -110,7 +110,7 @@ class Args:
     training_column_name_y: str
     npartitions: int
     vectors_file: str
-    noise_scale: float
+    noise_percentage: float
     logYscale: bool
     scaleYdata: bool
     embedding: str
@@ -118,24 +118,24 @@ class Args:
     save_pretrained_model: bool
 
 
-def bootstrap_small_dataset(X, y, n_samples=800, noise_scale=0.0):
+def augment_data(X: np.ndarray, y: np.ndarray, n_samples: int, noise_percentage: float):
     """
-    Bootstrap a small dataset to create a larger training set.
+    augment_data a small dataset to create a larger training set.
 
     :X: Feature matrix
     :y: Target vector
     :n_samples: Number of samples in the bootstrapped dataset
-    :noise_scale: Scale of Gaussian noise to add to y
+    :noise_percentage: Scale of Gaussian noise to add to y
     :return: Bootstrapped X and y
     """
 
+    logger.info(f"Augmenting data with {n_samples} samples")
     X_boot, y_boot = resample(X, y, n_samples=n_samples, replace=True, random_state=rng)
 
-    if noise_scale > 0:
-        if rng is None:
-            y_boot += np.random.normal(0, noise_scale, y_boot.shape)
-        else:
-            y_boot += rng.normal(0, noise_scale, y_boot.shape)
+    logger.info(f"Adding noise percentage: {noise_percentage}")
+    noise_scale = (noise_percentage / 100) * np.abs(y_boot)
+
+    y_boot += np.random.normal(0, noise_scale)
 
     return X_boot, y_boot
 
@@ -170,7 +170,20 @@ def make_custom_kernels(kernel_dict: Dict[str, Dict[str, str]]):
     return kernel
 
 
+def save_intermediate_results(grid_search, filename="intermediate_results.csv"):
+    """Saves intermediate cv_results_ to a CSV file."""
+
+    df = pd.DataFrame(grid_search.cv_results_)
+    df = df.sort_values(by="rank_test_score")
+    df.to_csv(filename, index=False)
+
+
+n_jobs = -1
+backend = "multiprocessing"
+
+
 def main(args: Args):
+
     start_time = perf_counter()
     logger.info(f"Training {args.model} model")
     logger.info(f"{args.training_file['filename']}")
@@ -207,15 +220,15 @@ def main(args: Args):
 
     logger.info(f"{y[:5]=}, {type(y)=}")
 
-    with parallel_backend("multiprocessing", n_jobs=-1):
+    with parallel_backend(backend, n_jobs=n_jobs):
         # bootstrap data
         if args.bootstrap:
             logger.info("Bootstrapping data")
-            X, y = bootstrap_small_dataset(
+            X, y = augment_data(
                 X,
                 y,
                 n_samples=int(args.bootstrap_nsamples),
-                noise_scale=float(args.noise_scale),
+                noise_percentage=float(args.noise_percentage),
             )
 
         # stack the arrays (n_samples, n_features)
@@ -267,10 +280,10 @@ def main(args: Args):
             # Grid-search
             cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True, random_state=rng)
             grid_search = GridSearchCV(
-                # grid_search = DaskGridSearchCV(
                 initial_estimator,
                 args.fine_tuned_hyperparameters,
                 cv=cv_fold,
+                n_jobs=n_jobs,
             )
             logger.info("Fitting grid search")
 
@@ -358,7 +371,7 @@ def main(args: Args):
         results["bootstrap"] = args.bootstrap
         if args.bootstrap:
             results["bootstrap_nsamples"] = args.bootstrap_nsamples
-            results["noise_scale"] = args.noise_scale
+            results["noise_percentage"] = args.noise_percentage
 
         # if args.save_pretrained_model:
         with open(f"{pre_trained_file.with_suffix('.dat.json')}", "w") as f:
