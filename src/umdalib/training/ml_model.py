@@ -16,7 +16,9 @@ from datetime import datetime
 # from sklearn.preprocessing import StandardScaler
 # from sklearn.metrics.pairwise import cosine_distances, euclidean_distances
 import pandas as pd
-from sklearn import metrics
+from sklearn import metrics, __version__ as sklearn_version
+
+logger.info(f"Using scikit-learn version {sklearn_version}")
 
 # models
 from sklearn.linear_model import LinearRegression
