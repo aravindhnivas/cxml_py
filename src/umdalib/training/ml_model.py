@@ -56,11 +56,11 @@ from dask.diagnostics import ProgressBar
 import json
 from scipy.optimize import curve_fit
 
-from dask.distributed import Client
+# from dask.distributed import Client
 
 
 # Set up Dask client
-client = Client()  # This will start a local cluster
+# client = Client()  # This will start a local cluster
 
 
 def linear(x, m, c):
@@ -329,7 +329,7 @@ def main(args: Args):
             logger.info(f"Best score: {grid_search.best_score_}")
             logger.info(f"Best parameters: {grid_search.best_params_}")
 
-            client.close()
+            # client.close()
 
             # save grid search
             # current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
