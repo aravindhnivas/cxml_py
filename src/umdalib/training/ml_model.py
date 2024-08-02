@@ -48,6 +48,7 @@ from scipy.optimize import curve_fit
 
 from dask.distributed import Client
 
+
 # Set up Dask client
 client = Client()  # This will start a local cluster
 
@@ -65,6 +66,16 @@ models = {
     "rfr": RandomForestRegressor,
     "gbr": GradientBoostingRegressor,
     "gpr": GaussianProcessRegressor,
+}
+
+kernels_dict = {
+    "Constant": kernels.ConstantKernel,
+    "RBF": kernels.RBF,
+    "Matern": kernels.Matern,
+    "RationalQuadratic": kernels.RationalQuadratic,
+    "ExpSineSquared": kernels.ExpSineSquared,
+    "DotProduct": kernels.DotProduct,
+    "WhiteKernel": kernels.WhiteKernel,
 }
 
 random_state_supported_models = ["rfr", "gbr", "gpr"]
@@ -124,6 +135,36 @@ def bootstrap_small_dataset(X, y, n_samples=800, noise_scale=0.0):
             y_boot += rng.normal(0, noise_scale, y_boot.shape)
 
     return X_boot, y_boot
+
+
+def make_custom_kernels(kernel_dict: Dict[str, Dict[str, str]]):
+
+    constants_kernels = None
+    other_kernels = None
+
+    for kernel_key in kernel_dict.keys():
+        kernel_params = kernel_dict[kernel_key]
+
+        for kernel_params_key, kernel_params_value in kernel_params.items():
+
+            if "," in kernel_params_value:
+                kernel_params[kernel_params_key] = tuple(
+                    float(x) for x in kernel_params_value.split(",")
+                )
+            elif kernel_params_value != "fixed":
+                kernel_params[kernel_params_key] = float(kernel_params_value)
+        logger.info(f"{kernel_key=}, {kernel_params=}")
+
+        if kernel_key == "Constant":
+            constants_kernels = kernels_dict[kernel_key](**kernel_params)
+        else:
+            if other_kernels is None:
+                other_kernels = kernels_dict[kernel_key](**kernel_params)
+            else:
+                other_kernels += kernels_dict[kernel_key](**kernel_params)
+
+    kernel = constants_kernels * other_kernels
+    return kernel
 
 
 def main(args: Args):
@@ -200,6 +241,15 @@ def main(args: Args):
     ):
         args.parameters["random_state"] = rng
 
+    kernel = None
+    if args.model == "gpr":
+        logger.info("Using Gaussian Process Regressor with custom kernel")
+
+        if args.parameters["kernel"]:
+            kernel = make_custom_kernels(args.parameters["kernel"])
+            args.parameters.pop("kernel", None)
+            # return {"error": "Kernel not implemented yet"}
+
     if args.fine_tune_model:
         logger.info("Fine-tuning model")
         opts = {
@@ -240,14 +290,17 @@ def main(args: Args):
             df = df.sort_values(by="rank_test_score")
             df.to_csv(grid_savefile.with_suffix(".csv"))
             logger.info(f"Grid search saved to {grid_savefile}")
-
     else:
-        estimator = models[args.model](**args.parameters)
+        if args.model == "gpr" and kernel is not None:
+            estimator = models[args.model](kernel, **args.parameters)
+        else:
+            estimator = models[args.model](**args.parameters)
 
     # train model
     if not args.fine_tune_model:
         logger.info("Training model")
         estimator.fit(X_train, y_train)
+        logger.info("Training complete")
     else:
         logger.info("Using best estimator from grid search")
 
