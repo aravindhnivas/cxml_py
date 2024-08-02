@@ -28,7 +28,8 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.gaussian_process import GaussianProcessRegressor, kernels
 
-# from sklearn.model_selection import KFold, GridSearchCV, ShuffleSplit
+# explicitly require this experimental feature
+from sklearn.experimental import enable_halving_search_cv  # noqa
 from sklearn.model_selection import (
     KFold,
     cross_val_score,
