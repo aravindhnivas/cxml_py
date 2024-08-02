@@ -67,7 +67,7 @@ def linear(x, m, c):
 
 
 # models_dict
-models = {
+models_dict = {
     "linear_regression": LinearRegression,
     "ridge": Ridge,
     "svr": SVR,
@@ -290,7 +290,7 @@ def main(args: Args):
                 for k, v in args.parameters.items()
                 if k not in args.fine_tuned_hyperparameters.keys()
             }
-            initial_estimator = models[args.model](**opts)
+            initial_estimator = models_dict[args.model](**opts)
 
             logger.info("Running grid search")
             # Grid-search
@@ -327,9 +327,9 @@ def main(args: Args):
                 logger.info(f"Grid search saved to {grid_savefile}")
         else:
             if args.model == "gpr" and kernel is not None:
-                estimator = models[args.model](kernel, **args.parameters)
+                estimator = models_dict[args.model](kernel, **args.parameters)
             else:
-                estimator = models[args.model](**args.parameters)
+                estimator = models_dict[args.model](**args.parameters)
 
         # train model
         if not args.fine_tune_model:
