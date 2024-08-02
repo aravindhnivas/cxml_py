@@ -8,7 +8,7 @@ waitress~=2.0
 pandas==2.2.*
 dask==2024.*
 dask-ml==2024.*
-scikit-learn==1.4.*
+scikit-learn==1.5.*
 scipy==1.11.*
 tables # Note that tables is the name of the pytables package on PyPI.
 loguru~=0.5
