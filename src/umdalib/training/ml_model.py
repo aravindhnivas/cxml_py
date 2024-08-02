@@ -303,7 +303,7 @@ def main(args: Args):
             logger.info("Running grid search")
             # Grid-search
             # cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True, random_state=rng)
-            cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True)
+            # cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True)
             GridCV = grid_search_dict[args.grid_search_method]["function"]
             GridCV_parameters = {}
             for param in grid_search_dict[args.grid_search_method]["parameters"]:
@@ -315,7 +315,7 @@ def main(args: Args):
             grid_search = GridCV(
                 initial_estimator,
                 args.fine_tuned_hyperparameters,
-                cv=cv_fold,
+                cv=int(args.cv_fold),
                 n_jobs=n_jobs,
                 **GridCV_parameters,
             )
