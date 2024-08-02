@@ -297,8 +297,8 @@ def main(args: Args):
                 df.to_csv(grid_savefile.with_suffix(".csv"))
                 logger.info(f"Grid search saved to {grid_savefile}")
         else:
-            if kernel is not None:
-                estimator = models[args.model](kernel=kernel, **args.parameters)
+            if args.model == "gpr" and kernel is not None:
+                estimator = models[args.model](kernel, **args.parameters)
             else:
                 estimator = models[args.model](**args.parameters)
 
