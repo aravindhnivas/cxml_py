@@ -297,8 +297,8 @@ def main(args: Args):
                 df.to_csv(grid_savefile.with_suffix(".csv"))
                 logger.info(f"Grid search saved to {grid_savefile}")
         else:
-            if args.model == "gpr" and kernel is not None:
-                estimator = models[args.model](kernel, **args.parameters)
+            if kernel is not None:
+                estimator = models[args.model](kernel=kernel, **args.parameters)
             else:
                 estimator = models[args.model](**args.parameters)
 
@@ -374,7 +374,7 @@ def main(args: Args):
 
         # Additional validation step
         results["cross_validation"] = args.cross_validation
-        if args.cross_validation:
+        if args.cross_validation and not args.fine_tune_model:
             logger.info("Cross-validating model")
 
             results["cv_fold"] = args.cv_fold
