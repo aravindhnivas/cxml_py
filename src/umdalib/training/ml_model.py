@@ -57,8 +57,10 @@ import json
 from scipy.optimize import curve_fit
 
 from xgboost import XGBRegressor, __version__ as xgboost_version
+from catboost import CatBoostRegressor, __version__ as catboost_version
 
 logger.info(f"Using xgboost version {xgboost_version}")
+logger.info(f"Using catboost version {catboost_version}")
 
 # from dask.distributed import Client
 
@@ -81,6 +83,7 @@ models_dict = {
     "gbr": GradientBoostingRegressor,
     "gpr": GaussianProcessRegressor,
     "xgboost": XGBRegressor,
+    "catboost": CatBoostRegressor,
 }
 
 kernels_dict = {
@@ -295,7 +298,7 @@ def main(args: Args):
                 kernel = make_custom_kernels(args.parameters["kernel"])
                 args.parameters.pop("kernel", None)
                 # return {"error": "Kernel not implemented yet"}
-
+        logger.info(f"{models_dict[args.model]=}")
         if args.fine_tune_model:
             logger.info("Fine-tuning model")
             opts = {
@@ -303,6 +306,7 @@ def main(args: Args):
                 for k, v in args.parameters.items()
                 if k not in args.fine_tuned_hyperparameters.keys()
             }
+
             initial_estimator = models_dict[args.model](**opts)
 
             logger.info("Running grid search")
