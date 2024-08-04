@@ -56,6 +56,10 @@ from dask.diagnostics import ProgressBar
 import json
 from scipy.optimize import curve_fit
 
+from xgboost import XGBRegressor, __version__ as xgboost_version
+
+logger.info(f"Using xgboost version {xgboost_version}")
+
 # from dask.distributed import Client
 
 
@@ -76,6 +80,7 @@ models_dict = {
     "rfr": RandomForestRegressor,
     "gbr": GradientBoostingRegressor,
     "gpr": GaussianProcessRegressor,
+    "xgboost": XGBRegressor,
 }
 
 kernels_dict = {
@@ -202,7 +207,7 @@ def save_intermediate_results(grid_search, filename="intermediate_results.csv"):
     df.to_csv(filename, index=False)
 
 
-n_jobs = -1
+n_jobs = -2
 backend = "multiprocessing"
 
 

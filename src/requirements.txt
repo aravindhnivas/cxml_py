@@ -19,3 +19,4 @@ h5py==3.9.*
 pyarrow-hotfix  # temporary fix for pyarrow 11.0.0
 git+https://github.com/aravindhnivas/mol2vec.git@gensim_v4
 prompt-toolkit==3.0.*
+xgboost==2.0.*
