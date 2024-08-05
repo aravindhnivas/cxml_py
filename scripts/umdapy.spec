@@ -1,20 +1,25 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 
+block_cipher = None
+
+
 a = Analysis(
-    ['/Users/aravindhnivas/Documents/GitHub/umdapy/src/main.py'],
+    ['/Users/aravindhnivas/Documents/GitHub/umda_py/src/main.py'],
     pathex=[],
     binaries=[],
     datas=[],
     hiddenimports=['umdalib'],
-    hookspath=['/Users/aravindhnivas/Documents/GitHub/umdapy/src/hooks'],
+    hookspath=['/Users/aravindhnivas/Documents/GitHub/umda_py/src/hooks'],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
+    cipher=block_cipher,
     noarchive=True,
-    optimize=0,
 )
-pyz = PYZ(a.pure)
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
     pyz,
@@ -32,11 +37,12 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['/Users/aravindhnivas/Documents/GitHub/umdapy/src/icons/icon.ico'],
+    icon=['/Users/aravindhnivas/Documents/GitHub/umda_py/src/icons/icon.ico'],
 )
 coll = COLLECT(
     exe,
     a.binaries,
+    a.zipfiles,
     a.datas,
     strip=False,
     upx=False,

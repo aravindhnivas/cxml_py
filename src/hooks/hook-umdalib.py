@@ -23,4 +23,21 @@ dask_datas = [(str(dask.resolve()), "dask")]
 distributed_http = site_pkgs / "distributed/http"
 distributed_http_datas = [(str(distributed_http.resolve()), "distributed/http")]
 
-datas = icons_files + distributed_datas + dask_datas + distributed_http_datas
+libxgboost = site_pkgs / "xgboost/lib"
+libxgboost_datas = [(str(libxgboost.resolve()), "xgboost/lib")]
+xgboost_VERSION = site_pkgs / "xgboost/VERSION"
+libxgboost_datas += [(str(xgboost_VERSION.resolve()), "xgboost")]
+
+lgbm = site_pkgs / "lightgbm/lib"
+lgbm_datas = [(str(lgbm.resolve()), "lightgbm/lib")]
+lgbm_VERSION = site_pkgs / "lightgbm/VERSION.txt"
+lgbm_datas += [(str(lgbm_VERSION.resolve()), "lightgbm")]
+
+datas = (
+    icons_files
+    + distributed_datas
+    + dask_datas
+    + distributed_http_datas
+    + libxgboost_datas
+    + lgbm_datas
+)

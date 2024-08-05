@@ -18,6 +18,8 @@ from datetime import datetime
 import pandas as pd
 from sklearn import metrics, __version__ as sklearn_version
 
+from umdalib.utils import Paths
+
 logger.info(f"Using scikit-learn version {sklearn_version}")
 
 # models
@@ -300,7 +302,11 @@ def main(args: Args):
             if "kernel" in args.parameters and args.parameters["kernel"]:
                 kernel = make_custom_kernels(args.parameters["kernel"])
                 args.parameters.pop("kernel", None)
-                # return {"error": "Kernel not implemented yet"}
+
+        if args.model == "catboost":
+            args.parameters["train_dir"] = Paths().app_log_dir / "catboost_info"
+            logger.info(f"catboost_info: {args.parameters['train_dir']=}")
+
         logger.info(f"{models_dict[args.model]=}")
         if args.fine_tune_model:
             logger.info("Fine-tuning model")
