@@ -58,9 +58,11 @@ from scipy.optimize import curve_fit
 
 from xgboost import XGBRegressor, __version__ as xgboost_version
 from catboost import CatBoostRegressor, __version__ as catboost_version
+from lightgbm import LGBMRegressor, __version__ as lightgbm_version
 
-logger.info(f"Using xgboost version {xgboost_version}")
-logger.info(f"Using catboost version {catboost_version}")
+logger.info(f"xgboost version {xgboost_version}")
+logger.info(f"catboost version {catboost_version}")
+logger.info(f"lightgbm version {lightgbm_version}")
 
 # from dask.distributed import Client
 
@@ -84,6 +86,7 @@ models_dict = {
     "gpr": GaussianProcessRegressor,
     "xgboost": XGBRegressor,
     "catboost": CatBoostRegressor,
+    "lgbm": LGBMRegressor,
 }
 
 kernels_dict = {
