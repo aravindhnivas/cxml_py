@@ -403,7 +403,7 @@ def main(args: Args):
         results = {
             "embedding": args.embedding,
             "PCA": args.pca,
-            "data_size": len(y),
+            "data_size": len(y_test),
             "r2": f"{r2:.2f}",
             "mse": f"{mse:.2f}",
             "rmse": f"{rmse:.2f}",
