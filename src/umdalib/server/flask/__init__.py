@@ -6,6 +6,8 @@ from importlib import import_module, reload
 from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
 from pathlib import Path as pt
+
+import numpy as np
 from umdalib.utils import Paths
 from umdalib.utils import logger
 
@@ -69,11 +71,19 @@ def compute():
         logger.info(f"function execution done in {timeConsumed:.2f} s")
 
         if isinstance(output, dict):
-            logger.info(f"Returning received to client\n{output=}")
+            # logger.info(f"Returning received to client\n{output=}")
             logger.success(f"Computation done!!")
+
+            for k, v in output.items():
+                if isinstance(v, np.ndarray):
+                    output[k] = v.tolist()
+            logger.info(f"Returning received to client\n{output=}")
             return jsonify(output)
 
         data = log_output(logfilename)
+        for k, v in output.items():
+            if isinstance(v, np.ndarray):
+                output[k] = v.tolist()
         return jsonify(data)
 
     except Exception:
