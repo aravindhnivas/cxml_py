@@ -6,7 +6,7 @@ except ImportError:
 from dataclasses import dataclass
 from time import perf_counter
 from typing import Dict, Union, TypedDict
-from joblib import parallel_backend
+from joblib import parallel_backend, dump
 
 import numpy as np
 from pathlib import Path as pt
@@ -49,7 +49,6 @@ from dask_ml.model_selection import (
 )
 
 # for saving models
-from joblib import dump
 from sklearn.utils import resample
 
 from umdalib.training.read_data import read_as_ddf
@@ -61,6 +60,26 @@ from scipy.optimize import curve_fit
 from xgboost import XGBRegressor, __version__ as xgboost_version
 from catboost import CatBoostRegressor, __version__ as catboost_version
 from lightgbm import LGBMRegressor, __version__ as lightgbm_version
+
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.pipeline import Pipeline
+
+
+# Custom transformer for scaling y
+class YScaler(BaseEstimator, TransformerMixin):
+    def __init__(self, scaler):
+        self.scaler = scaler
+
+    def fit(self, X, y=None):
+        self.scaler.fit(y.reshape(-1, 1))
+        return self
+
+    def transform(self, X, y=None):
+        return self.scaler.transform(y.reshape(-1, 1)).flatten()
+
+    def inverse_transform(self, y):
+        return self.scaler.inverse_transform(y.reshape(-1, 1)).flatten()
+
 
 logger.info(f"xgboost version {xgboost_version}")
 logger.info(f"catboost version {catboost_version}")
@@ -367,6 +386,9 @@ def main(args: Args):
             else:
                 estimator = models_dict[args.model](**args.parameters)
 
+        # Create the pipeline
+        estimator = Pipeline([("estimator", estimator)])  # Train the model
+
         # train model
         if not args.fine_tune_model:
             logger.info("Training model")
@@ -374,6 +396,10 @@ def main(args: Args):
             logger.info("Training complete")
         else:
             logger.info("Using best estimator from grid search")
+
+        if args.save_pretrained_model:
+            # dump(estimator, pre_trained_file)
+            dump((estimator, scaler), pre_trained_file)
 
         y_pred: np.ndarray = estimator.predict(X_test)
 
@@ -396,9 +422,6 @@ def main(args: Args):
 
         logger.info(f"Saving model to {pre_trained_file}")
         current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
-
-        if args.save_pretrained_model:
-            dump(estimator, pre_trained_file)
 
         parameters_file = pre_trained_file.with_suffix(".parameters.json")
         if args.save_pretrained_model:
