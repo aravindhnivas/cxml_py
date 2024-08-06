@@ -1,7 +1,10 @@
 import sys
 import json
+from typing import Dict
 import warnings
 from importlib import import_module
+
+import numpy as np
 from umdalib.utils import logger, Paths
 
 log_dir = Paths().app_log_dir
@@ -40,7 +43,11 @@ if __name__ == "__main__":
     with warnings.catch_warnings(record=True) as warn:
         pyfunction = import_module(f"umdalib.{pyfile}")
         if args:
-            result = pyfunction.main(args)
+            result: Dict = pyfunction.main(args)
+            for k, v in result.items():
+                if isinstance(v, np.ndarray):
+                    result[k] = v.tolist()
+
             if result:
                 logger.success(f"{result=}")
                 with open(log_dir / f"{pyfile}.json", "w") as f:
@@ -48,3 +55,5 @@ if __name__ == "__main__":
                     logger.success(f"Result saved to {log_dir / f'{pyfile}.json'}")
         else:
             pyfunction.main()
+
+    logger.info("Finished main.py")
