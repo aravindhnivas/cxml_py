@@ -4,4 +4,5 @@ hiddenimports = [
     "umdalib.training.mol2vec",
     "umdalib.training.pca",
     "umdalib.training.ml_model",
+    "umdalib.training.ml_prediction",
 ]
