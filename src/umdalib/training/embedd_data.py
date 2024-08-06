@@ -106,32 +106,63 @@ def get_smi_to_vec_after_pca(smi: str, model):
     return vector
 
 
-def main(args: Args):
+def get_smi_to_vec(embedder, pretrained_file, pca_file=None):
 
-    logger.info(f"{args=}")
-
-    global invalid_smiles, embedding, PCA_pipeline_location
-    invalid_smiles = []
-    embedding = args.embedding
+    global embedding, PCA_pipeline_location
+    embedding = embedder
 
     if embedding == "mol2vec":
-        model = load_model(args.pretrained_model_location)
+        model = load_model(pretrained_file)
         logger.info(f"Loaded mol2vec model with {model.vector_size} dimensions")
     elif embedding == "VICGAE":
-        model = load_model(args.pretrained_model_location, use_joblib=True)
+        model = load_model(pretrained_file, use_joblib=True)
         logger.info(f"Loaded VICGAE model")
 
-    PCA_pipeline_location = args.PCA_pipeline_location
-
-    if PCA_pipeline_location:
-        logger.info(f"Using PCA pipeline from {PCA_pipeline_location}")
+    PCA_pipeline_location = pca_file
+    smi_to_vector = None
+    if pca_file:
+        logger.info(f"Using PCA pipeline from {pca_file}")
         smi_to_vector = get_smi_to_vec_after_pca
     else:
         smi_to_vector = smi_to_vec_dict[embedding]
 
     logger.warning(f"{smi_to_vector=}")
     if not callable(smi_to_vector):
-        raise ValueError(f"Unknown embedding model: {args.embedding}")
+        raise ValueError(f"Unknown embedding model: {embedding}")
+
+    return smi_to_vector, model
+
+
+def main(args: Args):
+
+    logger.info(f"{args=}")
+
+    global invalid_smiles, embedding, PCA_pipeline_location
+    invalid_smiles = []
+
+    # embedding = args.embedding
+    # if embedding == "mol2vec":
+    #     model = load_model(args.pretrained_model_location)
+    #     logger.info(f"Loaded mol2vec model with {model.vector_size} dimensions")
+    # elif embedding == "VICGAE":
+    #     model = load_model(args.pretrained_model_location, use_joblib=True)
+    #     logger.info(f"Loaded VICGAE model")
+
+    # PCA_pipeline_location = args.PCA_pipeline_location
+
+    # if PCA_pipeline_location:
+    #     logger.info(f"Using PCA pipeline from {PCA_pipeline_location}")
+    #     smi_to_vector = get_smi_to_vec_after_pca
+    # else:
+    #     smi_to_vector = smi_to_vec_dict[embedding]
+
+    # logger.warning(f"{smi_to_vector=}")
+    # if not callable(smi_to_vector):
+    #     raise ValueError(f"Unknown embedding model: {args.embedding}")
+
+    smi_to_vector, model = get_smi_to_vec(
+        args.embedding, args.pretrained_model_location, args.PCA_pipeline_location
+    )
 
     if args.test_mode:
         logger.info(f"Testing with {args.test_smiles}")
