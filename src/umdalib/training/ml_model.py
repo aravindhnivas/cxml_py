@@ -323,7 +323,7 @@ def main(args: Args):
                 args.parameters.pop("kernel", None)
 
         if args.model == "catboost":
-            args.parameters["train_dir"] = Paths().app_log_dir / "catboost_info"
+            args.parameters["train_dir"] = str(Paths().app_log_dir / "catboost_info")
             logger.info(f"catboost_info: {args.parameters['train_dir']=}")
 
         logger.info(f"{models_dict[args.model]=}")
