@@ -37,15 +37,22 @@ def main(args: Args):
     logger.info(f"X: {X}")
 
     logger.info(f"Loading estimator from {args.pretrained_model_file}")
-    estimator = load(args.pretrained_model_file)
+    estimator, scaler = load(args.pretrained_model_file)
     if not estimator:
         logger.error("Failed to load estimator")
         raise ValueError("Failed to load estimator")
 
     logger.info(f"Loaded estimator: {estimator}")
+    logger.info(f"Loaded scaler: {scaler}")
     # return {"predicted_value": 1}
 
     predicted_value: np.ndarray = estimator.predict([X])
+
+    if scaler:
+        predicted_value = scaler.inverse_transform(
+            predicted_value.reshape(-1, 1)
+        ).flatten()
+
     logger.info(f"Predicted value: {predicted_value}")
 
     return {"predicted_value": predicted_value}
