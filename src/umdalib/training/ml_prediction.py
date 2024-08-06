@@ -1,7 +1,11 @@
 from dataclasses import dataclass
-from umdalib.utils import load_model, logger
+
+import numpy as np
+from umdalib.utils import logger
 from typing import TypedDict
+
 from umdalib.training.embedd_data import get_smi_to_vec
+from joblib import load
 
 
 class Embedder(TypedDict):
@@ -21,6 +25,7 @@ def main(args: Args):
 
     logger.info(f"Parsing SMILES: {args.smiles}")
     predicted_value = None
+    estimator = None
 
     smi_to_vector, model = get_smi_to_vec(
         args.molecular_embedder["name"],
@@ -31,10 +36,16 @@ def main(args: Args):
     X = smi_to_vector(args.smiles, model)
     logger.info(f"X: {X}")
 
-    estimator = load_model(args.pretrained_model_file, use_joblib=True)
-    logger.info(f"Loaded estimator: {estimator}")
+    logger.info(f"Loading estimator from {args.pretrained_model_file}")
+    estimator = load(args.pretrained_model_file)
+    if not estimator:
+        logger.error("Failed to load estimator")
+        raise ValueError("Failed to load estimator")
 
-    predicted_value = estimator.predict(X)
+    logger.info(f"Loaded estimator: {estimator}")
+    # return {"predicted_value": 1}
+
+    predicted_value: np.ndarray = estimator.predict([X])
     logger.info(f"Predicted value: {predicted_value}")
 
     return {"predicted_value": predicted_value}
