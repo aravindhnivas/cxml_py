@@ -39,15 +39,15 @@ class Paths:
     def temp_dir(self):
         return self.get_temp_dir()
 
+
 # logfile = Paths().app_log_dir / "umdapy_server.log"
 # logger.info(f"Logging to {logfile}")
 
 logger.add(
     Paths().app_log_dir / "umdapy_server.log",
-    rotation="10 MB",
+    rotation="1 MB",
     compression="zip",
 )
-
 
 
 def load_model(filepath: str, use_joblib: bool = False):
@@ -56,8 +56,7 @@ def load_model(filepath: str, use_joblib: bool = False):
         logger.error(f"Model file not found: {filepath}")
         raise FileNotFoundError(f"Model file not found: {filepath}")
     logger.info(f"Model loaded from {filepath}")
-    
+
     if use_joblib:
         return joblib.load(filepath)
     return word2vec.Word2Vec.load(str(filepath))
-
