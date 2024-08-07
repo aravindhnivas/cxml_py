@@ -42,7 +42,7 @@ def main(args: Args):
 
     X = smi_to_vector(args.smiles, model)
     logger.info(f"X: {X}")
-    return {"predicted_value": 1}
+    # return {"predicted_value": 1}
 
     logger.info(f"Loading estimator from {args.pretrained_model_file}")
     estimator, scaler = load_model(args.pretrained_model_file)
