@@ -6,7 +6,14 @@ except ImportError:
 from dataclasses import dataclass
 from time import perf_counter
 from typing import Dict, Union, TypedDict
-from joblib import parallel_backend, dump
+from joblib import (
+    # parallel_backend,
+    parallel_config,
+    dump,
+    __version__ as joblib_version,
+)
+
+logger.info(f"Using joblib version {joblib_version}")
 
 import numpy as np
 from pathlib import Path as pt
@@ -505,7 +512,7 @@ def main(args: Args):
 
     results = None
     if args.parallel_computation:
-        with parallel_backend(args.parallel_computation_backend, n_jobs=args.n_jobs):
+        with parallel_config(args.parallel_computation_backend, n_jobs=args.n_jobs):
             results = compute(args, X, y)
     else:
         results = compute(args, X, y)
