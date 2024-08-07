@@ -61,24 +61,24 @@ from xgboost import XGBRegressor, __version__ as xgboost_version
 from catboost import CatBoostRegressor, __version__ as catboost_version
 from lightgbm import LGBMRegressor, __version__ as lightgbm_version
 
-from sklearn.base import BaseEstimator, TransformerMixin
+# from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 
 
-# Custom transformer for scaling y
-class YScaler(BaseEstimator, TransformerMixin):
-    def __init__(self, scaler):
-        self.scaler = scaler
+# # Custom transformer for scaling y
+# class YScaler(BaseEstimator, TransformerMixin):
+#     def __init__(self, scaler):
+#         self.scaler = scaler
 
-    def fit(self, X, y=None):
-        self.scaler.fit(y.reshape(-1, 1))
-        return self
+#     def fit(self, X, y=None):
+#         self.scaler.fit(y.reshape(-1, 1))
+#         return self
 
-    def transform(self, X, y=None):
-        return self.scaler.transform(y.reshape(-1, 1)).flatten()
+#     def transform(self, X, y=None):
+#         return self.scaler.transform(y.reshape(-1, 1)).flatten()
 
-    def inverse_transform(self, y):
-        return self.scaler.inverse_transform(y.reshape(-1, 1)).flatten()
+#     def inverse_transform(self, y):
+#         return self.scaler.inverse_transform(y.reshape(-1, 1)).flatten()
 
 
 logger.info(f"xgboost version {xgboost_version}")
@@ -440,7 +440,9 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         results["cv_fold"] = args.cv_fold
 
         cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True, random_state=rng)
-        cv_scores = cross_val_score(estimator, X, y, cv=cv_fold, scoring="r2")
+        cv_scores = cross_val_score(
+            estimator, X, y, cv=cv_fold, scoring="r2", n_jobs=args.n_jobs
+        )
         logger.info(f"Cross-validation R2 scores: {cv_scores}")
         logger.info(
             f"Mean CV R2 score: {cv_scores.mean():.4f} (+/- {cv_scores.std() * 2:.4f})"
@@ -507,5 +509,6 @@ def main(args: Args):
             results = compute(args, X, y)
     else:
         results = compute(args, X, y)
+    # results = compute(args, X, y)
 
     return results
