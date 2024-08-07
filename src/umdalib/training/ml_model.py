@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from time import perf_counter
 from typing import Dict, Union, TypedDict
 from joblib import (
-    # parallel_backend,
     parallel_config,
     dump,
     __version__ as joblib_version,
@@ -18,16 +17,14 @@ logger.info(f"Using joblib version {joblib_version}")
 import numpy as np
 from pathlib import Path as pt
 from datetime import datetime
-
-# for processing
-# from sklearn.preprocessing import StandardScaler
-# from sklearn.metrics.pairwise import cosine_distances, euclidean_distances
 import pandas as pd
+
 from sklearn import metrics, __version__ as sklearn_version
+
+logger.info(f"Using scikit-learn version {sklearn_version}")
 
 from umdalib.utils import Paths
 
-logger.info(f"Using scikit-learn version {sklearn_version}")
 
 # models
 from sklearn.linear_model import LinearRegression
@@ -70,23 +67,6 @@ from lightgbm import LGBMRegressor, __version__ as lightgbm_version
 
 # from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
-
-
-# # Custom transformer for scaling y
-# class YScaler(BaseEstimator, TransformerMixin):
-#     def __init__(self, scaler):
-#         self.scaler = scaler
-
-#     def fit(self, X, y=None):
-#         self.scaler.fit(y.reshape(-1, 1))
-#         return self
-
-#     def transform(self, X, y=None):
-#         return self.scaler.transform(y.reshape(-1, 1)).flatten()
-
-#     def inverse_transform(self, y):
-#         return self.scaler.inverse_transform(y.reshape(-1, 1)).flatten()
-
 
 logger.info(f"xgboost version {xgboost_version}")
 logger.info(f"catboost version {catboost_version}")
