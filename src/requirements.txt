@@ -22,3 +22,4 @@ prompt-toolkit==3.0.*
 xgboost==2.0.*
 catboost==1.2.*
 lightgbm==4.5.*
+joblib==1.4.*
