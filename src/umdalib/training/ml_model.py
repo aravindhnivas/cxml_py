@@ -172,6 +172,9 @@ class Args:
     fine_tune_model: bool
     grid_search_method: str
     grid_search_parameters: Dict[str, int]
+    parallel_computation: bool
+    n_jobs: int
+    parallel_computation_backend: str
 
 
 def augment_data(X: np.ndarray, y: np.ndarray, n_samples: int, noise_percentage: float):
@@ -228,14 +231,9 @@ def make_custom_kernels(kernel_dict: Dict[str, Dict[str, str]]):
 
 def save_intermediate_results(grid_search, filename="intermediate_results.csv"):
     """Saves intermediate cv_results_ to a CSV file."""
-
     df = pd.DataFrame(grid_search.cv_results_)
     df = df.sort_values(by="rank_test_score")
     df.to_csv(filename, index=False)
-
-
-n_jobs = -2
-backend = "multiprocessing"
 
 
 def compute(args: Args, X: np.ndarray, y: np.ndarray):
@@ -319,13 +317,15 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             if param in args.grid_search_parameters:
                 GridCV_parameters[param] = args.grid_search_parameters[param]
 
+        if args.parallel_computation:
+            GridCV_parameters["n_jobs"] = args.n_jobs
+
         logger.info(f"{GridCV=}, {GridCV_parameters=}")
 
         grid_search = GridCV(
             initial_estimator,
             args.fine_tuned_hyperparameters,
             cv=int(args.cv_fold),
-            # n_jobs=n_jobs,
             **GridCV_parameters,
         )
         logger.info("Fitting grid search")
@@ -500,8 +500,12 @@ def main(args: Args):
     y = y[valid_mask]
 
     logger.info(f"{y[:5]=}, {type(y)=}")
+
     results = None
-    with parallel_backend(backend, n_jobs=n_jobs):
+    if args.parallel_computation:
+        with parallel_backend(args.parallel_computation_backend, n_jobs=args.n_jobs):
+            results = compute(args, X, y)
+    else:
         results = compute(args, X, y)
-    # results = compute(args, X, y)
+
     return results
