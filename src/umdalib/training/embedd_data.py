@@ -149,26 +149,6 @@ def main(args: Args):
     global invalid_smiles, embedding, PCA_pipeline_location
     invalid_smiles = []
 
-    # embedding = args.embedding
-    # if embedding == "mol2vec":
-    #     model = load_model(args.pretrained_model_location)
-    #     logger.info(f"Loaded mol2vec model with {model.vector_size} dimensions")
-    # elif embedding == "VICGAE":
-    #     model = load_model(args.pretrained_model_location, use_joblib=True)
-    #     logger.info(f"Loaded VICGAE model")
-
-    # PCA_pipeline_location = args.PCA_pipeline_location
-
-    # if PCA_pipeline_location:
-    #     logger.info(f"Using PCA pipeline from {PCA_pipeline_location}")
-    #     smi_to_vector = get_smi_to_vec_after_pca
-    # else:
-    #     smi_to_vector = smi_to_vec_dict[embedding]
-
-    # logger.warning(f"{smi_to_vector=}")
-    # if not callable(smi_to_vector):
-    #     raise ValueError(f"Unknown embedding model: {args.embedding}")
-
     smi_to_vector, model = get_smi_to_vec(
         args.embedding, args.pretrained_model_location, args.PCA_pipeline_location
     )
@@ -179,6 +159,7 @@ def main(args: Args):
         if PCA_pipeline_location:
             if isinstance(vec, da.Array):
                 vec = vec.compute()
+        logger.info(f"{vec.shape=}\n")
         return {
             "test_mode": {
                 "embedded_vector": vec.tolist() if vec is not None else None,
