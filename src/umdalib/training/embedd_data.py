@@ -1,18 +1,27 @@
+from umdalib.utils import load_model
+from umdalib.utils import logger
 from dataclasses import dataclass
 from time import perf_counter
 from typing import Callable, Literal
 import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
 from dask import array as da
+import pytorch_lightning as pl
 
+logger.info(f"pytorch_lightning version: {pl.__version__}")
 # from astrochem_embedding import VICGAE
+
 from pathlib import Path as pt
 import numpy as np
 from rdkit import Chem
 from mol2vec import features
 from umdalib.training.read_data import read_as_ddf
-from umdalib.utils import load_model
-from umdalib.utils import logger
+
+
+import warnings
+
+# suppress `torch.load` with `weights_only=False` warning
+warnings.filterwarnings("ignore", category=UserWarning)
 
 
 @dataclass
