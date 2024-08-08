@@ -3,7 +3,7 @@ import json
 from typing import Dict
 import warnings
 from importlib import import_module
-
+import multiprocessing
 import numpy as np
 from umdalib.utils import logger, Paths
 
@@ -18,6 +18,8 @@ class MyClass(object):
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
+
     logger.info("Starting main.py")
     logger.info(f"{sys.argv=}")
     pyfile = sys.argv[1]
