@@ -4,6 +4,8 @@ from os import environ
 from platform import system
 from multiprocessing import cpu_count
 import joblib
+
+
 from loguru import logger
 from psutil import virtual_memory
 from gensim.models import word2vec
@@ -40,14 +42,16 @@ class Paths:
         return self.get_temp_dir()
 
 
-# logfile = Paths().app_log_dir / "umdapy_server.log"
-# logger.info(f"Logging to {logfile}")
+logfile = Paths().app_log_dir / "umdapy_server.log"
+logger.info(f"Logging to {logfile}")
 
 logger.add(
-    Paths().app_log_dir / "umdapy_server.log",
-    rotation="1 MB",
+    logfile,
+    rotation="10 MB",
     compression="zip",
 )
+
+logger.info(f"loaded joblib: {joblib.__version__}")
 
 
 def load_model(filepath: str, use_joblib: bool = False):
