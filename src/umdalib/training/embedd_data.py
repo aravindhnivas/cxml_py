@@ -6,11 +6,8 @@ from typing import Callable, Literal
 import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
 from dask import array as da
-import pytorch_lightning as pl
 
-logger.info(f"pytorch_lightning version: {pl.__version__}")
 # from astrochem_embedding import VICGAE
-
 from pathlib import Path as pt
 import numpy as np
 from rdkit import Chem
