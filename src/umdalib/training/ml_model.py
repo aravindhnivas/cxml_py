@@ -97,6 +97,8 @@ models_dict = {
     "lgbm": LGBMRegressor,
 }
 
+n_jobs_keyword_available_models = ["linear_regression", "knn", "rfr", "xgboost", "lgbm"]
+
 kernels_dict = {
     "Constant": kernels.ConstantKernel,
     "RBF": kernels.RBF,
@@ -292,6 +294,9 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             if k not in args.fine_tuned_hyperparameters.keys()
         }
 
+        if args.parallel_computation and args.model in n_jobs_keyword_available_models:
+            opts["n_jobs"] = n_jobs
+
         initial_estimator = models_dict[args.model](**opts)
 
         logger.info("Running grid search")
@@ -305,7 +310,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
                 GridCV_parameters[param] = args.grid_search_parameters[param]
 
         if args.parallel_computation:
-            GridCV_parameters["n_jobs"] = args.n_jobs
+            GridCV_parameters["n_jobs"] = n_jobs
 
         logger.info(f"{GridCV=}, {GridCV_parameters=}")
 
@@ -338,8 +343,14 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             df = pd.DataFrame(grid_search.cv_results_)
             df = df.sort_values(by="rank_test_score")
             df.to_csv(grid_savefile.with_suffix(".csv"))
+
             logger.info(f"Grid search saved to {grid_savefile}")
+
     else:
+
+        if args.parallel_computation and args.model in n_jobs_keyword_available_models:
+            args.parameters["n_jobs"] = n_jobs
+
         if args.model == "gpr" and kernel is not None:
             estimator = models_dict[args.model](kernel, **args.parameters)
         else:
@@ -428,7 +439,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
         cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True, random_state=rng)
         cv_scores = cross_val_score(
-            estimator, X, y, cv=cv_fold, scoring="r2", n_jobs=args.n_jobs
+            estimator, X, y, cv=cv_fold, scoring="r2", n_jobs=n_jobs
         )
         logger.info(f"Cross-validation R2 scores: {cv_scores}")
         logger.info(
@@ -460,7 +471,17 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     return results
 
 
+n_jobs = None
+backend = "threading"
+
+
 def main(args: Args):
+
+    global n_jobs, backend
+
+    if args.parallel_computation:
+        n_jobs = int(args.n_jobs)
+        backend = args.parallel_computation_backend
 
     logger.info(f"Training {args.model} model")
     logger.info(f"{args.training_file['filename']}")
@@ -492,9 +513,11 @@ def main(args: Args):
 
     results = None
     if args.parallel_computation:
-        with parallel_config(args.parallel_computation_backend, n_jobs=args.n_jobs):
+        with parallel_config(backend, n_jobs=n_jobs):
+            logger.info(f"Using {n_jobs} jobs with {backend} backend")
             results = compute(args, X, y)
     else:
+        logger.info("Running in serial mode")
         results = compute(args, X, y)
     # results = compute(args, X, y)
 
