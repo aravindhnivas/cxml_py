@@ -39,10 +39,10 @@ def predict_from_file(test_file: pt, smi_to_vector, model, estimator, scaler):
         raise ValueError(
             "Test file should have at least one column with header name SMILES"
         )
-    if len(columns) > 1:
-        raise ValueError(
-            "Test file should have only one column with header name SMILES"
-        )
+    # if len(columns) > 1:
+    #     raise ValueError(
+    #         "Test file should have only one column with header name SMILES"
+    #     )
     if columns[0] != "SMILES":
         raise ValueError("Test file should have a column header named 'SMILES'")
 
