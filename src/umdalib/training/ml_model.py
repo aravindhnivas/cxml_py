@@ -261,11 +261,19 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         scaler = StandardScaler()
         y = scaler.fit_transform(y.reshape(-1, 1)).flatten()
 
-    # split data
-    logger.info("Splitting data for training and testing")
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=float(args.test_size), random_state=rng
-    )
+    test_size = float(args.test_size)
+
+    if test_size > 0:
+        # split data
+        logger.info("Splitting data for training and testing")
+        X_train, X_test, y_train, y_test = train_test_split(
+            X,
+            y,
+            test_size=test_size,
+            # random_state=rng
+        )
+    else:
+        X_train, X_test, y_train, y_test = X, X, y, y
 
     if (
         args.model in random_state_supported_models
