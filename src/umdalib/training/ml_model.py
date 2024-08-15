@@ -270,6 +270,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             X,
             y,
             test_size=test_size,
+            shuffle=True,
             # random_state=rng
         )
     else:
@@ -441,12 +442,13 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
     # Additional validation step
     results["cross_validation"] = args.cross_validation
-    if args.cross_validation and not args.fine_tune_model:
+
+    if args.cross_validation and not args.fine_tune_model and test_size > 0:
         logger.info("Cross-validating model")
 
         results["cv_fold"] = args.cv_fold
 
-        cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True, random_state=rng)
+        cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True)
         cv_scores = cross_val_score(
             estimator, X, y, cv=cv_fold, scoring="r2", n_jobs=n_jobs
         )
