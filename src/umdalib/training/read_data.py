@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 import dask.dataframe as dd
-
-# from loguru import logger
+import pandas as pd
 from umdalib.utils import logger
 from dask.diagnostics import ProgressBar
 from multiprocessing import cpu_count
@@ -9,29 +8,35 @@ from typing import Dict, Union
 
 NPARTITIONS = cpu_count() * 5
 
-# pbar = ProgressBar()
-# pbar.register()
 
+def read_as_ddf(
+    filetype: str, filename: str, key: str = None, computed=False, use_dask=False
+):
 
-def read_as_ddf(filetype: str, filename: str, key: str = None, computed=False):
+    df_fn = dd if use_dask else pd
+
     ddf = None
     if filename.endswith(".smi"):
-        ddf = dd.read_csv(filename, header=None, names=["SMILES"])
+        ddf = df_fn.read_csv(filename, header=None, names=["SMILES"])
     elif filetype == "csv":
-        ddf = dd.read_csv(filename)
+        ddf = df_fn.read_csv(filename)
     elif filetype == "parquet":
-        ddf = dd.read_parquet(filename)
+        ddf = df_fn.read_parquet(filename)
     elif filetype == "hdf":
-        ddf = dd.read_hdf(filename, key)
+        ddf = df_fn.read_hdf(filename, key)
     elif filetype == "json":
-        ddf = dd.read_json(filename)
+        ddf = df_fn.read_json(filename)
     else:
         raise ValueError(f"Unknown filetype: {filetype}")
 
-    if computed:
+    if computed and use_dask:
         with ProgressBar():
             ddf = ddf.compute()
     return ddf
+
+
+# use_dask = False
+# df_fn: Union[dd.DataFrame, pd.DataFrame] = pd
 
 
 @dataclass
@@ -40,14 +45,25 @@ class Args:
     filetype: str
     key: str
     rows: Dict[str, Union[int, str]]
+    use_dask: bool
 
 
 def main(args: Args):
-    print(f"Reading {args.filename} as {args.filetype}")
+    # global use_dask, df_fn
 
-    ddf = read_as_ddf(args.filetype, args.filename, args.key)
+    if args.use_dask:
+        logger.info("Using Dask")
+    else:
+        logger.warning("Not using Dask")
 
-    logger.info(f"read_data file: Shape: {ddf.shape[0].compute()}")
+    logger.info(f"Reading {args.filename} as {args.filetype}")
+
+    ddf = read_as_ddf(args.filetype, args.filename, args.key, args.use_dask)
+    shape = ddf.shape[0]
+    if args.use_dask:
+        shape = shape.compute()
+    logger.info(f"read_data file: Shape: {shape}")
+
     # if ddf.columns[0] == "Unnamed: 0":
     #     ddf = ddf.drop(columns=["Unnamed: 0"])
 
@@ -56,13 +72,12 @@ def main(args: Args):
     }
     count = int(args.rows["value"])
     with ProgressBar():
-        # nrows = None
         if args.rows["where"] == "head":
             nrows = ddf.head(count).fillna("")
         elif args.rows["where"] == "tail":
             nrows = ddf.tail(count).fillna("")
         data["nrows"] = nrows.to_dict(orient="records")
-        data["shape"] = ddf.shape[0].compute()
+        data["shape"] = shape
     logger.info(f"{type(data)=}")
 
     return data

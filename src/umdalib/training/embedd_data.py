@@ -36,6 +36,7 @@ class Args:
     test_smiles: str
     PCA_pipeline_location: str
     embedd_savefile: str
+    use_dask: bool
 
 
 def VICGAE2vec(smi: str, model):
@@ -154,7 +155,7 @@ def main(args: Args):
         logger.info(f"Testing with {args.test_smiles}")
         vec: np.ndarray = smi_to_vector(args.test_smiles, model)
         if PCA_pipeline_location:
-            if isinstance(vec, da.Array):
+            if args.use_dask and isinstance(vec, da.Array):
                 vec = vec.compute()
         logger.info(f"{vec.shape=}\n")
         return {
@@ -167,10 +168,11 @@ def main(args: Args):
     # location = fullfile.parent
     logger.info(f"Reading {fullfile} as {args.filetype}")
 
-    ddf = read_as_ddf(args.filetype, args.filename, args.key)
+    ddf = read_as_ddf(args.filetype, args.filename, args.key, args.use_dask)
 
-    logger.info(f"{args.npartitions=}")
-    ddf = ddf.repartition(npartitions=args.npartitions)
+    if args.use_dask:
+        logger.info(f"{args.npartitions=}")
+        ddf = ddf.repartition(npartitions=args.npartitions)
 
     vectors = None
     logger.info(f"Using {args.embedding} for embedding")
@@ -179,9 +181,12 @@ def main(args: Args):
     if not callable(smi_to_vector):
         raise ValueError(f"Unknown embedding model: {args.embedding}")
 
-    vectors: dd = ddf[args.df_column].apply(
-        smi_to_vector, args=(model,), meta=(None, np.float32)
-    )
+    if args.use_dask:
+        vectors = ddf[args.df_column].apply(
+            smi_to_vector, args=(model,), meta=(None, np.float32)
+        )
+    else:
+        vectors = ddf[args.df_column].apply(smi_to_vector, args=(model,))
 
     if vectors is None:
         raise ValueError(f"Unknown embedding model: {args.embedding}")
@@ -195,7 +200,11 @@ def main(args: Args):
     computed_time = None
 
     with ProgressBar():
-        vec_computed = vectors.compute()
+        if args.use_dask and isinstance(vectors, da.Array):
+            vec_computed = vectors.compute()
+        else:
+            vec_computed = vectors
+        # vec_computed = vectors.compute()
         logger.info(f"{vec_computed.shape=}\n{vec_computed[0]=}")
         vec_computed = np.vstack(
             vec_computed
