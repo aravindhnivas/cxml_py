@@ -65,22 +65,25 @@ def compute():
             output = pyfunction.main(args)
 
             if warnings_list:
+                logger.warning(f"Warnings: {warnings_list}")
                 output["warnings"] = [str(warning.message) for warning in warnings_list]
+        computed_time = perf_counter() - startTime
+        output["computed_time"] = f"{computed_time:.2f} s"
 
-        timeConsumed = perf_counter() - startTime
-        logger.info(f"function execution done in {timeConsumed:.2f} s")
+        logger.info(f"function execution done in {computed_time:.2f} s")
 
         if isinstance(output, dict):
-            # logger.info(f"Returning received to client\n{output=}")
             logger.success(f"Computation done!!")
 
             for k, v in output.items():
                 if isinstance(v, np.ndarray):
                     output[k] = v.tolist()
+
             logger.info(f"Returning received to client\n{output=}")
             return jsonify(output)
 
         data = log_output(logfilename)
+
         for k, v in output.items():
             if isinstance(v, np.ndarray):
                 output[k] = v.tolist()

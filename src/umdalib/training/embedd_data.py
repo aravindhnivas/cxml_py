@@ -141,7 +141,6 @@ def get_smi_to_vec(embedder, pretrained_file, pca_file=None):
 
 
 def main(args: Args):
-
     logger.info(f"{args=}")
 
     global invalid_smiles, embedding, PCA_pipeline_location
@@ -153,11 +152,15 @@ def main(args: Args):
 
     if args.test_mode:
         logger.info(f"Testing with {args.test_smiles}")
+
         vec: np.ndarray = smi_to_vector(args.test_smiles, model)
+
         if PCA_pipeline_location:
             if args.use_dask and isinstance(vec, da.Array):
                 vec = vec.compute()
+
         logger.info(f"{vec.shape=}\n")
+
         return {
             "test_mode": {
                 "embedded_vector": vec.tolist() if vec is not None else None,
@@ -165,7 +168,6 @@ def main(args: Args):
         }
 
     fullfile = pt(args.filename)
-    # location = fullfile.parent
     logger.info(f"Reading {fullfile} as {args.filetype}")
 
     ddf = read_as_ddf(args.filetype, args.filename, args.key, args.use_dask)
@@ -196,9 +198,6 @@ def main(args: Args):
     logger.info(f"Begin computing embeddings for {fullfile.stem}...")
     time = perf_counter()
 
-    start_time = perf_counter()
-    computed_time = None
-
     with ProgressBar():
         if args.use_dask and isinstance(vectors, da.Array):
             vec_computed = vectors.compute()
@@ -210,7 +209,6 @@ def main(args: Args):
             vec_computed
         )  # stack the arrays (n_samples, n_features)
 
-        computed_time = f"{(perf_counter() - start_time):.2f} s"
         np.save(embedd_savefile, vec_computed)
 
     logger.info(f"{vec_computed.shape=}")
@@ -220,14 +218,12 @@ def main(args: Args):
     )
 
     # \xa0 is a non-breaking space in Latin1 (ISO 8859-1), also known as NBSP in Unicode. It's a character that prevents an automatic line break at its position. In HTML, it's often used to create multiple spaces that are visible.
-    invalid_smiles = [
-        smiles.replace("\xa0", "").strip()
-        for smiles in invalid_smiles
-        # if isinstance(smiles, str)
-    ]
+    invalid_smiles = [smiles.replace("\xa0", "").strip() for smiles in invalid_smiles]
+
     invalid_smiles_filename = fullfile.with_name(
         f"[INVALID_entries]_{args.embedd_savefile}"
     ).with_suffix(".txt")
+
     if len(invalid_smiles) > 0:
         with open(invalid_smiles_filename, "w") as f:
             for smiles in invalid_smiles:
@@ -240,6 +236,5 @@ def main(args: Args):
             "invalid_smiles": len(invalid_smiles),
             "invalid_smiles_file": str(invalid_smiles_filename),
             "saved_file": str(embedd_savefile),
-            "computed_time": computed_time,
         }
     }

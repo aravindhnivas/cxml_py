@@ -6,6 +6,7 @@ from importlib import import_module
 import multiprocessing
 import numpy as np
 from umdalib.utils import logger, Paths
+from time import perf_counter
 
 log_dir = Paths().app_log_dir
 
@@ -44,11 +45,16 @@ if __name__ == "__main__":
 
     with warnings.catch_warnings(record=True) as warn:
         pyfunction = import_module(f"umdalib.{pyfile}")
+
         if args:
+            start_time = perf_counter()
             result: Dict = pyfunction.main(args)
+            computed_time = f"{(perf_counter() - start_time):.2f} s"
+
             for k, v in result.items():
                 if isinstance(v, np.ndarray):
                     result[k] = v.tolist()
+            result["computed_time"] = computed_time
 
             if result:
                 logger.success(f"{result=}")
@@ -57,5 +63,4 @@ if __name__ == "__main__":
                     logger.success(f"Result saved to {log_dir / f'{pyfile}.json'}")
         else:
             pyfunction.main()
-
     logger.info("Finished main.py")
