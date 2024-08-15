@@ -164,6 +164,7 @@ class Args:
     parallel_computation: bool
     n_jobs: int
     parallel_computation_backend: str
+    use_dask: bool
 
 
 def augment_data(X: np.ndarray, y: np.ndarray, n_samples: int, noise_percentage: float):
@@ -497,13 +498,16 @@ def main(args: Args):
         args.training_file["filetype"],
         args.training_file["filename"],
         args.training_file["key"],
+        use_dask=args.use_dask,
     )
-    ddf = ddf.repartition(npartitions=args.npartitions)
     y: np.ndarray = None
-    with ProgressBar():
-        y = ddf[args.training_column_name_y].compute()
+    if args.use_dask:
+        ddf = ddf.repartition(npartitions=args.npartitions)
+        with ProgressBar():
+            y = ddf[args.training_column_name_y].compute()
+    else:
+        y = ddf[args.training_column_name_y]
 
-    # y = y.to_numpy()
     y = y.values
     if args.logYscale:
         y = np.log10(y)
@@ -519,6 +523,5 @@ def main(args: Args):
     else:
         logger.info("Running in serial mode")
         results = compute(args, X, y)
-    # results = compute(args, X, y)
 
     return results
