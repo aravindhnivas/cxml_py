@@ -109,10 +109,10 @@ def analyze_molecules(smiles_list: list[str], parallel=True):
         return pd.DataFrame(results.tolist())
 
     logger.warning(f"{len(invalid_smiles)} invalid molecules found.")
-    with open(loc / "invalid_smiles_and_indices.txt", "w") as f:
-        f.write("# SMILES\tIndex\n")
+    with open(loc / "invalid_smiles_and_indices.csv", "w") as f:
+        f.write("SMILES,Index\n")
         for i, smi in zip(invalid_smiles_indices, invalid_smiles):
-            f.write(f"{smi}\t{i}\n")
+            f.write(f"{smi},{i}\n")
         logger.warning(
             f"Invalid SMILES strings saved to {str(loc / 'invalid_smiles_and_indices.txt')}."
         )
@@ -136,6 +136,9 @@ class Args:
 def main(args: Args):
 
     global loc
+
+    # testing error
+    # raise ValueError("Testing error")
     logger.info("Analyzing molecules...")
 
     loc = pt(args.filename).parent
