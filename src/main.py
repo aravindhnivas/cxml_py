@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     result_file = log_dir / f"{pyfile}.json"
     if result_file.exists():
-        logger.info(f"Removing existing file: {result_file}")
+        logger.warning(f"Removing existing file: {result_file}")
         result_file.unlink()
 
     with warnings.catch_warnings(record=True) as warn:
