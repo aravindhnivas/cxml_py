@@ -131,14 +131,22 @@ class Args:
     key: str
     use_dask: bool
     smiles_column_name: str
+    atomic_size_bin: int
+    analysis_file: str = None
 
 
 def main(args: Args):
 
     global loc
 
-    # testing error
-    # raise ValueError("Testing error")
+    if args.analysis_file:
+        logger.info("Analyzing molecules from file...")
+        molecular_analysis_from_file(
+            csv_file=args.analysis_file, bin_size=args.atomic_size_bin
+        )
+        logger.success("Analysis complete.")
+        return
+
     logger.info("Analyzing molecules...")
 
     loc = pt(args.filename).parent
@@ -190,4 +198,121 @@ def main(args: Args):
     df.to_csv(analysis_file, index=False)
     logger.success(f"Results saved as {analysis_file}")
 
+    molecular_analysis_from_file(df, bin_size=args.atomic_size_bin)
     return {"analysis_file": str(analysis_file)}
+
+
+def size_distribution(df: pd.DataFrame, bin_size=10):
+
+    # No. of atoms
+    number_of_atoms_distribution = Counter(df["No. of atoms"].values)
+    logger.info(f"Number of atoms distribution: {number_of_atoms_distribution}")
+
+    # Convert the Counter to a DataFrame
+    number_of_atoms_distribution_df = pd.DataFrame.from_dict(
+        number_of_atoms_distribution, orient="index"
+    ).reset_index()
+    number_of_atoms_distribution_df.columns = ["No. of atoms", "Count"]
+    max_atom_size = number_of_atoms_distribution_df["No. of atoms"].max()
+    logger.info(f"Max number of atoms: {max_atom_size}")
+
+    # Aggregate data into bins
+
+    bins = np.arange(0, max_atom_size + bin_size, bin_size)
+    labels = [f"{i}-{i+bin_size}" for i in range(0, max_atom_size, bin_size)]
+
+    number_of_atoms_distribution_df["Bins"] = pd.cut(
+        number_of_atoms_distribution_df["No. of atoms"].astype(int),
+        bins=bins,
+        labels=labels,
+        right=False,
+    )
+
+    #  the observed parameter is used to control whether only the observed categories are included in the result when grouping by a categorical variable.
+    binned_df = (
+        number_of_atoms_distribution_df.groupby("Bins", observed=True)["Count"]
+        .sum()
+        .reset_index()
+    )
+    binned_df = binned_df.sort_values(by="Count", ascending=False)
+
+    logger.info(f"Binned distribution of number of atoms: {binned_df}")
+
+    binned_file = loc / f"elemental_distribution_{bin_size}bin.csv"
+    binned_df.to_csv(binned_file, index=False)
+
+    logger.success(f"Binned distribution saved as {binned_file}")
+
+    return binned_file
+
+
+def structural_distribution(df: pd.DataFrame):
+    IsAromatic_counts = df["IsAromatic"].sum()
+    IsNonCyclic_counts = df["IsNonCyclic"].sum()
+    IsCyclicNonAromatic_counts = df["IsCyclicNonAromatic"].sum()
+
+    counts = [IsAromatic_counts, IsNonCyclic_counts, IsCyclicNonAromatic_counts]
+    labels = ["aromatic", "non-cyclic", "cyclic\nnon-aromatic"]
+
+    # save to file
+    structural_distribution_file = loc / "structural_distribution.csv"
+    pd.DataFrame({"Structural Category": labels, "Count": counts}).to_csv(
+        structural_distribution_file, index=False
+    )
+    logger.success(f"Structural distribution saved as {structural_distribution_file}")
+
+
+def elemental_distribution(df: pd.DataFrame):
+
+    elements = Counter()
+    for e in df["Elements"]:
+        elements.update(e)
+
+    logger.info("Total elements: ", len(elements))
+
+    logger.info("Top 10 elements counts:")
+    for element, count in elements.most_common(10):
+        logger.info(f"{element}: {count}")
+
+    elements_containing = Counter()
+    for element in elements.keys():
+        elements_containing[element] = (
+            df["Elements"].apply(lambda x: element in x).sum()
+        )
+    elements_containing_df = pd.DataFrame.from_dict(
+        elements_containing, orient="index"
+    ).reset_index()
+    elements_containing_df.columns = ["Element", "Count"]
+    elements_containing_df = elements_containing_df.sort_values(
+        by="Count", ascending=False
+    )
+
+    # save to file
+    elements_containing_file = loc / "elements_containing.csv"
+    elements_containing_df.to_csv(elements_containing_file, index=False)
+    logger.success(
+        f"Elements containing distribution saved as {elements_containing_file}"
+    )
+
+
+def molecular_analysis_from_file(
+    df: pd.DataFrame = None, csv_file: str = None, bin_size=10
+):
+
+    if not (df or csv_file):
+        raise ValueError("Either a DataFrame or a CSV file must be provided.")
+
+    if csv_file:
+        csv_file = pt(csv_file)
+        df = pd.read_csv(csv_file)
+        df["ElementCategories"] = df["ElementCategories"].apply(
+            lambda x: Counter(json.loads(x))
+        )
+        df["Elements"] = df["Elements"].apply(lambda x: Counter(json.loads(x)))
+
+    logger.info("Analyzing molecules...")
+    logger.info(f"Analyzing {len(df)} molecules...")
+
+    size_distribution(df, bin_size)
+    structural_distribution(df)
+    elemental_distribution(df)
