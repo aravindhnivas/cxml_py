@@ -183,8 +183,8 @@ def main(args: Args):
     df["ElementCategories"] = df["ElementCategories"].apply(lambda x: json.dumps(x))
     df["Elements"] = df["Elements"].apply(lambda x: json.dumps(x))
 
-    result_file = loc / "molecule_analysis_results.csv"
-    df.to_csv(result_file, index=False)
-    logger.success(f"Results saved as {result_file}")
+    analysis_file = loc / "molecule_analysis_results.csv"
+    df.to_csv(analysis_file, index=False)
+    logger.success(f"Results saved as {analysis_file}")
 
-    return {"results_file": str(result_file)}
+    return {"analysis_file": str(analysis_file)}
