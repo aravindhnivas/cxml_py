@@ -25,8 +25,10 @@ class Args:
 
 
 @lru_cache()
-def load_model(model_location: str):
-    return load(model_location)
+def load_model():
+    if not pretrained_model_file:
+        raise ValueError("Pretrained model file not found")
+    return load(pretrained_model_file)
 
 
 def predict_from_file(test_file: pt, smi_to_vector, model, estimator, scaler):
@@ -40,10 +42,7 @@ def predict_from_file(test_file: pt, smi_to_vector, model, estimator, scaler):
         raise ValueError(
             "Test file should have at least one column with header name SMILES"
         )
-    # if len(columns) > 1:
-    #     raise ValueError(
-    #         "Test file should have only one column with header name SMILES"
-    #     )
+
     if columns[0] != "SMILES":
         raise ValueError("Test file should have a column header named 'SMILES'")
 
@@ -62,14 +61,26 @@ def predict_from_file(test_file: pt, smi_to_vector, model, estimator, scaler):
 
     predicted_value = predicted_value.tolist()
     data["predicted_value"] = predicted_value
-    savefile = test_file.parent / f"{test_file.stem}_predicted_values.csv"
+    savefile = (
+        test_file.parent
+        / f"{test_file.stem}_predicted_values_{pretrained_model_file.stem}.csv"
+    )
     data.to_csv(savefile, index=False)
 
     logger.info(f"Predicted values saved to {savefile}")
     return {"savedfile": str(savefile)}
 
 
+pretrained_model_file = None
+
+
 def main(args: Args):
+    global pretrained_model_file
+
+    if not args.pretrained_model_file:
+        raise ValueError("Pretrained model file not found")
+
+    pretrained_model_file = pt(args.pretrained_model_file)
 
     logger.info(f"Parsing SMILES: {args.smiles}")
 
@@ -82,8 +93,8 @@ def main(args: Args):
         args.molecular_embedder["pipeline_file"],
     )
 
-    logger.info(f"Loading estimator from {args.pretrained_model_file}")
-    estimator, scaler = load_model(args.pretrained_model_file)
+    logger.info(f"Loading estimator from {pretrained_model_file}")
+    estimator, scaler = load_model()
 
     if not estimator:
         logger.error("Failed to load estimator")
