@@ -21,6 +21,7 @@ class Args:
     molecular_embedder: Embedder
     pretrained_model_file: str
     test_file: str
+    use_dask: bool
 
 
 @lru_cache()

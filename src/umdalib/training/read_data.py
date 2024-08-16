@@ -13,9 +13,20 @@ def read_as_ddf(
     filetype: str, filename: str, key: str = None, computed=False, use_dask=False
 ):
 
-    df_fn = dd if use_dask else pd
+    logger.info(f"Reading {filename} as {filetype} using dask: {use_dask}")
 
-    ddf = None
+    df_fn = None
+    if use_dask:
+        df_fn = dd
+        logger.info(f"Using Dask: {df_fn=}")
+    else:
+        df_fn = pd
+        logger.info(f"Using Pandas: {df_fn=}")
+
+    # df_fn = dd
+
+    ddf: Union[dd.DataFrame, pd.DataFrame] = None
+
     if filename.endswith(".smi"):
         ddf = df_fn.read_csv(filename, header=None, names=["SMILES"])
     elif filetype == "csv":
@@ -32,11 +43,9 @@ def read_as_ddf(
     if computed and use_dask:
         with ProgressBar():
             ddf = ddf.compute()
+
+    logger.info(f"{type(ddf)=}")
     return ddf
-
-
-# use_dask = False
-# df_fn: Union[dd.DataFrame, pd.DataFrame] = pd
 
 
 @dataclass
@@ -49,28 +58,24 @@ class Args:
 
 
 def main(args: Args):
-    # global use_dask, df_fn
-
-    if args.use_dask:
-        logger.info("Using Dask")
-    else:
-        logger.warning("Not using Dask")
 
     logger.info(f"Reading {args.filename} as {args.filetype}")
+    logger.info(f"Using Dask: {args.use_dask}")
 
-    ddf = read_as_ddf(args.filetype, args.filename, args.key, args.use_dask)
+    ddf = read_as_ddf(args.filetype, args.filename, args.key, use_dask=args.use_dask)
+    logger.info(f"{type(ddf)=}")
+
     shape = ddf.shape[0]
     if args.use_dask:
         shape = shape.compute()
     logger.info(f"read_data file: Shape: {shape}")
 
-    # if ddf.columns[0] == "Unnamed: 0":
-    #     ddf = ddf.drop(columns=["Unnamed: 0"])
-
     data = {
         "columns": ddf.columns.values.tolist(),
     }
+
     count = int(args.rows["value"])
+
     with ProgressBar():
         if args.rows["where"] == "head":
             nrows = ddf.head(count).fillna("")
@@ -78,6 +83,7 @@ def main(args: Args):
             nrows = ddf.tail(count).fillna("")
         data["nrows"] = nrows.to_dict(orient="records")
         data["shape"] = shape
+
     logger.info(f"{type(data)=}")
 
     return data

@@ -19,6 +19,7 @@ class Args:
     analysis_file: AnalysisFile
     columnX: str
     columnY: str
+    use_dask: bool
 
 
 def linear_fit(x, m, c):
@@ -31,6 +32,8 @@ def main(args: Args):
         args.analysis_file["filetype"],
         args.analysis_file["filename"],
         args.analysis_file["key"],
+        use_dask=args.use_dask,
+        computed=args.use_dask,
     )
 
     y_true = df[args.columnX].values

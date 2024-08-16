@@ -170,7 +170,7 @@ def main(args: Args):
     fullfile = pt(args.filename)
     logger.info(f"Reading {fullfile} as {args.filetype}")
 
-    ddf = read_as_ddf(args.filetype, args.filename, args.key, args.use_dask)
+    ddf = read_as_ddf(args.filetype, args.filename, args.key, use_dask=args.use_dask)
 
     if args.use_dask:
         logger.info(f"{args.npartitions=}")
