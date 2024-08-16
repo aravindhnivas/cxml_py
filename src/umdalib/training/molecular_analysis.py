@@ -303,9 +303,6 @@ def elemental_distribution(df: pd.DataFrame):
 
 def molecular_analysis(df: pd.DataFrame = None, csv_file: str = None, bin_size=10):
 
-    if not (df or csv_file):
-        raise ValueError("Either a DataFrame or a CSV file must be provided.")
-
     if csv_file:
         logger.info("Analyzing molecules from file...")
         csv_file = pt(csv_file)
