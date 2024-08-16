@@ -43,6 +43,11 @@ if __name__ == "__main__":
     logger.info(f"{pyfile=}\n")
     args = MyClass(**args)
 
+    result_file = log_dir / f"{pyfile}.json"
+    if result_file.exists():
+        logger.info(f"Removing existing file: {result_file}")
+        result_file.unlink()
+
     with warnings.catch_warnings(record=True) as warn:
         pyfunction = import_module(f"umdalib.{pyfile}")
 
@@ -58,13 +63,16 @@ if __name__ == "__main__":
 
             if not result:
                 result = {"info": "No result returned from main() function"}
+
+            result["done"] = True
+            result["error"] = False
             result["computed_time"] = computed_time
 
             if result:
                 logger.success(f"{result=}")
-                with open(log_dir / f"{pyfile}.json", "w") as f:
+                with open(result_file, "w") as f:
                     json.dump(result, f, indent=4)
-                    logger.success(f"Result saved to {log_dir / f'{pyfile}.json'}")
+                    logger.success(f"Result saved to {result_file}")
         else:
             pyfunction.main()
     logger.info("Finished main.py")
