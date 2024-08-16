@@ -28,7 +28,7 @@ def read_as_ddf(
     ddf: Union[dd.DataFrame, pd.DataFrame] = None
 
     if filename.endswith(".smi"):
-        ddf = df_fn.read_csv(filename, header=None, names=["SMILES"])
+        ddf = df_fn.read_csv(filename)
     elif filetype == "csv":
         ddf = df_fn.read_csv(filename)
     elif filetype == "parquet":

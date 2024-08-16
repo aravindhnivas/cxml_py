@@ -51,9 +51,13 @@ if __name__ == "__main__":
             result: Dict = pyfunction.main(args)
             computed_time = f"{(perf_counter() - start_time):.2f} s"
 
-            for k, v in result.items():
-                if isinstance(v, np.ndarray):
-                    result[k] = v.tolist()
+            if isinstance(result, Dict):
+                for k, v in result.items():
+                    if isinstance(v, np.ndarray):
+                        result[k] = v.tolist()
+
+            if not result:
+                result = {"info": "No result returned from main() function"}
             result["computed_time"] = computed_time
 
             if result:
