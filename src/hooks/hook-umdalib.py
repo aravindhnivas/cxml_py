@@ -33,6 +33,12 @@ lgbm_datas = [(str(lgbm.resolve()), "lightgbm/lib")]
 lgbm_VERSION = site_pkgs / "lightgbm/VERSION.txt"
 lgbm_datas += [(str(lgbm_VERSION.resolve()), "lightgbm")]
 
+lightning_fabric_datas = []
+lightning_fabric_version = site_pkgs / "lightning_fabric/version.info"
+lightning_fabric_datas += [
+    (str(lightning_fabric_version.resolve()), "lightning_fabric")
+]
+
 datas = (
     icons_files
     + distributed_datas
@@ -40,4 +46,5 @@ datas = (
     + distributed_http_datas
     + libxgboost_datas
     + lgbm_datas
+    + lightning_fabric_datas
 )
