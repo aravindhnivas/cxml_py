@@ -196,7 +196,7 @@ def main(args: Args):
     df.to_csv(analysis_file, index=False)
     logger.success(f"Results saved as {analysis_file}")
 
-    molecular_analysis(df, bin_size=args.atoms_bin_size)
+    molecular_analysis(csv_file=analysis_file, bin_size=args.atoms_bin_size)
     logger.success("Analysis complete.")
 
     return {"analysis_file": str(analysis_file)}
@@ -272,6 +272,8 @@ def elemental_distribution(df: pd.DataFrame):
     for e in df["Elements"]:
         elements.update(e)
 
+    logger.info(elements)
+
     logger.info("Total elements: ", len(elements))
 
     logger.info("Top 10 elements counts:")
@@ -301,16 +303,15 @@ def elemental_distribution(df: pd.DataFrame):
     return elements_containing_df
 
 
-def molecular_analysis(df: pd.DataFrame = None, csv_file: str = None, bin_size=10):
+def molecular_analysis(csv_file: str = None, bin_size=10):
 
-    if csv_file:
-        logger.info("Analyzing molecules from file...")
-        csv_file = pt(csv_file)
-        df = pd.read_csv(csv_file)
-        df["ElementCategories"] = df["ElementCategories"].apply(
-            lambda x: Counter(json.loads(x))
-        )
-        df["Elements"] = df["Elements"].apply(lambda x: Counter(json.loads(x)))
+    logger.info("Analyzing molecules from file...")
+    csv_file = pt(csv_file)
+    df = pd.read_csv(csv_file)
+    df["ElementCategories"] = df["ElementCategories"].apply(
+        lambda x: Counter(json.loads(x))
+    )
+    df["Elements"] = df["Elements"].apply(lambda x: Counter(json.loads(x)))
 
     logger.info("Analyzing molecules...")
     logger.info(f"Analyzing {len(df)} molecules...")
