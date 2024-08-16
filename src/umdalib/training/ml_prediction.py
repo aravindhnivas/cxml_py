@@ -83,6 +83,7 @@ def main(args: Args):
 
     logger.info(f"Loading estimator from {args.pretrained_model_file}")
     estimator, scaler = load_model(args.pretrained_model_file)
+
     if not estimator:
         logger.error("Failed to load estimator")
         raise ValueError("Failed to load estimator")
