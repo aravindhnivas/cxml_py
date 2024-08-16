@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 import numpy as np
-import pandas as pd
 from scipy.optimize import curve_fit
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from typing import TypedDict
-from umdalib.utils import logger
 from umdalib.training.read_data import read_as_ddf
+
+# from umdalib.utils import logger
+# import pandas as pd
 
 
 class AnalysisFile(TypedDict):

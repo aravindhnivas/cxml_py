@@ -3,10 +3,10 @@ from umdalib.utils import logger
 from dataclasses import dataclass
 from time import perf_counter
 from typing import Callable, Literal
-import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
 from dask import array as da
 
+# import dask.dataframe as dd
 # from astrochem_embedding import VICGAE
 from pathlib import Path as pt
 import numpy as np
@@ -14,11 +14,8 @@ from rdkit import Chem
 from mol2vec import features
 from umdalib.training.read_data import read_as_ddf
 
-
-import warnings
-
-# suppress `torch.load` with `weights_only=False` warning
-warnings.filterwarnings("ignore", category=UserWarning)
+# import warnings
+# warnings.filterwarnings("ignore", category=UserWarning)
 
 
 @dataclass
