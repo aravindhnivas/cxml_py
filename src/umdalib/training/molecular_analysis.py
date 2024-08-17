@@ -140,14 +140,21 @@ def main(args: Args):
     global loc
 
     if args.analysis_file:
-        loc = pt(args.analysis_file).parent
+        analysis_file = pt(args.analysis_file)
+        loc = analysis_file.parent
+        if not loc.exists():
+            loc.mkdir(parents=True)
         molecular_analysis(csv_file=args.analysis_file, bin_size=args.atoms_bin_size)
         logger.success("Analysis complete.")
         return
 
     logger.info("Analyzing molecules...")
 
-    loc = pt(args.filename).parent
+    filename = pt(args.filename)
+    loc = pt(filename).parent / f"{filename.stem}_analysis"
+    if not loc.exists():
+        loc.mkdir(parents=True)
+
     df = read_as_ddf(
         args.filetype,
         args.filename,
