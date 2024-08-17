@@ -252,7 +252,7 @@ def size_distribution(df: pd.DataFrame, bin_size=10):
 
     binned_df = binned_df.sort_values(by="Count", ascending=False)
     logger.info(f"Binned distribution of number of atoms: {binned_df}")
-    binned_file = loc / f"size_distribution_{bin_size}bin.csv"
+    binned_file = loc / f"size_distribution.csv"
     binned_df.to_csv(binned_file, index=False)
 
     logger.success(f"Binned distribution saved as {binned_file}")
