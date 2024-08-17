@@ -57,7 +57,7 @@ def compute():
         logfilename = Paths().temp_dir / f"{calling_file}_data.json"
         args = MyClass(**data["args"])
 
-        logger.info(f"{pyfile=}\n{data['args']=}")
+        logger.info(f"{pyfile=}\n{args=}")
 
         with warnings.catch_warnings(record=True) as warnings_list:
             pyfunction = import_module(f"umdalib.{pyfile}")
@@ -68,8 +68,10 @@ def compute():
                 logger.warning(f"Warnings: {warnings_list}")
                 output["warnings"] = [str(warning.message) for warning in warnings_list]
         computed_time = perf_counter() - startTime
-        output["computed_time"] = f"{computed_time:.2f} s"
+        if not output:
+            output = {"info": "No result returned from main() function"}
 
+        output["computed_time"] = f"{computed_time:.2f} s"
         logger.info(f"function execution done in {computed_time:.2f} s")
 
         if isinstance(output, dict):
