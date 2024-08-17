@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import json
+from typing import Literal, Union
 import numpy as np
 import pandas as pd
 from rdkit import Chem
@@ -132,19 +133,24 @@ class Args:
     use_dask: bool
     smiles_column_name: str
     atoms_bin_size: int
-    analysis_file: str = None
+    analysis_file: str
+    mode: Literal[
+        "all", "size_distribution", "structural_distribution", "elemental_distribution"
+    ]
 
 
 def main(args: Args):
 
     global loc
 
-    if args.analysis_file:
+    if args.analysis_file or args.mode != "all":
+        logger.info(f"Analyzing molecules from file... mode: {args.mode}")
+
         analysis_file = pt(args.analysis_file)
         loc = analysis_file.parent
         if not loc.exists():
             loc.mkdir(parents=True)
-        molecular_analysis(csv_file=args.analysis_file, bin_size=args.atoms_bin_size)
+        molecular_analysis(args.analysis_file, args.atoms_bin_size, args.mode)
         logger.success("Analysis complete.")
         return
 
@@ -203,7 +209,7 @@ def main(args: Args):
     df.to_csv(analysis_file, index=False)
     logger.success(f"Results saved as {analysis_file}")
 
-    molecular_analysis(csv_file=analysis_file, bin_size=args.atoms_bin_size)
+    molecular_analysis(analysis_file, args.atoms_bin_size)
     logger.success("Analysis complete.")
 
     return {"analysis_file": str(analysis_file)}
@@ -310,7 +316,7 @@ def elemental_distribution(df: pd.DataFrame):
     return elements_containing_df
 
 
-def molecular_analysis(csv_file: str = None, bin_size=10):
+def molecular_analysis(csv_file: str = None, bin_size=10, mode="all"):
 
     logger.info("Analyzing molecules from file...")
     csv_file = pt(csv_file)
@@ -319,10 +325,20 @@ def molecular_analysis(csv_file: str = None, bin_size=10):
         lambda x: Counter(json.loads(x))
     )
     df["Elements"] = df["Elements"].apply(lambda x: Counter(json.loads(x)))
-
     logger.info("Analyzing molecules...")
     logger.info(f"Analyzing {len(df)} molecules...")
+
+    if mode == "size_distribution":
+        size_distribution(df, bin_size)
+        return
+    elif mode == "structural_distribution":
+        structural_distribution(df)
+        return
+    elif mode == "elemental_distribution":
+        elemental_distribution(df)
+        return
 
     size_distribution(df, bin_size)
     structural_distribution(df)
     elemental_distribution(df)
+    return
