@@ -255,7 +255,7 @@ def structural_distribution(df: pd.DataFrame):
     IsCyclicNonAromatic_counts = df["IsCyclicNonAromatic"].sum()
 
     counts = [IsAromatic_counts, IsNonCyclic_counts, IsCyclicNonAromatic_counts]
-    labels = ["aromatic", "non-cyclic", "cyclic\nnon-aromatic"]
+    labels = ["aromatic", "non-cyclic", "cyclic non-aromatic"]
 
     # save to file
     structural_distribution_file = loc / "structural_distribution.csv"
