@@ -29,6 +29,9 @@ def read_as_ddf(
 
     if filename.endswith(".smi"):
         ddf = df_fn.read_csv(filename)
+        logger.info(f"Columns in the DataFrame: {ddf.columns.tolist()}")
+        if ddf.columns[0].lower() != "smiles":
+            ddf.columns = ["SMILES"]
     elif filetype == "csv":
         ddf = df_fn.read_csv(filename)
     elif filetype == "parquet":

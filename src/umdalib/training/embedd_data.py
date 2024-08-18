@@ -40,7 +40,8 @@ def VICGAE2vec(smi: str, model):
     global invalid_smiles
     smi = str(smi).replace("\xa0", "")
     if smi == "nan":
-        return None
+        invalid_smiles.append(smi)
+        return np.zeros(32)
     try:
         return model.embed_smiles(smi).numpy().reshape(-1)
     except:
@@ -49,6 +50,7 @@ def VICGAE2vec(smi: str, model):
 
 
 invalid_smiles = []
+test_mode = False
 
 
 def mol2vec(smi: str, model, radius=1) -> list[np.ndarray]:
@@ -59,17 +61,19 @@ def mol2vec(smi: str, model, radius=1) -> list[np.ndarray]:
 
     global invalid_smiles
     smi = str(smi).replace("\xa0", "")
-
+    if test_mode:
+        logger.info(f"{smi=}")
     if smi == "nan":
-        return None
+        invalid_smiles.append(smi)
+        return np.zeros(model.vector_size)
 
     # Molecule from SMILES will break on "bad" SMILES; this tries
     # to get around sanitization (which takes a while) if it can
     try:
         mol = Chem.MolFromSmiles(smi, sanitize=False)
+        if test_mode:
+            logger.info(f"{mol=}")
         if not mol:
-            if not isinstance(smi, str):
-                return None
             invalid_smiles.append(str(smi))
 
         mol.UpdatePropertyCache(strict=False)
@@ -78,14 +82,17 @@ def mol2vec(smi: str, model, radius=1) -> list[np.ndarray]:
         sentence = features.mol2alt_sentence(mol, radius)
         # generate vector embedding from sentence and model
         vector = features.sentences2vec([sentence], model)
+        if test_mode:
+            logger.info(f"{vector.shape=}")
 
+        if len(vector) == 1:
+            # return np.zeros(model.vector_size)
+            raise ValueError(f"Invalid embedding: {smi}")
         return vector.reshape(-1)
 
     except:
         if smi not in invalid_smiles and isinstance(smi, str):
             invalid_smiles.append(smi)
-
-        # return np.zeros((1, model.vector_size))
         return np.zeros(model.vector_size)
 
 
@@ -140,14 +147,15 @@ def get_smi_to_vec(embedder, pretrained_file, pca_file=None):
 def main(args: Args):
     logger.info(f"{args=}")
 
-    global invalid_smiles, embedding, PCA_pipeline_location
+    global invalid_smiles, embedding, PCA_pipeline_location, test_mode
     invalid_smiles = []
+    test_mode = args.test_mode
 
     smi_to_vector, model = get_smi_to_vec(
         args.embedding, args.pretrained_model_location, args.PCA_pipeline_location
     )
 
-    if args.test_mode:
+    if test_mode:
         logger.info(f"Testing with {args.test_smiles}")
 
         vec: np.ndarray = smi_to_vector(args.test_smiles, model)
@@ -195,17 +203,20 @@ def main(args: Args):
     logger.info(f"Begin computing embeddings for {fullfile.stem}...")
     time = perf_counter()
 
+    vec_computed: np.ndarray = None
     with ProgressBar():
         if args.use_dask and isinstance(vectors, da.Array):
             vec_computed = vectors.compute()
         else:
             vec_computed = vectors
-        # vec_computed = vectors.compute()
-        logger.info(f"{vec_computed.shape=}\n{vec_computed[0]=}")
-        vec_computed = np.vstack(
-            vec_computed
-        )  # stack the arrays (n_samples, n_features)
 
+        logger.info(f"{vec_computed.shape=}\n{vec_computed[0].shape=}")
+        logger.warning(f"{invalid_smiles=}")
+        for i, vec in enumerate(vec_computed):
+            if not vec.any():
+                logger.warning(f"Empty vector found in {i=} {vec.shape=}, {vec=}\n")
+                logger.warning(f"Invalid embedding: {ddf[args.df_column].iloc[i]}\n")
+        vec_computed = np.vstack(vec_computed)
         np.save(embedd_savefile, vec_computed)
 
     logger.info(f"{vec_computed.shape=}")
@@ -219,10 +230,11 @@ def main(args: Args):
 
     invalid_smiles_filename = fullfile.with_name(
         f"[INVALID_entries]_{args.embedd_savefile}"
-    ).with_suffix(".txt")
+    ).with_suffix(".smi")
 
     if len(invalid_smiles) > 0:
         with open(invalid_smiles_filename, "w") as f:
+            # f.write("SMILES\n")
             for smiles in invalid_smiles:
                 f.write(smiles + "\n")
 
