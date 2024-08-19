@@ -6,7 +6,7 @@ from umdalib.utils import logger
 from collections import Counter
 from multiprocessing import Pool, cpu_count
 from pathlib import Path as pt
-from typing import Optional
+from typing import Any, Callable, Optional
 
 # Constants for column names
 COLUMN_ATOMS = "No. of atoms"
@@ -17,43 +17,49 @@ COLUMN_IS_CYCLIC_NON_AROMATIC = "IsCyclicNonAromatic"
 
 
 def apply_filters_to_df(
-    x: pd.Series,
+    row: pd.Series,
     min_atomic_number: Optional[int],
     max_atomic_number: Optional[int],
     filter_elements: list[str],
     filter_structures: list[str],
-) -> Optional[pd.Series]:
+) -> bool:
 
     # Filter based on atomic number
-    if min_atomic_number is not None and x[COLUMN_ATOMS] < int(min_atomic_number):
-        return None
-    if max_atomic_number is not None and x[COLUMN_ATOMS] > int(max_atomic_number):
-        return None
+    if min_atomic_number:
+        if row[COLUMN_ATOMS] < int(min_atomic_number):
+            return False
+
+    if max_atomic_number:
+        if row[COLUMN_ATOMS] > int(max_atomic_number):
+            return False
 
     # Filter based on elements
     if filter_elements:
-        if any(key in x[COLUMN_ELEMENTS] for key in filter_elements):
-            return None
+        for element in filter_elements:
+            if element in row[COLUMN_ELEMENTS]:
+                return False
 
     # Filter based on structures
     if filter_structures:
-        if "aromatic" in filter_structures and x[COLUMN_IS_AROMATIC]:
-            return None
-        if "non-cyclic" in filter_structures and x[COLUMN_IS_NON_CYCLIC]:
-            return None
+        if "aromatic" in filter_structures and row[COLUMN_IS_AROMATIC]:
+            return False
+        if "non-cyclic" in filter_structures and row[COLUMN_IS_NON_CYCLIC]:
+            return False
         if (
             "cyclic non-aromatic" in filter_structures
-            and x[COLUMN_IS_CYCLIC_NON_AROMATIC]
+            and row[COLUMN_IS_CYCLIC_NON_AROMATIC]
         ):
-            return None
+            return False
 
-    return x
+    return True
 
 
-def parallel_apply(df: pd.DataFrame, func, *args) -> pd.DataFrame:
+def parallel_apply(
+    df: pd.DataFrame, func: Callable[[pd.Series, Any], bool], *args
+) -> pd.DataFrame:
     with Pool(cpu_count()) as pool:
         result = pool.starmap(func, [(row, *args) for _, row in df.iterrows()])
-    return pd.DataFrame([r for r in result if r is not None])
+    return df[result]
 
 
 @dataclass
@@ -67,8 +73,8 @@ class Args:
     filter_structures: list[str]
 
 
-# parallel = True
-parallel = False
+parallel = True
+# parallel = False
 
 
 def main(args: Args):
@@ -123,17 +129,20 @@ def main(args: Args):
         )
     else:
         logger.info("Using single processing")
-        final_df: pd.DataFrame = df.apply(
-            apply_filters_to_df,
-            axis=1,
-            args=(
-                args.min_atomic_number,
-                args.max_atomic_number,
-                args.filter_elements,
-                args.filter_structures,
-            ),
-        )
-    final_df = final_df.dropna()  # Drop rows that were filtered out
+        final_df: pd.DataFrame = df[
+            df.apply(
+                apply_filters_to_df,
+                axis=1,
+                args=(
+                    args.min_atomic_number,
+                    args.max_atomic_number,
+                    args.filter_elements,
+                    args.filter_structures,
+                ),
+            )
+        ]
+
+    # final_df = final_df.dropna()  # Drop rows that were filtered out
     logger.info(f"Filtered DataFrame length: {len(final_df)}")
     filtered_file_path = (
         analysis_file.parent / "filtered_" / f"{analysis_file.stem}_filtered.csv"
