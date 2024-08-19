@@ -72,6 +72,8 @@ parallel = False
 
 
 def main(args: Args):
+    # logger.info(args.min_atomic_number)
+
     analysis_file = pt(args.analysis_file)
     df = pd.read_csv(analysis_file)
     df["ElementCategories"] = df["ElementCategories"].apply(
@@ -79,7 +81,19 @@ def main(args: Args):
     )
     df["Elements"] = df["Elements"].apply(lambda x: Counter(json.loads(x)))
 
+    if not any(
+        [
+            args.min_atomic_number,
+            args.max_atomic_number,
+            args.filter_elements,
+            args.filter_structures,
+        ]
+    ):
+        logger.info("No filters applied")
+        return {"filtered_file": str(analysis_file)}
+
     if parallel:
+        logger.info("Using parallel processing")
         final_df = parallel_apply(
             df,
             apply_filters_to_df,
@@ -89,6 +103,7 @@ def main(args: Args):
             args.filter_structures,
         )
     else:
+        logger.info("Using single processing")
         final_df: pd.DataFrame = df.apply(
             apply_filters_to_df,
             axis=1,
@@ -100,7 +115,7 @@ def main(args: Args):
             ),
         )
     final_df = final_df.dropna()  # Drop rows that were filtered out
-    logger.info("Filtered DataFrame length: %d", len(final_df))
+    logger.info(f"Filtered DataFrame length: {len(final_df)}")
     filtered_file_path = (
         analysis_file.parent / "filtered_" / f"{analysis_file.stem}_filtered.csv"
     )
