@@ -81,18 +81,35 @@ def main(args: Args):
     )
     df["Elements"] = df["Elements"].apply(lambda x: Counter(json.loads(x)))
 
-    if not any(
-        [
-            args.min_atomic_number,
-            args.max_atomic_number,
-            args.size_count_threshold,
-            args.elemental_count_threshold,
-            args.filter_elements,
-            args.filter_structures,
-        ]
-    ):
-        logger.info("No filters applied")
-        return {"filtered_file": str(analysis_file)}
+    if args.elemental_count_threshold:
+        logger.info("Filtering based on element count threshold")
+        # Filter based on element count threshold
+        elements = Counter()
+        for e in df["Elements"]:
+            elements.update(e)
+
+        elements_containing = Counter()
+        for element in elements.keys():
+            elements_containing[element] = (
+                df["Elements"].apply(lambda x: element in x).sum()
+            )
+
+        include_elements = {
+            key: count
+            for key, count in elements_containing.items()
+            if count > int(args.elemental_count_threshold)
+        }
+        include_elements_keys = set(include_elements.keys())
+        all_elements = set(elements_containing.keys())
+        filter_elements = all_elements - include_elements_keys
+
+        args.filter_elements = filter_elements.update(args.filter_elements)
+        logger.info(
+            f"Filtering out elements: {filter_elements} based on threshold count"
+        )
+
+    # filter based on atomic size threshold
+    # ...
 
     if parallel:
         logger.info("Using parallel processing")
