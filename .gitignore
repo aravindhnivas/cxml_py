@@ -154,3 +154,4 @@ cython_debug/
 # custom ignored files
 .DS_Store
 src/umdapy/.DS_Store
+scripts/umdapy.spec
