@@ -231,26 +231,12 @@ def size_distribution(df: pd.DataFrame, bin_size=10):
     number_of_atoms_distribution_df = number_of_atoms_distribution_df.sort_values(
         by="No. of atoms"
     )
-    number_of_atoms_distribution_df.to_csv(
-        loc / "full_size_distribution.csv", index=False
-    )
+    number_of_atoms_distribution_df.to_csv(loc / "size_distribution.csv", index=False)
 
     min_atom_size = number_of_atoms_distribution_df["No. of atoms"].min()
     max_atom_size = number_of_atoms_distribution_df["No. of atoms"].max()
     logger.info(f"Min atomic size: {min_atom_size}")
     logger.info(f"Max atomic size: {max_atom_size}")
-
-    # bins = np.arange(min_atom_size, max_atom_size + bin_size, bin_size)
-    # labels = [
-    #     f"{i}-{i+bin_size}" for i in range(min_atom_size, max_atom_size, bin_size)
-    # ]
-
-    # number_of_atoms_distribution_df["Bins"] = pd.cut(
-    #     number_of_atoms_distribution_df["No. of atoms"].astype(int),
-    #     bins=bins,
-    #     labels=labels,
-    #     right=False,
-    # )
 
     # Create bins
     bins = list(np.arange(min_atom_size, max_atom_size, bin_size))
@@ -277,7 +263,7 @@ def size_distribution(df: pd.DataFrame, bin_size=10):
 
     # binned_df = binned_df.sort_values(by="Count", ascending=False)
     logger.info(f"Binned distribution of number of atoms: {binned_df}")
-    binned_file = loc / f"size_distribution.csv"
+    binned_file = loc / f"binned_size_distribution.csv"
     binned_df.to_csv(binned_file, index=False)
 
     logger.success(f"Binned distribution saved as {binned_file}")
