@@ -233,22 +233,32 @@ def size_distribution(df: pd.DataFrame, bin_size=10):
     logger.info(f"Min atomic size: {min_atom_size}")
     logger.info(f"Max atomic size: {max_atom_size}")
 
-    # Aggregate data into bins
+    # bins = np.arange(min_atom_size, max_atom_size + bin_size, bin_size)
+    # labels = [
+    #     f"{i}-{i+bin_size}" for i in range(min_atom_size, max_atom_size, bin_size)
+    # ]
 
-    # bins = np.arange(0, max_atom_size + bin_size, bin_size)
-    # labels = [f"{i}-{i+bin_size}" for i in range(0, max_atom_size, bin_size)]
+    # number_of_atoms_distribution_df["Bins"] = pd.cut(
+    #     number_of_atoms_distribution_df["No. of atoms"].astype(int),
+    #     bins=bins,
+    #     labels=labels,
+    #     right=False,
+    # )
 
-    # bins and labels constrained with min and max atom size, the last bin will be [max_atom_size - bin_size, max_atom_size]
-    bins = np.arange(min_atom_size, max_atom_size + bin_size, bin_size)
-    labels = [
-        f"{i}-{i+bin_size}" for i in range(min_atom_size, max_atom_size, bin_size)
-    ]
+    # Create bins
+    bins = list(np.arange(min_atom_size, max_atom_size, bin_size))
+    bins.append(max_atom_size)  # Add max_atom_size as the last bin edge
 
+    # Create labels
+    labels = [f"{bins[i]}-{bins[i+1]}" for i in range(len(bins) - 1)]
+
+    # Apply pd.cut with the new bins and labels
     number_of_atoms_distribution_df["Bins"] = pd.cut(
         number_of_atoms_distribution_df["No. of atoms"].astype(int),
         bins=bins,
         labels=labels,
-        right=False,
+        right=True,  # Changed to True to include the right edge in each bin
+        include_lowest=True,  # Ensures the lowest value is included in the first bin
     )
 
     #  the observed parameter is used to control whether only the observed categories are included in the result when grouping by a categorical variable.
