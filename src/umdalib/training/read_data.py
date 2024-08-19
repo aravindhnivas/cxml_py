@@ -27,7 +27,7 @@ def read_as_ddf(
 
     ddf: Union[dd.DataFrame, pd.DataFrame] = None
 
-    if filename.endswith(".smi"):
+    if filetype == "smi":
         ddf = df_fn.read_csv(filename)
         logger.info(f"Columns in the DataFrame: {ddf.columns.tolist()}")
         if ddf.columns[0].lower() != "smiles":
