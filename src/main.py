@@ -39,7 +39,7 @@ if __name__ == "__main__":
             sys.exit(1)
         # args = json.loads(sys.argv[2])
 
-    logger.info("\n[Received arguments]\n" + json.dumps(args, indent=4))
+    logger.info(f"\n[Received arguments]\n{args}")
     logger.info(f"{pyfile=}\n")
     args = MyClass(**args)
 
