@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import json
-from typing import Literal, Union
+from typing import Literal
 import numpy as np
 import pandas as pd
 from rdkit import Chem

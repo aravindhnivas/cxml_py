@@ -7,4 +7,5 @@ hiddenimports = [
     "umdalib.training.ml_prediction",
     "umdalib.training.ml_prediction_analysis",
     "umdalib.training.molecular_analysis",
+    "umdalib.training.apply_filter_for_molecular_analysis",
 ]
