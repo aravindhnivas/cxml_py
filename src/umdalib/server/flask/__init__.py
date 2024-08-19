@@ -6,13 +6,32 @@ from importlib import import_module, reload
 from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
 from pathlib import Path as pt
-
+from werkzeug.exceptions import HTTPException
 import numpy as np
-from umdalib.utils import Paths
 from umdalib.utils import logger
+import sys
+
+# from umdalib.utils import Paths
 
 app = Flask(__name__)
 CORS(app)
+
+
+@app.route("/custom-error")
+def custom_error():
+    abort(400, description="This is a custom error message")
+
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    # Get the full traceback
+    tb = traceback.format_exception(*sys.exc_info())
+
+    # Create a detailed error response
+    error_response = {"error": str(e), "traceback": tb}
+
+    # You can choose to keep 500 as the status code for all server errors
+    return jsonify(error_response), 500
 
 
 @app.route("/umdapy")
@@ -53,8 +72,6 @@ def compute():
         data = request.get_json()
         pyfile = data["pyfile"]
 
-        calling_file = pyfile.split(".")[-1]
-        logfilename = Paths().temp_dir / f"{calling_file}_data.json"
         args = MyClass(**data["args"])
 
         logger.info(f"{pyfile=}\n{args=}")
@@ -80,18 +97,11 @@ def compute():
             for k, v in output.items():
                 if isinstance(v, np.ndarray):
                     output[k] = v.tolist()
-
             logger.info(f"Returning received to client\n{output=}")
             return jsonify(output)
-
-        data = log_output(logfilename)
-
-        for k, v in output.items():
-            if isinstance(v, np.ndarray):
-                output[k] = v.tolist()
-        return jsonify(data)
 
     except Exception:
         error = traceback.format_exc(5)
         logger.error(error)
-        abort(400, description=error)
+        raise
+        # abort(400, description=str(error))

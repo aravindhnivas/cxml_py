@@ -1,7 +1,7 @@
-from .flask import app
 import waitress
 from dataclasses import dataclass
 from umdalib.utils import logger
+from umdalib.server.flask import app
 
 
 @dataclass
