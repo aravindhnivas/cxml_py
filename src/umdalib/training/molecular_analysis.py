@@ -228,6 +228,13 @@ def size_distribution(df: pd.DataFrame, bin_size=10):
         number_of_atoms_distribution, orient="index"
     ).reset_index()
     number_of_atoms_distribution_df.columns = ["No. of atoms", "Count"]
+    number_of_atoms_distribution_df = number_of_atoms_distribution_df.sort_values(
+        by="No. of atoms"
+    )
+    number_of_atoms_distribution_df.to_csv(
+        loc / "full_size_distribution.csv", index=False
+    )
+
     min_atom_size = number_of_atoms_distribution_df["No. of atoms"].min()
     max_atom_size = number_of_atoms_distribution_df["No. of atoms"].max()
     logger.info(f"Min atomic size: {min_atom_size}")
