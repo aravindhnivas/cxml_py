@@ -85,6 +85,8 @@ def main(args: Args):
         [
             args.min_atomic_number,
             args.max_atomic_number,
+            args.size_count_threshold,
+            args.elemental_count_threshold,
             args.filter_elements,
             args.filter_structures,
         ]
