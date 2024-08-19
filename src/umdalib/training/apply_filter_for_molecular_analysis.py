@@ -73,8 +73,8 @@ class Args:
     filter_structures: list[str]
 
 
-parallel = True
-# parallel = False
+# parallel = True
+parallel = False
 
 
 def main(args: Args):
@@ -86,6 +86,14 @@ def main(args: Args):
         lambda x: Counter(json.loads(x))
     )
     df["Elements"] = df["Elements"].apply(lambda x: Counter(json.loads(x)))
+
+    logger.info(f"Original DataFrame length: {len(df)}")
+    logger.info(f"Min atomic number: {args.min_atomic_number}")
+    logger.info(f"Max atomic number: {args.max_atomic_number}")
+    logger.info(f"Filter elements: {args.filter_elements}")
+    logger.info(f"Filter structures: {args.filter_structures}")
+    logger.info(f"Elemental count threshold: {args.elemental_count_threshold}")
+    logger.info(f"Atomic size count threshold: {args.size_count_threshold}")
 
     if args.elemental_count_threshold:
         logger.info("Filtering based on element count threshold")
@@ -115,7 +123,24 @@ def main(args: Args):
         )
 
     # filter based on atomic size threshold
-    # ...
+    if args.size_count_threshold:
+        logger.info("Filtering based on atomic size count threshold")
+        atoms_distribution = Counter(df["No. of atoms"].values)
+        atoms_distribution_df = pd.DataFrame.from_dict(
+            atoms_distribution, orient="index"
+        ).reset_index()
+        atoms_distribution_df.columns = ["No. of atoms", "Count"]
+
+        # filter by atomic size count threshold
+        atoms_distribution_df = atoms_distribution_df[
+            atoms_distribution_df["Count"] > int(args.size_count_threshold)
+        ]
+        no_of_atoms = set(atoms_distribution_df["No. of atoms"].values)
+        df = df[df["No. of atoms"].isin(no_of_atoms)]
+        logger.info(
+            f"Filtering out atomic sizes: {no_of_atoms} based on threshold count"
+        )
+        logger.info(f"Filtered atomic size threshold DataFrame length: {len(df)}")
 
     if parallel:
         logger.info("Using parallel processing")
