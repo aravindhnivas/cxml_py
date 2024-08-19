@@ -85,10 +85,12 @@ def mol2vec(smi: str, model, radius=1) -> list[np.ndarray]:
         if test_mode:
             logger.info(f"{vector.shape=}")
 
+        vector = vector.reshape(-1)
         if len(vector) == 1:
             # return np.zeros(model.vector_size)
+            logger.error(f"Vector length is {len(vector)} for {smi}")
             raise ValueError(f"Invalid embedding: {smi}")
-        return vector.reshape(-1)
+        return vector
 
     except:
         if smi not in invalid_smiles and isinstance(smi, str):
