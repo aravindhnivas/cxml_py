@@ -213,16 +213,15 @@ def main(args: Args):
             vec_computed = vectors
 
         logger.info(f"{vec_computed.shape=}\n{vec_computed[0].shape=}")
-        logger.warning(f"{invalid_smiles=}")
-        for i, vec in enumerate(vec_computed):
-            if not vec.any():
-                logger.warning(f"Empty vector found in {i=} {vec.shape=}, {vec=}\n")
-                logger.warning(f"Invalid embedding: {ddf[args.df_column].iloc[i]}\n")
+        # logger.warning(f"{invalid_smiles=}")
+        # for i, vec in enumerate(vec_computed):
+        #     if not vec.any():
+        #         logger.warning(f"Empty vector found in {i=} {vec.shape=}, {vec=}\n")
+        #         logger.warning(f"Invalid embedding: {ddf[args.df_column].iloc[i]}\n")
         vec_computed = np.vstack(vec_computed)
         np.save(embedd_savefile, vec_computed)
 
     logger.info(f"{vec_computed.shape=}")
-
     logger.info(
         f"Embeddings computed in {(perf_counter() - time):.2f} s and saved to {embedd_savefile.name}"
     )
