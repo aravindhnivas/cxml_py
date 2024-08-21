@@ -172,6 +172,12 @@ def main(args: Args):
     )
     if not filtered_file_path.parent.exists():
         filtered_file_path.parent.mkdir(parents=True)
+
+    final_df["ElementCategories"] = final_df["ElementCategories"].apply(
+        lambda x: json.dumps(dict(x))
+    )
+    final_df["Elements"] = final_df["Elements"].apply(lambda x: json.dumps(dict(x)))
+
     final_df.to_csv(filtered_file_path)
 
     return {"filtered_file": str(filtered_file_path)}

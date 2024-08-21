@@ -148,6 +148,9 @@ def main(args: Args):
 
         analysis_file = pt(args.analysis_file)
         loc = analysis_file.parent
+        logger.info(f"Analysis file: {analysis_file}")
+        logger.info(f"Location: {loc}")
+
         if not loc.exists():
             loc.mkdir(parents=True)
         molecular_analysis(args.analysis_file, args.atoms_bin_size, args.mode)
@@ -157,7 +160,10 @@ def main(args: Args):
     logger.info("Analyzing molecules...")
 
     filename = pt(args.filename)
+    logger.info(f"Filename: {filename}")
     loc = pt(filename).parent / f"{filename.stem}_analysis"
+    logger.info(f"Location: {loc}")
+
     if not loc.exists():
         loc.mkdir(parents=True)
 
@@ -202,8 +208,10 @@ def main(args: Args):
         logger.info(f"{category}: {count}")
 
     # Convert Counter objects to JSON strings
-    df["ElementCategories"] = df["ElementCategories"].apply(lambda x: json.dumps(x))
-    df["Elements"] = df["Elements"].apply(lambda x: json.dumps(x))
+    df["ElementCategories"] = df["ElementCategories"].apply(
+        lambda x: json.dumps(dict(x))
+    )
+    df["Elements"] = df["Elements"].apply(lambda x: json.dumps(dict(x)))
 
     analysis_file = loc / "molecule_analysis_results.csv"
     df.to_csv(analysis_file, index=False)
@@ -330,11 +338,23 @@ def elemental_distribution(df: pd.DataFrame):
 def molecular_analysis(csv_file: str = None, bin_size=10, mode="all"):
     logger.info("Analyzing molecules from file...")
     csv_file = pt(csv_file)
-    df = pd.read_csv(csv_file)
+    df = pd.read_csv(csv_file, index_col=False)
+
+    logger.info(f"Fetched {len(df)} molecules from {csv_file}")
+    logger.info(f"File columns: {df.columns}\n {df.iloc[0]}")
+
+    logger.info("Converting JSON strings to Counter objects...")
+    logger.info(
+        f"{df.iloc[0]['ElementCategories']=}\n{type(df.iloc[0]['ElementCategories'])=}"
+    )
+    logger.info(f"{df.iloc[0]['Elements']=}\n{type(df.iloc[0]['Elements'])=}")
+
     df["ElementCategories"] = df["ElementCategories"].apply(
         lambda x: Counter(json.loads(x))
     )
     df["Elements"] = df["Elements"].apply(lambda x: Counter(json.loads(x)))
+    logger.info("Converted JSON strings to Counter objects.")
+
     logger.info("Analyzing molecules...")
     logger.info(f"Analyzing {len(df)} molecules...")
 
