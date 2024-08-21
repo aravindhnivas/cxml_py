@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import json
 import pandas as pd
+from umdalib.training.read_data import read_as_ddf
 from umdalib.utils import logger
 from collections import Counter
 from multiprocessing import Pool, cpu_count
@@ -13,6 +14,8 @@ COLUMN_ELEMENTS = "Elements"
 COLUMN_IS_AROMATIC = "IsAromatic"
 COLUMN_IS_NON_CYCLIC = "IsNonCyclic"
 COLUMN_IS_CYCLIC_NON_AROMATIC = "IsCyclicNonAromatic"
+
+removed_indices = []
 
 
 def apply_filters_to_df(
@@ -55,8 +58,11 @@ def apply_filters_to_df(
 def parallel_apply(
     df: pd.DataFrame, func: Callable[[pd.Series, Any], bool], *args
 ) -> pd.DataFrame:
+    global removed_indices
+
     with Pool(cpu_count()) as pool:
         result = pool.starmap(func, [(row, *args) for _, row in df.iterrows()])
+
     return df[result]
 
 
@@ -69,6 +75,7 @@ class Args:
     elemental_count_threshold: int
     filter_elements: list[str]
     filter_structures: list[str]
+    filtered_filename: str
 
 
 # parallel = True
@@ -79,6 +86,7 @@ def main(args: Args):
     # logger.info(args.min_atomic_number)
 
     analysis_file = pt(args.analysis_file)
+
     df = pd.read_csv(analysis_file)
     df["ElementCategories"] = df["ElementCategories"].apply(
         lambda x: Counter(json.loads(x))
@@ -167,9 +175,14 @@ def main(args: Args):
 
     # final_df = final_df.dropna()  # Drop rows that were filtered out
     logger.info(f"Filtered DataFrame length: {len(final_df)}")
-    filtered_file_path = (
-        analysis_file.parent / "filtered_" / f"{analysis_file.stem}_filtered.csv"
+    filtered_dir = analysis_file.parent / "filtered"
+    if not filtered_dir.exists():
+        filtered_dir.mkdir(parents=True)
+
+    filtered_file_path: pt = (
+        filtered_dir / args.filtered_filename / f"{analysis_file.stem}.csv"
     )
+    logger.info(f"Filtered file path: {filtered_file_path}")
     if not filtered_file_path.parent.exists():
         filtered_file_path.parent.mkdir(parents=True)
 
@@ -179,5 +192,16 @@ def main(args: Args):
     final_df["Elements"] = final_df["Elements"].apply(lambda x: json.dumps(dict(x)))
 
     final_df.to_csv(filtered_file_path)
+
+    analysis_dir = analysis_file.parent
+    metadata_file = analysis_dir / "metadata.json"
+    data = json.loads(metadata_file.read_text())
+    logger.info(data)
+
+    df = read_as_ddf(
+        data["filetype"],
+        data["filename"],
+        data["key"],
+    )
 
     return {"filtered_file": str(filtered_file_path)}
