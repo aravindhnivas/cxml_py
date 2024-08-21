@@ -12,7 +12,6 @@ NPARTITIONS = cpu_count() * 5
 def read_as_ddf(
     filetype: str, filename: str, key: str = None, computed=False, use_dask=False
 ):
-
     logger.info(f"Reading {filename} as {filetype} using dask: {use_dask}")
 
     df_fn = None
@@ -61,7 +60,6 @@ class Args:
 
 
 def main(args: Args):
-
     logger.info(f"Reading {args.filename} as {args.filetype}")
     logger.info(f"Using Dask: {args.use_dask}")
 

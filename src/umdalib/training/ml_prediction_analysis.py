@@ -28,7 +28,6 @@ def linear_fit(x, m, c):
 
 
 def main(args: Args):
-
     df = read_as_ddf(
         args.analysis_file["filetype"],
         args.analysis_file["filename"],

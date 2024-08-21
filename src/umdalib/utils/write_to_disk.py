@@ -62,7 +62,6 @@ def stream_embeddings_to_hdf5(
         )
 
         for index, smi, vec in zip(range(len(all_smiles)), all_smiles, vectors):
-
             if not smi:
                 continue
 

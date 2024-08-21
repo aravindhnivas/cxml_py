@@ -55,9 +55,7 @@ def train_fit_model(data: np.ndarray, model: IncrementalPCA):
 
 
 def generate_embeddings():
-
     with h5py.File(h5_file, "w") as embeddings_file:
-
         np_vec = np.load(npy_file, allow_pickle=True)
         vectors = np.vstack(np_vec)
         embeddings_file["vectors"] = vectors
@@ -71,7 +69,6 @@ def generate_embeddings():
             )
             vectors = da.from_array(np.vstack(np_vec))
         try:
-
             scaler = StandardScaler()
             pca_model = IncrementalPCA(n_components=pca_dim)
             kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
@@ -155,8 +152,17 @@ class Args:
 
 
 def main(args: Args):
-
-    global original_model, smi_to_vector, pca_dim, n_clusters, radius, embeddings_save_loc, model, h5_file, npy_file, compute_kmeans
+    global \
+        original_model, \
+        smi_to_vector, \
+        pca_dim, \
+        n_clusters, \
+        radius, \
+        embeddings_save_loc, \
+        model, \
+        h5_file, \
+        npy_file, \
+        compute_kmeans
 
     pca_dim = args.pca_dim
     n_clusters = args.n_clusters

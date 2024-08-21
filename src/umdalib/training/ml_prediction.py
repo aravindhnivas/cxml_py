@@ -32,7 +32,6 @@ def load_model():
 
 
 def predict_from_file(test_file: pt, smi_to_vector, model, estimator, scaler):
-
     logger.info(f"Reading test file: {test_file}")
     data = pd.read_csv(test_file)
     logger.info(f"Data shape: {data.shape}")

@@ -5,17 +5,11 @@ from time import perf_counter
 from typing import Callable, Literal
 from dask.diagnostics import ProgressBar
 from dask import array as da
-
-# import dask.dataframe as dd
-# from astrochem_embedding import VICGAE
 from pathlib import Path as pt
 import numpy as np
 from rdkit import Chem
 from mol2vec import features
 from umdalib.training.read_data import read_as_ddf
-
-# import warnings
-# warnings.filterwarnings("ignore", category=UserWarning)
 
 
 @dataclass
@@ -108,7 +102,6 @@ PCA_pipeline_location: str = None
 
 
 def get_smi_to_vec_after_pca(smi: str, model):
-
     fn = smi_to_vec_dict[embedding]
     vector = fn(smi, model)
 
@@ -120,7 +113,6 @@ def get_smi_to_vec_after_pca(smi: str, model):
 
 
 def get_smi_to_vec(embedder, pretrained_file, pca_file=None):
-
     global embedding, PCA_pipeline_location
     embedding = embedder
 
@@ -129,7 +121,7 @@ def get_smi_to_vec(embedder, pretrained_file, pca_file=None):
         logger.info(f"Loaded mol2vec model with {model.vector_size} dimensions")
     elif embedding == "VICGAE":
         model = load_model(pretrained_file, use_joblib=True)
-        logger.info(f"Loaded VICGAE model")
+        logger.info("Loaded VICGAE model")
 
     PCA_pipeline_location = pca_file
     smi_to_vector = None

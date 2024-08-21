@@ -32,6 +32,5 @@ def main(args: Args):
 
 
 def stop_websocket_server():
-
     asyncio.get_event_loop().stop()
     logger.info("WebSocket server stopped")

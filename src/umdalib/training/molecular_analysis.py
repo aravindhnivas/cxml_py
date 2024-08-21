@@ -140,7 +140,6 @@ class Args:
 
 
 def main(args: Args):
-
     global loc
 
     if args.analysis_file or args.mode != "all":
@@ -328,7 +327,6 @@ def elemental_distribution(df: pd.DataFrame):
 
 
 def molecular_analysis(csv_file: str = None, bin_size=10, mode="all"):
-
     logger.info("Analyzing molecules from file...")
     csv_file = pt(csv_file)
     df = pd.read_csv(csv_file)

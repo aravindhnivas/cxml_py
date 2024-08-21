@@ -190,7 +190,6 @@ def augment_data(X: np.ndarray, y: np.ndarray, n_samples: int, noise_percentage:
 
 
 def make_custom_kernels(kernel_dict: Dict[str, Dict[str, str]]):
-
     constants_kernels = None
     other_kernels = None
 
@@ -198,7 +197,6 @@ def make_custom_kernels(kernel_dict: Dict[str, Dict[str, str]]):
         kernel_params = kernel_dict[kernel_key]
 
         for kernel_params_key, kernel_params_value in kernel_params.items():
-
             if "," in kernel_params_value:
                 kernel_params[kernel_params_key] = tuple(
                     float(x) for x in kernel_params_value.split(",")
@@ -227,7 +225,6 @@ def save_intermediate_results(grid_search, filename="intermediate_results.csv"):
 
 
 def compute(args: Args, X: np.ndarray, y: np.ndarray):
-
     start_time = perf_counter()
 
     estimator = None
@@ -357,7 +354,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             logger.info(f"Grid search saved to {grid_savefile}")
 
     else:
-
         if args.parallel_computation and args.model in n_jobs_keyword_available_models:
             args.parameters["n_jobs"] = n_jobs
 
@@ -487,7 +483,6 @@ backend = "threading"
 
 
 def main(args: Args):
-
     global n_jobs, backend
 
     if args.parallel_computation:

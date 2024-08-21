@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 import json
 import pandas as pd
-from umdalib.training.read_data import read_as_ddf
 from umdalib.utils import logger
 from collections import Counter
 from multiprocessing import Pool, cpu_count
@@ -23,7 +22,6 @@ def apply_filters_to_df(
     filter_elements: list[str],
     filter_structures: list[str],
 ) -> bool:
-
     # Filter based on atomic number
     if min_atomic_number:
         if row[COLUMN_ATOMS] < int(min_atomic_number):

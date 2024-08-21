@@ -17,7 +17,6 @@ def gen_corpus(
     radius: int = 1,
     sentence_type: str = "alt",
 ):
-
     smi_in_file: pt = pt(smi_file)
 
     corpus_out_file = (
@@ -75,7 +74,6 @@ class Args:
 
 
 def main(args: Args):
-
     global n_jobs
     logger.info("#" * 80 + "\n\n")
     logger.info(f"\n\nStarting Mol2Vec model generation with {args=}\n\n")
@@ -101,7 +99,6 @@ def main(args: Args):
             args.corpus_file, args.vector_size, args.min_count
         )
     else:
-
         smi_file = pt(args.smi_file)
 
         logger.info(f"Generating corpus file from {smi_file}")
