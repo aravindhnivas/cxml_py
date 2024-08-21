@@ -107,7 +107,7 @@ def analyze_molecules(smiles_list: list[str], parallel=True):
 
     if len(invalid_smiles) == 0:
         logger.success("All molecules are valid.")
-        return pd.DataFrame(results.tolist())
+        return pd.DataFrame(results)
 
     logger.warning(f"{len(invalid_smiles)} invalid molecules found.")
     with open(loc / "invalid_smiles_and_indices.csv", "w") as f:
@@ -119,7 +119,7 @@ def analyze_molecules(smiles_list: list[str], parallel=True):
         )
 
     results = results[results is not None]
-    return pd.DataFrame(results.tolist())
+    return pd.DataFrame(results)
 
 
 loc: pt = None
