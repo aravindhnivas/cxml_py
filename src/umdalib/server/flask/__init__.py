@@ -38,11 +38,6 @@ def home():
     return "Server running: umdapy"
 
 
-@app.errorhandler(400)
-def pyError(error):
-    return jsonify(error=str(error)), 400
-
-
 class MyClass(object):
     @logger.catch
     def __init__(self, **kwargs):
@@ -103,4 +98,3 @@ def compute():
         error = traceback.format_exc(5)
         logger.error(error)
         raise
-        # abort(400, description=str(error))
