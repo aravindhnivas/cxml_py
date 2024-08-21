@@ -149,7 +149,17 @@ class Args:
 
 
 def main(args: Args):
-    global original_model, smi_to_vector, pca_dim, n_clusters, radius, embeddings_save_loc, model, h5_file, npy_file, compute_kmeans
+    global \
+        original_model, \
+        smi_to_vector, \
+        pca_dim, \
+        n_clusters, \
+        radius, \
+        embeddings_save_loc, \
+        model, \
+        h5_file, \
+        npy_file, \
+        compute_kmeans
 
     pca_dim = args.pca_dim
     n_clusters = args.n_clusters
