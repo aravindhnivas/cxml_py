@@ -118,7 +118,8 @@ def analyze_molecules(smiles_list: list[str], parallel=True):
             f"Invalid SMILES strings saved to {str(loc / 'invalid_smiles_and_indices.txt')}."
         )
 
-    results = np.array([r for r in results if r is not None])
+    # results = np.array([r for r in results if r is not None])
+    results = results[results != None]  # noqa: E711
     return pd.DataFrame(results.tolist())
 
 
