@@ -1,11 +1,11 @@
 {
-    "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter",
-        "editor.formatOnSave": true
-      },
-
-      // hide __pycache__ folder
-      "files.exclude": {
-        "**/__pycache__": true
-      }
+  "[python]": {
+    // "editor.defaulXtFormatter": "ms-python.black-formatter",
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true
+  },
+  // hide __pycache__ folder
+  "files.exclude": {
+    "**/__pycache__": true
+  }
 }
