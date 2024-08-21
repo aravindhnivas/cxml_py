@@ -92,7 +92,7 @@ def compute():
         logger.info(f"function execution done in {computed_time:.2f} s")
 
         if isinstance(output, dict):
-            logger.success(f"Computation done!!")
+            logger.success("Computation done!!")
 
             for k, v in output.items():
                 if isinstance(v, np.ndarray):

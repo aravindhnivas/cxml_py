@@ -1,9 +1,8 @@
-from time import perf_counter, sleep
+from time import perf_counter
 import numpy as np
 import h5py
 from pathlib import Path as pt
 from umdalib.utils import load_model
-import numpy as np
 
 USE_DASK = True
 from dask import array as da
@@ -20,7 +19,7 @@ else:
     from sklearn.preprocessing import StandardScaler
 
 from umdalib.utils import logger
-from joblib import load, dump, parallel_backend
+from joblib import dump, parallel_backend
 from sklearn.pipeline import make_pipeline
 from .embedd_data import smi_to_vec_dict
 from multiprocessing import cpu_count
@@ -101,11 +100,11 @@ def generate_embeddings():
                 kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
                 kmeans, _, labels = train_fit_model(pca_h5_file["pca"], kmeans)
                 pca_h5_file["cluster_ids"] = labels
-                dump(kmeans, embeddings_save_loc / f"kmeans_model.pkl")
+                dump(kmeans, embeddings_save_loc / "kmeans_model.pkl")
 
             logger.info("Combining the models into a pipeline")
             pipe = make_pipeline(scaler, pca_model)
-            pipeline_file = embeddings_save_loc / f"pca_pipeline.pkl"
+            pipeline_file = embeddings_save_loc / "pca_pipeline.pkl"
             dump(pipe, pipeline_file)
             logger.success(f"Pipeline saved to {pipeline_file}")
 
@@ -186,7 +185,7 @@ def main(args: Args):
         model = load_model(args.model_file)
     else:
         model = load_model(args.model_file, use_joblib=True)
-    h5_file = embeddings_save_loc / f"data.h5"
+    h5_file = embeddings_save_loc / "data.h5"
     npy_file = pt(args.npy_file)
 
     time_start = perf_counter()
