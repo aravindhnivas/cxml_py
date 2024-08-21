@@ -102,7 +102,7 @@ def analyze_molecules(smiles_list: list[str], parallel=True):
         raise ValueError("No valid molecules found.")
 
     # None values are returned for invalid SMILES strings
-    invalid_smiles_indices = [i for i, result in enumerate(results) if result is None]
+    invalid_smiles_indices = np.where(results == None)[0]  # noqa: E711
     invalid_smiles = [smiles_list[i] for i in invalid_smiles_indices]
 
     if len(invalid_smiles) == 0:
