@@ -220,6 +220,17 @@ def main(args: Args):
     molecular_analysis(analysis_file, args.atoms_bin_size)
     logger.success("Analysis complete.")
 
+    with open(loc / "metadata.json", "w") as f:
+        metadata = {
+            "filename": args.filename,
+            "analysis_files_dir": str(loc),
+            "filetype": args.filetype,
+            "key": args.key,
+            "use_dask": args.use_dask,
+        }
+        json.dump(metadata, f, indent=4)
+        logger.success(f"Metadata saved as {loc / 'metadata.json'}")
+
     return {"analysis_file": str(analysis_file)}
 
 
