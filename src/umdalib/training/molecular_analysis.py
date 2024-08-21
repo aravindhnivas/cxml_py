@@ -102,7 +102,7 @@ def analyze_molecules(smiles_list: list[str], parallel=True):
         raise ValueError("No valid molecules found.")
 
     # None values are returned for invalid SMILES strings
-    invalid_smiles_indices = np.where(results == None)[0]
+    invalid_smiles_indices = np.where(results is None)[0]
     invalid_smiles = [smiles_list[i] for i in invalid_smiles_indices]
 
     if len(invalid_smiles) == 0:
@@ -118,7 +118,7 @@ def analyze_molecules(smiles_list: list[str], parallel=True):
             f"Invalid SMILES strings saved to {str(loc / 'invalid_smiles_and_indices.txt')}."
         )
 
-    results = results[results != None]
+    results = results[results is not None]
     return pd.DataFrame(results.tolist())
 
 

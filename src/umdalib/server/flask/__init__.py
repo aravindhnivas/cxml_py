@@ -6,7 +6,6 @@ from importlib import import_module, reload
 from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
 from pathlib import Path as pt
-from werkzeug.exceptions import HTTPException
 import numpy as np
 from umdalib.utils import logger
 import sys

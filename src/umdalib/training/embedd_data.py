@@ -38,7 +38,7 @@ def VICGAE2vec(smi: str, model):
         return np.zeros(32)
     try:
         return model.embed_smiles(smi).numpy().reshape(-1)
-    except:
+    except Exception as _:
         invalid_smiles.append(smi)
         return np.zeros(32)
 
@@ -86,7 +86,7 @@ def mol2vec(smi: str, model, radius=1) -> list[np.ndarray]:
             raise ValueError(f"Invalid embedding: {smi}")
         return vector
 
-    except:
+    except Exception as _:
         if smi not in invalid_smiles and isinstance(smi, str):
             invalid_smiles.append(smi)
         return np.zeros(model.vector_size)

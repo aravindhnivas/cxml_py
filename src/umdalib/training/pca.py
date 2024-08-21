@@ -3,12 +3,16 @@ import numpy as np
 import h5py
 from pathlib import Path as pt
 from umdalib.utils import load_model
-
-USE_DASK = True
+from umdalib.utils import logger
+from joblib import dump, parallel_backend
+from sklearn.pipeline import make_pipeline
+from .embedd_data import smi_to_vec_dict
+from multiprocessing import cpu_count
 from dask import array as da
 from dask.diagnostics import ProgressBar
 from dask.distributed import Client
 
+USE_DASK = True
 if USE_DASK:
     from dask_ml.decomposition import IncrementalPCA
     from dask_ml.cluster import KMeans
@@ -17,12 +21,6 @@ else:
     from sklearn.decomposition import IncrementalPCA
     from sklearn.cluster import KMeans
     from sklearn.preprocessing import StandardScaler
-
-from umdalib.utils import logger
-from joblib import dump, parallel_backend
-from sklearn.pipeline import make_pipeline
-from .embedd_data import smi_to_vec_dict
-from multiprocessing import cpu_count
 
 
 def train_fit_model(data: np.ndarray, model: IncrementalPCA):
@@ -151,17 +149,7 @@ class Args:
 
 
 def main(args: Args):
-    global \
-        original_model, \
-        smi_to_vector, \
-        pca_dim, \
-        n_clusters, \
-        radius, \
-        embeddings_save_loc, \
-        model, \
-        h5_file, \
-        npy_file, \
-        compute_kmeans
+    global original_model, smi_to_vector, pca_dim, n_clusters, radius, embeddings_save_loc, model, h5_file, npy_file, compute_kmeans
 
     pca_dim = args.pca_dim
     n_clusters = args.n_clusters

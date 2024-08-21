@@ -11,18 +11,11 @@ from joblib import (
     dump,
     __version__ as joblib_version,
 )
-
-logger.info(f"Using joblib version {joblib_version}")
-
 import numpy as np
 from pathlib import Path as pt
 from datetime import datetime
 import pandas as pd
-
 from sklearn import metrics, __version__ as sklearn_version
-
-logger.info(f"Using scikit-learn version {sklearn_version}")
-
 from umdalib.utils import Paths
 
 
@@ -71,6 +64,9 @@ from sklearn.pipeline import Pipeline
 logger.info(f"xgboost version {xgboost_version}")
 logger.info(f"catboost version {catboost_version}")
 logger.info(f"lightgbm version {lightgbm_version}")
+
+logger.info(f"Using joblib version {joblib_version}")
+logger.info(f"Using scikit-learn version {sklearn_version}")
 
 # from dask.distributed import Client
 
