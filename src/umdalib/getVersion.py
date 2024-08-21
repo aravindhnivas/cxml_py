@@ -5,7 +5,7 @@ from umdalib.utils import NPARTITIONS, RAM_IN_GB
 # from umdalib.utils import logger
 
 
-def main(args=""):
+def main(args=None):
     version_info = sys.version_info
     version = f"{version_info.major}.{version_info.minor}.{version_info.micro}"
     return {
