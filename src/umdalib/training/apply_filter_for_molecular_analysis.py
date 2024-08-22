@@ -194,11 +194,8 @@ def main(args: Args):
     if not filtered_dir.exists():
         filtered_dir.mkdir(parents=True)
 
-    filtered_file_path: pt = (
-        filtered_dir
-        / f"{filtered_data_filename}_analysis"
-        / "molecule_analysis_results.csv"
-    )
+    filtered_analysis_dir = filtered_dir / f"{filtered_data_filename}_analysis"
+    filtered_file_path: pt = filtered_analysis_dir / "molecule_analysis_results.csv"
     logger.info(f"Filtered file path: {filtered_file_path}")
     if not filtered_file_path.parent.exists():
         filtered_file_path.parent.mkdir(parents=True)
