@@ -15,7 +15,7 @@ COLUMN_IS_AROMATIC = "IsAromatic"
 COLUMN_IS_NON_CYCLIC = "IsNonCyclic"
 COLUMN_IS_CYCLIC_NON_AROMATIC = "IsCyclicNonAromatic"
 
-removed_indices = []
+removed_indices_condition = []
 
 
 def apply_filters_to_df(
@@ -58,7 +58,7 @@ def apply_filters_to_df(
 def parallel_apply(
     df: pd.DataFrame, func: Callable[[pd.Series, Any], bool], *args
 ) -> pd.DataFrame:
-    global removed_indices
+    global removed_indices_condition
 
     with Pool(cpu_count()) as pool:
         result = pool.starmap(func, [(row, *args) for _, row in df.iterrows()])
@@ -83,7 +83,7 @@ parallel = False
 
 
 def main(args: Args):
-    # logger.info(args.min_atomic_number)
+    global removed_indices_condition
 
     analysis_file = pt(args.analysis_file)
 
@@ -160,48 +160,79 @@ def main(args: Args):
         )
     else:
         logger.info("Using single processing")
-        final_df: pd.DataFrame = df[
-            df.apply(
-                apply_filters_to_df,
-                axis=1,
-                args=(
-                    args.min_atomic_number,
-                    args.max_atomic_number,
-                    args.filter_elements,
-                    args.filter_structures,
-                ),
-            )
-        ]
+        removed_indices_condition = df.apply(
+            apply_filters_to_df,
+            axis=1,
+            args=(
+                args.min_atomic_number,
+                args.max_atomic_number,
+                args.filter_elements,
+                args.filter_structures,
+            ),
+        )
+        final_df: pd.DataFrame = df[removed_indices_condition]
 
     # final_df = final_df.dropna()  # Drop rows that were filtered out
     logger.info(f"Filtered DataFrame length: {len(final_df)}")
-    filtered_dir = analysis_file.parent / "filtered"
-    if not filtered_dir.exists():
-        filtered_dir.mkdir(parents=True)
-
-    filtered_file_path: pt = (
-        filtered_dir / args.filtered_filename / f"{analysis_file.stem}.csv"
-    )
-    logger.info(f"Filtered file path: {filtered_file_path}")
-    if not filtered_file_path.parent.exists():
-        filtered_file_path.parent.mkdir(parents=True)
 
     final_df["ElementCategories"] = final_df["ElementCategories"].apply(
         lambda x: json.dumps(dict(x))
     )
     final_df["Elements"] = final_df["Elements"].apply(lambda x: json.dumps(dict(x)))
 
-    final_df.to_csv(filtered_file_path)
-
     analysis_dir = analysis_file.parent
     metadata_file = analysis_dir / "metadata.json"
     data = json.loads(metadata_file.read_text())
     logger.info(data)
 
-    df = read_as_ddf(
+    filename = pt(data["filename"])
+    filtered_data_filename = (
+        f"{filename.stem}_{args.filtered_filename.lower()}_filtered"
+    )
+
+    filtered_dir = analysis_file.parent / "filtered" / args.filtered_filename
+    if not filtered_dir.exists():
+        filtered_dir.mkdir(parents=True)
+
+    filtered_file_path: pt = (
+        filtered_dir
+        / f"{filtered_data_filename}_analysis"
+        / "molecule_analysis_results.csv"
+    )
+    logger.info(f"Filtered file path: {filtered_file_path}")
+    if not filtered_file_path.parent.exists():
+        filtered_file_path.parent.mkdir(parents=True)
+    final_df.to_csv(filtered_file_path)
+
+    df: pd.DataFrame = read_as_ddf(
         data["filetype"],
-        data["filename"],
+        filename,
         data["key"],
     )
+
+    logger.info(f"{df.head()=}")
+
+    # remove invalid mol indices
+    invalid_indices_smi_df = pd.read_csv(
+        analysis_dir / "invalid_smiles_and_indices.csv"
+    )
+
+    invalid_indices = invalid_indices_smi_df["Index"].values
+    if invalid_indices.size > 0:
+        logger.info(f"{invalid_indices=}")
+        logger.info(f"{invalid_indices_smi_df.head()=}")
+
+        df_cleaned = df.drop([invalid_indices])
+        df_cleaned.reset_index(drop=True, inplace=True)
+    else:
+        df_cleaned = df
+    logger.info(f"{df_cleaned.head()=}")
+
+    df_filtered = df_cleaned[removed_indices_condition]
+    # df_filtered.reset_index(drop=True, inplace=True)
+    logger.info(f"{df_filtered.head()=}")
+    filtered_df_file = filtered_dir / f"{filtered_data_filename}.csv"
+    df_filtered.to_csv(filtered_df_file)
+    logger.info(f"Filtered data saved at {filtered_df_file}")
 
     return {"filtered_file": str(filtered_file_path)}
