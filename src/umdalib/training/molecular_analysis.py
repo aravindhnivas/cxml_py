@@ -107,13 +107,14 @@ def analyze_molecules(smiles_list: list[str], parallel=True):
 
     if len(invalid_smiles) == 0:
         logger.success("All molecules are valid.")
-        return pd.DataFrame(results.tolist())
+        # return pd.DataFrame(results.tolist())
+    else:
+        logger.warning(f"{len(invalid_smiles)} invalid molecules found.")
 
-    logger.warning(f"{len(invalid_smiles)} invalid molecules found.")
     with open(loc / "invalid_smiles_and_indices.csv", "w") as f:
-        f.write("SMILES,Index\n")
+        f.write("Index,SMILES\n")
         for i, smi in zip(invalid_smiles_indices, invalid_smiles):
-            f.write(f"{smi},{i}\n")
+            f.write(f"{i},{smi}\n")
         logger.warning(
             f"Invalid SMILES strings saved to {str(loc / 'invalid_smiles_and_indices.txt')}."
         )
