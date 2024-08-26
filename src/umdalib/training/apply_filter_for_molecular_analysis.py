@@ -219,7 +219,7 @@ def main(args: Args):
         logger.info(f"{invalid_indices=}")
         logger.info(f"{invalid_indices_smi_df.head()=}")
 
-        df_cleaned = df.drop([invalid_indices])
+        df_cleaned = df.drop(invalid_indices)
         df_cleaned.reset_index(drop=True, inplace=True)
     else:
         df_cleaned = df
