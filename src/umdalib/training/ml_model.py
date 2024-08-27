@@ -5,7 +5,7 @@ except ImportError:
 
 from dataclasses import dataclass
 from time import perf_counter
-from typing import Dict, Union, TypedDict
+from typing import Dict, Tuple, Union, TypedDict
 from joblib import (
     parallel_config,
     dump,
@@ -163,7 +163,9 @@ class Args:
     use_dask: bool
 
 
-def augment_data(X: np.ndarray, y: np.ndarray, n_samples: int, noise_percentage: float):
+def augment_data(
+    X: np.ndarray, y: np.ndarray, n_samples: int, noise_percentage: float
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     augment_data a small dataset to create a larger training set.
 
@@ -185,7 +187,7 @@ def augment_data(X: np.ndarray, y: np.ndarray, n_samples: int, noise_percentage:
     return X_boot, y_boot
 
 
-def make_custom_kernels(kernel_dict: Dict[str, Dict[str, str]]):
+def make_custom_kernels(kernel_dict: Dict[str, Dict[str, str]]) -> kernels.Kernel:
     constants_kernels = None
     other_kernels = None
 
@@ -213,7 +215,9 @@ def make_custom_kernels(kernel_dict: Dict[str, Dict[str, str]]):
     return kernel
 
 
-def save_intermediate_results(grid_search, filename="intermediate_results.csv"):
+def save_intermediate_results(
+    grid_search: GridSearchCV, filename: str = "intermediate_results.csv"
+) -> None:
     """Saves intermediate cv_results_ to a CSV file."""
     df = pd.DataFrame(grid_search.cv_results_)
     df = df.sort_values(by="rank_test_score")
