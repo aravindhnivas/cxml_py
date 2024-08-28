@@ -61,6 +61,10 @@ from lightgbm import LGBMRegressor, __version__ as lightgbm_version
 # from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 
+from tqdm import tqdm
+
+tqdm.pandas()
+
 logger.info(f"xgboost version {xgboost_version}")
 logger.info(f"catboost version {catboost_version}")
 logger.info(f"lightgbm version {lightgbm_version}")
@@ -485,7 +489,7 @@ def convert_to_float(value: Union[str, float]) -> float:
     except ValueError:
         if isinstance(value, str) and "-" in value:
             parts = value.split("-")
-            if len(parts) == 2:
+            if len(parts) == 2 and parts[0] and parts[1]:
                 try:
                     return (float(parts[0]) + float(parts[1])) / 2
                 except ValueError:
