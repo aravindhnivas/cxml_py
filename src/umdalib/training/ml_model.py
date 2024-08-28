@@ -478,6 +478,21 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     return results
 
 
+def convert_to_float(value):
+    try:
+        return float(value)
+    except ValueError:
+        if isinstance(value, str) and "-" in value:
+            parts = value.split("-")
+            if len(parts) != 2:
+                raise ValueError(f"Invalid value range: {value}")
+            try:
+                return (float(parts[0]) + float(parts[1])) / 2
+            except ValueError:
+                pass
+        return np.nan
+
+
 n_jobs = None
 backend = "threading"
 
@@ -493,10 +508,6 @@ def main(args: Args):
     logger.info(f"{args.training_file['filename']}")
 
     X = np.load(args.vectors_file, allow_pickle=True)
-    invalid_indices = [i for i, arr in enumerate(X) if np.any(arr == 0)]
-    valid_mask = np.ones(len(X), dtype=bool)  # Initially, mark all as valid
-    valid_mask[invalid_indices] = False  # Mark invalid indices as False
-    X = X[valid_mask]  # Keep only the rows that are marked as True in the valid_mask
 
     # load training data from file
     ddf = read_as_ddf(
@@ -505,18 +516,41 @@ def main(args: Args):
         args.training_file["key"],
         use_dask=args.use_dask,
     )
-    y: np.ndarray = None
+
+    y = None
     if args.use_dask:
         ddf = ddf.repartition(npartitions=args.npartitions)
         with ProgressBar():
             y = ddf[args.training_column_name_y].compute()
     else:
         y = ddf[args.training_column_name_y]
+    logger.info(f"{type(y)=}")
+
+    if not isinstance(y, pd.Series):
+        y = pd.Series(y)
+
+    # Apply the conversion function to handle strings like '188.0 - 189.0'
+    y = y.apply(convert_to_float)
+
+    # Keep track of valid indices
+    valid_y_indices = y.notna()
+    y = y[valid_y_indices]
+    X = X[valid_y_indices]
 
     y = y.values
+
     if args.logYscale:
         y = np.log10(y)
-    y = y[valid_mask]
+
+    invalid_embedding_indices = [i for i, arr in enumerate(X) if np.any(arr == 0)]
+    valid_embedding_mask = np.ones(len(X), dtype=bool)  # Initially, mark all as valid
+    valid_embedding_mask[invalid_embedding_indices] = (
+        False  # Mark invalid indices as False
+    )
+    X = X[
+        valid_embedding_mask
+    ]  # Keep only the rows that are marked as True in the valid_embedding_mask
+    y = y[valid_embedding_mask]
 
     logger.info(f"{y[:5]=}, {type(y)=}")
 
