@@ -161,6 +161,7 @@ class Args:
     n_jobs: int
     parallel_computation_backend: str
     use_dask: bool
+    skip_invalid_y_values: bool
 
 
 def augment_data(
@@ -478,28 +479,30 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     return results
 
 
-def convert_to_float(value):
+def convert_to_float(value: Union[str, float]) -> float:
     try:
         return float(value)
     except ValueError:
         if isinstance(value, str) and "-" in value:
             parts = value.split("-")
-            if len(parts) != 2:
-                raise ValueError(f"Invalid value range: {value}")
-            try:
-                return (float(parts[0]) + float(parts[1])) / 2
-            except ValueError:
-                pass
-        return np.nan
+            if len(parts) == 2:
+                try:
+                    return (float(parts[0]) + float(parts[1])) / 2
+                except ValueError:
+                    pass
+        if skip_invalid_y_values:
+            return np.nan
+        raise
 
 
 n_jobs = None
 backend = "threading"
+skip_invalid_y_values = False
 
 
 def main(args: Args):
-    global n_jobs, backend
-
+    global n_jobs, backend, skip_invalid_y_values
+    skip_invalid_y_values = args.skip_invalid_y_values
     if args.parallel_computation:
         n_jobs = int(args.n_jobs)
         backend = args.parallel_computation_backend
