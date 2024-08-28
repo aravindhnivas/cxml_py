@@ -1,24 +1,18 @@
-import json
 import warnings
 import traceback
 from time import perf_counter
 from importlib import import_module, reload
-from flask import Flask, request, jsonify, abort
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-from pathlib import Path as pt
 import numpy as np
 from umdalib.utils import logger
 import sys
-
 # from umdalib.utils import Paths
+# import json
+# from pathlib import Path as pt
 
 app = Flask(__name__)
 CORS(app)
-
-
-@app.route("/custom-error")
-def custom_error():
-    abort(400, description="This is a custom error message")
 
 
 @app.errorhandler(Exception)
@@ -43,18 +37,6 @@ class MyClass(object):
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
-
-
-def log_output(logfilename: pt):
-    logger.info(f"Reading log file: {logfilename=}")
-    if not logfilename.exists():
-        raise Exception(
-            "Computed file is neither returned from main function or saved to temperary location"
-        )
-
-    with open(logfilename, "r") as f:
-        data = json.load(f)
-    return data
 
 
 @app.route("/", methods=["POST"])
