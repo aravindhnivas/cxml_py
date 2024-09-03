@@ -76,7 +76,6 @@ Dependencies:
 - scikit-learn
 - PyTorch
 - RDKit (for chemical structure handling)
-- matplotlib/seaborn (for visualization)
 - pytest (for testing)
 - tqdm (for progress bars)
 - dask (for parallel processing)
