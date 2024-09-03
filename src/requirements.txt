@@ -1,13 +1,14 @@
 # Core dependencies
 Flask==3.0.0
 Flask-Cors==5.0.0
+# gensim==4.3.3
 numpy==1.26.4
 waitress==3.0.0
 pandas==2.2.2
 dask==2024.8.2
 dask-ml==2024.4.4
 scikit-learn==1.5.1
-scipy==1.11.4
+scipy==1.13.1
 tables==3.10.1 # PyTables
 loguru==0.7.2
 selfies==2.1.2
