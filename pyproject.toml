@@ -1,0 +1,48 @@
+[project]
+name = "umdalib"
+version = "1.5.0"
+description = "Add your description here"
+authors = [
+    { name = "Aravindh Nivas Marimuthu", email = "aravindhnivas@duck.com" },
+]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+dependencies = [
+    "scipy>=1.13.1",
+    "pandas>=2.2.2",
+    "dask>=2024.8.2",
+    "dask-ml>=2024.4.4",
+    "numba>=0.60.0",
+    "numpy==1.26.4",
+    "flask>=3.0.3",
+    "flask-cors>=5.0.0",
+    "scikit-learn>=1.5.1",
+    "selfies>=2.1.2",
+    "loguru>=0.7.2",
+    "waitress>=3.0.0",
+    "xgboost>=2.1.1",
+    "catboost>=1.2.5",
+    "lightgbm>=4.5.0",
+    "joblib>=1.4.2",
+    "h5py>=3.11.0",
+    "pyinstaller>=6.10.0",
+    "mol2vec @ git+https://github.com/aravindhnivas/mol2vec.git@gensim_v4",
+    "astrochem_embedding @ git+https://github.com/aravindhnivas/astrochem_embedding.git@main",
+    "rdkit>=2024.3.5",
+]
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = []
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/umdalib"]
