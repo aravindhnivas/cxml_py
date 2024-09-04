@@ -63,26 +63,29 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install a specific version
+        id: setup-rye
+        uses: eifinger/setup-rye@v4
         with:
-          python-version: "3.9"
-          cache: "pip" # caching pip dependencies
+          version: "latest"
+          enable-cache: true
+
+      - name: Do something if the cache was restored
+        if: steps.setup-rye.outputs.cache-hit == 'true'
+        run: echo "Cache was restored"
+
+      - name: Set up Python environment with Rye
+        run: rye sync
 
       - name: hdf5 (macos)
         if: matrix.os == 'macos-latest'
         run: brew install hdf5
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r src/requirements.txt
-
       - name: List contents of src/icons
         run: ls src/icons
 
       - name: Build with pyinstaller for ${{matrix.TARGET}}
-        run: ${{matrix.CMD_BUILD}}
+        run: rye run ${{matrix.CMD_BUILD}}
 
       - name: Create ZIP
         run: ${{matrix.ZIP_IT}}
