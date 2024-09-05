@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path as pt
 
 import pandas as pd
 
@@ -60,19 +61,31 @@ def main(args: Args):
         use_dask=args.use_dask,
         computed=args.use_dask,
     )
+    logger.info(f"{df.columns=}")
     deduplicated_df, dropped_indices = drop_duplicates_on_x_column(
-        df, args.smiles_column_name
+        df.copy(), args.smiles_column_name
     )
-    deduplicated_filename = args.filename.replace(".csv", "_deduplicated.csv")
+
+    training_filename = pt(args.filename)
+    deduplicated_filename = (
+        training_filename.parent / f"[FIXED-DUPLICATES]_{training_filename.stem}.csv"
+    )
 
     if dropped_indices.size > 0:
         deduplicated_df.to_csv(deduplicated_filename, index=False)
         logger.info(f"Saved deduplicated data to {deduplicated_filename}")
+
+        duplicated_df = df.loc[dropped_indices]
+        duplicated_filename = (
+            training_filename.parent / f"[DUPLICATES]_{training_filename.stem}.csv"
+        )
+        duplicated_df.to_csv(duplicated_filename, index=False)
+        logger.info(f"Saved duplicated data to {duplicated_filename}")
     else:
         logger.info("No duplicates found")
 
     return {
         "deduplicated_filename": deduplicated_filename,
+        "duplicated_filename": duplicated_filename,
         "duplicates": len(dropped_indices),
-        # "dropped_indices": dropped_indices.values,
     }
