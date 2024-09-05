@@ -63,15 +63,16 @@ def main(args: Args):
     deduplicated_df, dropped_indices = drop_duplicates_on_x_column(
         df, args.smiles_column_name
     )
+    deduplicated_filename = args.filename.replace(".csv", "_deduplicated.csv")
 
     if dropped_indices.size > 0:
-        deduplicated_filename = args.filename.replace(".csv", "_deduplicated.csv")
         deduplicated_df.to_csv(deduplicated_filename, index=False)
         logger.info(f"Saved deduplicated data to {deduplicated_filename}")
     else:
         logger.info("No duplicates found")
 
     return {
+        "deduplicated_filename": deduplicated_filename,
         "duplicates": len(dropped_indices),
-        "dropped_indices": dropped_indices.values,
+        # "dropped_indices": dropped_indices.values,
     }
