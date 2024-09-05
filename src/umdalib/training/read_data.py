@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import dask.dataframe as dd
+import numpy as np
 import pandas as pd
 from umdalib.utils import logger
 from dask.diagnostics import ProgressBar
@@ -27,10 +28,15 @@ def read_as_ddf(
     ddf: Union[dd.DataFrame, pd.DataFrame] = None
 
     if filetype == "smi":
-        ddf = df_fn.read_csv(filename)
+        data = np.loadtxt(filename, dtype=str, ndmin=2)
+        if data[0][0].lower() == "smiles":
+            data = data[1:]
+
+        ddf = pd.DataFrame(data, columns=["SMILES"])
+        if use_dask:
+            ddf = dd.from_pandas(ddf)
+
         logger.info(f"Columns in the DataFrame: {ddf.columns.tolist()}")
-        if ddf.columns[0].lower() != "smiles":
-            ddf.columns = ["SMILES"]
     elif filetype == "csv":
         ddf = df_fn.read_csv(filename)
     elif filetype == "parquet":
@@ -84,7 +90,6 @@ def main(args: Args):
             nrows = ddf.tail(count).fillna("")
         data["nrows"] = nrows.to_dict(orient="records")
         data["shape"] = shape
-
     logger.info(f"{type(data)=}")
 
     return data
