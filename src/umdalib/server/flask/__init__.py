@@ -1,12 +1,15 @@
-import warnings
-import traceback
-from time import perf_counter
-from importlib import import_module, reload
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import numpy as np
-from umdalib.utils import logger
 import sys
+import traceback
+import warnings
+from importlib import import_module, reload
+from time import perf_counter
+
+import numpy as np
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+
+from umdalib.utils import logger
+
 # from umdalib.utils import Paths
 # import json
 # from pathlib import Path as pt

@@ -1,11 +1,13 @@
 from dataclasses import dataclass
+from multiprocessing import cpu_count
+from typing import Dict, Union
+
 import dask.dataframe as dd
 import numpy as np
 import pandas as pd
-from umdalib.utils import logger
 from dask.diagnostics import ProgressBar
-from multiprocessing import cpu_count
-from typing import Dict, Union
+
+from umdalib.utils import logger
 
 NPARTITIONS = cpu_count() * 5
 

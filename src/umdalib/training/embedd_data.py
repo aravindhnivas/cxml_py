@@ -1,15 +1,16 @@
-from umdalib.utils import load_model
-from umdalib.utils import logger
 from dataclasses import dataclass
+from pathlib import Path as pt
 from time import perf_counter
 from typing import Callable, Literal
-from dask.diagnostics import ProgressBar
-from dask import array as da
-from pathlib import Path as pt
+
 import numpy as np
-from rdkit import Chem
+from dask import array as da
+from dask.diagnostics import ProgressBar
 from mol2vec import features
+from rdkit import Chem
+
 from umdalib.training.read_data import read_as_ddf
+from umdalib.utils import load_model, logger
 
 
 @dataclass

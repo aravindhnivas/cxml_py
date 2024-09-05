@@ -1,7 +1,9 @@
-import waitress
 from dataclasses import dataclass
-from umdalib.utils import logger
+
+import waitress
+
 from umdalib.server.flask import app
+from umdalib.utils import logger
 
 
 @dataclass

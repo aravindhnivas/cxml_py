@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from mol2vec import features
 from pathlib import Path as pt
+
 from loguru import logger
+from mol2vec import features
 
 from umdalib.utils import Paths
 

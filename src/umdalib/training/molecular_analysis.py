@@ -1,16 +1,17 @@
-from dataclasses import dataclass
 import json
+import multiprocessing
+from collections import Counter
+from dataclasses import dataclass
+from pathlib import Path as pt
 from typing import Literal
+
 import numpy as np
 import pandas as pd
-from rdkit import Chem
+from rdkit import Chem, RDLogger
 from rdkit.Chem import Descriptors
-from rdkit import RDLogger
-from collections import Counter
+
 from umdalib.training.read_data import read_as_ddf
 from umdalib.utils import logger
-import multiprocessing
-from pathlib import Path as pt
 
 # from utils import loc
 

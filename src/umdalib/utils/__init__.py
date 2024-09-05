@@ -1,14 +1,13 @@
-from pathlib import Path as pt
 import tempfile
-from os import environ
-from platform import system
 from multiprocessing import cpu_count
+from os import environ
+from pathlib import Path as pt
+from platform import system
+
 import joblib
-
-
+from gensim.models import word2vec
 from loguru import logger
 from psutil import virtual_memory
-from gensim.models import word2vec
 
 RAM_IN_GB = virtual_memory().total / 1024**3
 NPARTITIONS = cpu_count() * 5

@@ -1,7 +1,9 @@
 import asyncio
-import websockets
-from umdalib.utils import logger
 from dataclasses import dataclass
+
+import websockets
+
+from umdalib.utils import logger
 
 
 @dataclass

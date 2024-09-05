@@ -1,25 +1,27 @@
-from time import perf_counter
-import numpy as np
-import h5py
-from pathlib import Path as pt
-from umdalib.utils import load_model
-from umdalib.utils import logger
-from joblib import dump, parallel_backend
-from sklearn.pipeline import make_pipeline
-from .embedd_data import smi_to_vec_dict
 from multiprocessing import cpu_count
+from pathlib import Path as pt
+from time import perf_counter
+
+import h5py
+import numpy as np
 from dask import array as da
 from dask.diagnostics import ProgressBar
 from dask.distributed import Client
+from joblib import dump, parallel_backend
+from sklearn.pipeline import make_pipeline
+
+from umdalib.utils import load_model, logger
+
+from .embedd_data import smi_to_vec_dict
 
 USE_DASK = True
 if USE_DASK:
-    from dask_ml.decomposition import IncrementalPCA
     from dask_ml.cluster import KMeans
+    from dask_ml.decomposition import IncrementalPCA
     from dask_ml.preprocessing import StandardScaler
 else:
-    from sklearn.decomposition import IncrementalPCA
     from sklearn.cluster import KMeans
+    from sklearn.decomposition import IncrementalPCA
     from sklearn.preprocessing import StandardScaler
 
 

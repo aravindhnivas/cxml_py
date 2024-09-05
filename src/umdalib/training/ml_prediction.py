@@ -1,12 +1,14 @@
 from dataclasses import dataclass
-import numpy as np
-import pandas as pd
-from umdalib.utils import logger
-from typing import TypedDict
-from umdalib.training.embedd_data import get_smi_to_vec
-from joblib import load
 from functools import lru_cache
 from pathlib import Path as pt
+from typing import TypedDict
+
+import numpy as np
+import pandas as pd
+from joblib import load
+
+from umdalib.training.embedd_data import get_smi_to_vec
+from umdalib.utils import logger
 
 
 class Embedder(TypedDict):

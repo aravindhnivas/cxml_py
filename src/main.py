@@ -1,12 +1,14 @@
-import sys
 import json
-from typing import Dict
+import multiprocessing
+import sys
 import warnings
 from importlib import import_module
-import multiprocessing
-import numpy as np
-from umdalib.utils import logger, Paths
 from time import perf_counter
+from typing import Dict
+
+import numpy as np
+
+from umdalib.utils import Paths, logger
 
 log_dir = Paths().app_log_dir
 

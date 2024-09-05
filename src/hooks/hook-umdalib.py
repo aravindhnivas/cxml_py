@@ -1,6 +1,7 @@
-import umdalib
-from pathlib import Path as pt
 from distutils.sysconfig import get_python_lib
+from pathlib import Path as pt
+
+import umdalib
 
 site_pkgs = pt(get_python_lib())
 print(f"{site_pkgs=}")
@@ -11,7 +12,7 @@ hiddenimports = [
     "umdalib.server",
     "umdalib.getVersion",
     "umdalib.training",
-    "umdalib.ws",
+    # "umdalib.ws",
     "astrochem_embedding",
 ]
 icons_dir = pt(umdalib.__file__).parent / "../icons"
