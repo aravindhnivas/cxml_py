@@ -205,11 +205,6 @@ def main(args: Args):
             vec_computed = vectors
 
         logger.info(f"{vec_computed.shape=}\n{vec_computed[0].shape=}")
-        # logger.warning(f"{invalid_smiles=}")
-        # for i, vec in enumerate(vec_computed):
-        #     if not vec.any():
-        #         logger.warning(f"Empty vector found in {i=} {vec.shape=}, {vec=}\n")
-        #         logger.warning(f"Invalid embedding: {ddf[args.df_column].iloc[i]}\n")
         vec_computed = np.vstack(vec_computed)
         np.save(embedd_savefile, vec_computed)
 
@@ -227,7 +222,6 @@ def main(args: Args):
 
     if len(invalid_smiles) > 0:
         with open(invalid_smiles_filename, "w") as f:
-            # f.write("SMILES\n")
             for smiles in invalid_smiles:
                 f.write(smiles + "\n")
 
