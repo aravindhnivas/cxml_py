@@ -78,17 +78,12 @@ def main(args: Args):
     logger.info("#" * 80 + "\n\n")
     logger.info(f"\n\nStarting Mol2Vec model generation with {args=}\n\n")
 
-    # if args.n_jobs:
-    #     n_jobs = args.n_jobs
-
     logger.info(f"Generating Mol2Vec model from SMILES file. Using {n_jobs} CPU cores.")
     logger.info(f"SMILES file: {args.smi_file}")
 
     if not pt(args.smi_file).exists():
         logger.error(f"SMILES file {args.smi_file} does not exist.")
         raise FileNotFoundError(f"SMILES file {args.smi_file} does not exist.")
-
-    # return
 
     m2v_model = None
     pkl_file: str = None
