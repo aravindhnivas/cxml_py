@@ -70,15 +70,15 @@ def main(args: Args):
     deduplicated_filename = (
         training_filename.parent / f"[FIXED-DUPLICATES]_{training_filename.stem}.csv"
     )
+    duplicated_filename = (
+        training_filename.parent / f"[DUPLICATES]_{training_filename.stem}.csv"
+    )
 
     if dropped_indices.size > 0:
         deduplicated_df.to_csv(deduplicated_filename, index=False)
         logger.info(f"Saved deduplicated data to {deduplicated_filename}")
 
         duplicated_df = df.loc[dropped_indices]
-        duplicated_filename = (
-            training_filename.parent / f"[DUPLICATES]_{training_filename.stem}.csv"
-        )
         duplicated_df.to_csv(duplicated_filename, index=False)
         logger.info(f"Saved duplicated data to {duplicated_filename}")
     else:
