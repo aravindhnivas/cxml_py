@@ -408,6 +408,12 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     y_linear_fit = linear(y_test, *pop)
 
     results = {
+        "size": {
+            "X": X.shape,
+            "y": y.shape,
+            "X_test": X_test.shape,
+            "y_test": y_test.shape,
+        },
         "embedding": args.embedding,
         "PCA": args.pca,
         "y_test_data_size": len(y_test),
