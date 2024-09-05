@@ -4,8 +4,7 @@ import sys
 import warnings
 from importlib import import_module
 from time import perf_counter
-from typing import Dict
-
+from pathlib import Path as pt
 import numpy as np
 
 from umdalib.utils import Paths, logger
@@ -53,28 +52,34 @@ if __name__ == "__main__":
     with warnings.catch_warnings(record=True) as warn:
         pyfunction = import_module(f"umdalib.{pyfile}")
 
+        start_time = perf_counter()
+        result: dict = {}
+
         if args:
-            start_time = perf_counter()
-            result: Dict = pyfunction.main(args)
-            computed_time = f"{(perf_counter() - start_time):.2f} s"
-
-            if isinstance(result, Dict):
-                for k, v in result.items():
-                    if isinstance(v, np.ndarray):
-                        result[k] = v.tolist()
-
-            if not result:
-                result = {"info": "No result returned from main() function"}
-
-            result["done"] = True
-            result["error"] = False
-            result["computed_time"] = computed_time
-
-            if result:
-                logger.success(f"{result=}")
-                with open(result_file, "w") as f:
-                    json.dump(result, f, indent=4)
-                    logger.success(f"Result saved to {result_file}")
+            result = pyfunction.main(args)
         else:
-            pyfunction.main()
+            result = pyfunction.main()
+
+        computed_time = f"{(perf_counter() - start_time):.2f} s"
+
+        if isinstance(result, dict):
+            for k, v in result.items():
+                if isinstance(v, np.ndarray):
+                    result[k] = v.tolist()
+                if isinstance(v, pt):
+                    result[k] = str(v)
+
+        if not result:
+            result = {"info": "No result returned from main() function"}
+
+        result["done"] = True
+        result["error"] = False
+        result["computed_time"] = computed_time
+
+        if result:
+            logger.success(f"{result=}")
+            with open(result_file, "w") as f:
+                json.dump(result, f, indent=4)
+                logger.success(f"Result saved to {result_file}")
+
     logger.info("Finished main.py")
