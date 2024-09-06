@@ -208,21 +208,18 @@ def main(args: Args):
         filename,
         data["key"],
     )
-
+    df = df.set_index(df.columns[0])
+    logger.info(f"Index name: {df.index.name}\n{df.index.values[:10]=}\n{df.columns=}")
     logger.info(f"{df.head()=}")
 
     # remove invalid mol indices
-    invalid_indices_smi_df = pd.read_csv(
-        analysis_dir / "invalid_smiles_and_indices.csv"
-    )
+    invalid_smiles_df_file = analysis_dir / "invalid_smiles_df.csv"
+    if invalid_smiles_df_file.exists():
+        invalid_smiles_df = pd.read_csv(analysis_dir / "invalid_smiles_df.csv")
+        invalid_smiles_df = invalid_smiles_df.set_index(invalid_smiles_df.columns[0])
 
-    invalid_indices = invalid_indices_smi_df["Index"].values
-    if invalid_indices.size > 0:
-        logger.info(f"{invalid_indices=}")
-        logger.info(f"{invalid_indices_smi_df.head()=}")
-
-        df_cleaned = df.drop(invalid_indices)
-        df_cleaned.reset_index(drop=True, inplace=True)
+        df_cleaned = df.iloc[~df.index.isin(invalid_smiles_df.index)]
+        logger.info(f"Removed {len(invalid_smiles_df)} invalid molecules")
     else:
         df_cleaned = df
     logger.info(f"{df_cleaned.head()=}")
