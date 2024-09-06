@@ -75,12 +75,13 @@ def main(args: Args):
     )
 
     if dropped_indices.size > 0:
-        deduplicated_df.to_csv(deduplicated_filename, index=False)
+        deduplicated_df.to_csv(
+            deduplicated_filename, index=True, index_label="OriginalIndex"
+        )
         logger.info(f"Saved deduplicated data to {deduplicated_filename}")
-
-        duplicated_df = df.loc[dropped_indices]
-        duplicated_df.to_csv(duplicated_filename, index=False)
-        logger.info(f"Saved duplicated data to {duplicated_filename}")
+        # duplicated_df = df.loc[dropped_indices]
+        # duplicated_df.to_csv(duplicated_filename, index=True, index_label='OriginalIndex')
+        # logger.info(f"Saved duplicated data to {duplicated_filename}")
     else:
         logger.info("No duplicates found")
 
