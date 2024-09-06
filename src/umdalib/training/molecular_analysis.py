@@ -168,17 +168,12 @@ def main(args: Args):
         use_dask=args.use_dask,
         computed=True,
     )
-
-    # smiles_list = df[args.smiles_column_name].tolist()
-
-    # logger.info(f"Analyzing {len(smiles_list)} molecules...")
     df = analyze_molecules(
         df, args.smiles_column_name, parallel=True, filename=filename
     )
     logger.info(f"Analysis complete. {len(df)} valid molecules processed.")
 
     logger.info("Analysis Summary:")
-    # logger.info(df.head())
     logger.info(f"Total molecules analyzed: {len(df)}")
     logger.info(f"Organic molecules: {df['Category'].value_counts().get('Organic', 0)}")
     logger.info(
