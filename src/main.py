@@ -23,7 +23,7 @@ if __name__ == "__main__":
     multiprocessing.freeze_support()
 
     logger.info("Starting main.py")
-    logger.info(f"{sys.argv=}")
+    # logger.info(f"sys.argv = {json.dumps(sys.argv, indent=4)}")
     pyfile = sys.argv[1]
     args = None
     if len(sys.argv) > 2:
@@ -31,7 +31,7 @@ if __name__ == "__main__":
             if not sys.argv[2].strip():
                 raise ValueError("Input JSON string is empty")
             args = json.loads(sys.argv[2])
-            logger.info("Successfully loaded JSON string")
+            logger.success("Successfully loaded JSON string")
         except json.JSONDecodeError as e:
             logger.error(f"JSONDecodeError: {e}")
             sys.exit(1)
@@ -39,8 +39,8 @@ if __name__ == "__main__":
             logger.error(f"ValueError: {e}")
             sys.exit(1)
         # args = json.loads(sys.argv[2])
-
-    logger.info(f"\n[Received arguments]\n{args}")
+    logger.info(f"{pyfile=}")
+    logger.info(f"\n[Received arguments]\n{json.dumps(args, indent=4)}")
     logger.info(f"{pyfile=}\n")
     args = MyClass(**args)
 
@@ -75,11 +75,10 @@ if __name__ == "__main__":
         result["done"] = True
         result["error"] = False
         result["computed_time"] = computed_time
-
-        if result:
-            logger.success(f"{result=}")
-            with open(result_file, "w") as f:
-                json.dump(result, f, indent=4)
-                logger.success(f"Result saved to {result_file}")
+        logger.success(f"Computation completed successfully in {computed_time}")
+        logger.success(f"{result=}")
+        with open(result_file, "w") as f:
+            json.dump(result, f, indent=4)
+            logger.success(f"Result saved to {result_file}")
 
     logger.info("Finished main.py")
