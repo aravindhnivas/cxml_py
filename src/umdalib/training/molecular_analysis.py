@@ -166,7 +166,7 @@ def main(args: Args):
         args.filename,
         args.key,
         use_dask=args.use_dask,
-        computed=args.use_dask,
+        computed=True,
     )
 
     # smiles_list = df[args.smiles_column_name].tolist()

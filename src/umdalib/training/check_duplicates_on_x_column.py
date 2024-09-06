@@ -59,7 +59,7 @@ def main(args: Args):
         args.filename,
         args.key,
         use_dask=args.use_dask,
-        computed=args.use_dask,
+        computed=True,
     )
     logger.info(f"{df.columns=}")
     deduplicated_df, dropped_indices = drop_duplicates_on_x_column(

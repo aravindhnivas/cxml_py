@@ -35,7 +35,7 @@ def main(args: Args):
         args.analysis_file["filename"],
         args.analysis_file["key"],
         use_dask=args.use_dask,
-        computed=args.use_dask,
+        computed=True,
     )
 
     y_true = df[args.columnX].values
