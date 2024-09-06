@@ -54,16 +54,16 @@ def main(args: Args):
     logger.info(f"Checking duplicates on {args.filename}")
     logger.info(f"Using Dask: {args.use_dask}")
 
-    df = read_as_ddf(
+    training_df = read_as_ddf(
         args.filetype,
         args.filename,
         args.key,
         use_dask=args.use_dask,
         computed=True,
     )
-    logger.info(f"{df.columns=}")
+    logger.info(f"{training_df.columns=}")
     deduplicated_df, dropped_indices = drop_duplicates_on_x_column(
-        df.copy(), args.smiles_column_name
+        training_df.copy(), args.smiles_column_name
     )
 
     training_filename = pt(args.filename)
@@ -79,9 +79,6 @@ def main(args: Args):
             deduplicated_filename, index=True, index_label="OriginalIndex"
         )
         logger.info(f"Saved deduplicated data to {deduplicated_filename}")
-        # duplicated_df = df.loc[dropped_indices]
-        # duplicated_df.to_csv(duplicated_filename, index=True, index_label='OriginalIndex')
-        # logger.info(f"Saved duplicated data to {duplicated_filename}")
     else:
         logger.info("No duplicates found")
 
