@@ -82,11 +82,13 @@ def analyze_single_molecule(smi):
 
 
 def analyze_molecules(
-    df: pd.DataFrame, smiles_column_name: str, parallel=True, filename: pt = None
+    original_df: pd.DataFrame,
+    smiles_column_name: str,
+    parallel=True,
 ):
     """Analyze a list of SMILES strings in parallel and return a DataFrame with results."""
 
-    smiles_list = df[smiles_column_name].tolist()
+    smiles_list = original_df[smiles_column_name].tolist()
     logger.info(f"Analyzing {len(smiles_list)} molecules...")
 
     results = []
@@ -111,7 +113,7 @@ def analyze_molecules(
     invalid_smiles = [smiles_list[i] for i in invalid_smiles_indices]
     logger.warning(f"{len(invalid_smiles)} invalid molecules found.")
 
-    invalid_df = df.iloc[invalid_smiles_indices]
+    invalid_df = original_df.iloc[invalid_smiles_indices]
     invalid_df.to_csv(loc / "invalid_smiles_df.csv", index=False)
     results = results[results != None]  # noqa: E711
     return pd.DataFrame(results.tolist())
@@ -161,31 +163,31 @@ def main(args: Args):
     if not loc.exists():
         loc.mkdir(parents=True)
 
-    df = read_as_ddf(
+    original_df = read_as_ddf(
         args.filetype,
         args.filename,
         args.key,
         use_dask=args.use_dask,
         computed=True,
     )
-    df = analyze_molecules(
-        df, args.smiles_column_name, parallel=True, filename=filename
-    )
-    logger.info(f"Analysis complete. {len(df)} valid molecules processed.")
+    analysis_df = analyze_molecules(original_df, args.smiles_column_name, parallel=True)
+    logger.info(f"Analysis complete. {len(analysis_df)} valid molecules processed.")
 
     logger.info("Analysis Summary:")
-    logger.info(f"Total molecules analyzed: {len(df)}")
-    logger.info(f"Organic molecules: {df['Category'].value_counts().get('Organic', 0)}")
+    logger.info(f"Total molecules analyzed: {len(analysis_df)}")
     logger.info(
-        f"Inorganic molecules: {df['Category'].value_counts().get('Inorganic', 0)}"
+        f"Organic molecules: {analysis_df['Category'].value_counts().get('Organic', 0)}"
     )
-    logger.info(f"Aromatic molecules: {df['IsAromatic'].sum()}")
-    logger.info(f"Non-cyclic molecules: {df['IsNonCyclic'].sum()}")
-    logger.info(f"Cyclic molecules: {df['IsCyclicNonAromatic'].sum()}")
+    logger.info(
+        f"Inorganic molecules: {analysis_df['Category'].value_counts().get('Inorganic', 0)}"
+    )
+    logger.info(f"Aromatic molecules: {analysis_df['IsAromatic'].sum()}")
+    logger.info(f"Non-cyclic molecules: {analysis_df['IsNonCyclic'].sum()}")
+    logger.info(f"Cyclic molecules: {analysis_df['IsCyclicNonAromatic'].sum()}")
 
     logger.info("Top 10 Elements:")
     elements = Counter()
-    for e in df["Elements"]:
+    for e in analysis_df["Elements"]:
         elements.update(e)
     for element, count in elements.most_common(10):
         logger.info(f"{element}: {count}")
@@ -193,20 +195,21 @@ def main(args: Args):
     logger.info("Element Categories:")
 
     elem_cats = Counter()
-    for ec in df["ElementCategories"]:
+    for ec in analysis_df["ElementCategories"]:
         elem_cats.update(ec)
     for category, count in elem_cats.items():
         logger.info(f"{category}: {count}")
 
     # Convert Counter objects to JSON strings
-    df["ElementCategories"] = df["ElementCategories"].apply(
+    analysis_df["ElementCategories"] = analysis_df["ElementCategories"].apply(
         lambda x: json.dumps(dict(x))
     )
-    df["Elements"] = df["Elements"].apply(lambda x: json.dumps(dict(x)))
+    analysis_df["Elements"] = analysis_df["Elements"].apply(
+        lambda x: json.dumps(dict(x))
+    )
 
     analysis_file = loc / "molecule_analysis_results.csv"
-    df.to_csv(analysis_file, index=False)
-    # df.to_csv(analysis_file)
+    analysis_df.to_csv(analysis_file, index=False)
     logger.success(f"Results saved as {analysis_file}")
 
     molecular_analysis(analysis_file, args.atoms_bin_size)

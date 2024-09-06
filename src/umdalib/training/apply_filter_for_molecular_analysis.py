@@ -89,13 +89,15 @@ def main(args: Args):
 
     analysis_file = pt(args.analysis_file)
 
-    df = pd.read_csv(analysis_file)
-    df["ElementCategories"] = df["ElementCategories"].apply(
+    analysis_df = pd.read_csv(analysis_file)
+    analysis_df["ElementCategories"] = analysis_df["ElementCategories"].apply(
         lambda x: Counter(json.loads(x))
     )
-    df["Elements"] = df["Elements"].apply(lambda x: Counter(json.loads(x)))
+    analysis_df["Elements"] = analysis_df["Elements"].apply(
+        lambda x: Counter(json.loads(x))
+    )
 
-    logger.info(f"Original DataFrame length: {len(df)}")
+    logger.info(f"Original DataFrame length: {len(analysis_df)}")
     logger.info(f"Min atomic number: {args.min_atomic_number}")
     logger.info(f"Max atomic number: {args.max_atomic_number}")
     logger.info(f"Filter elements: {args.filter_elements}")
@@ -107,13 +109,13 @@ def main(args: Args):
         logger.info("Filtering based on element count threshold")
         # Filter based on element count threshold
         elements = Counter()
-        for e in df["Elements"]:
+        for e in analysis_df["Elements"]:
             elements.update(e)
 
         elements_containing = Counter()
         for element in elements.keys():
             elements_containing[element] = (
-                df["Elements"].apply(lambda x: element in x).sum()
+                analysis_df["Elements"].apply(lambda x: element in x).sum()
             )
 
         include_elements = {
@@ -133,7 +135,7 @@ def main(args: Args):
     # filter based on atomic size threshold
     if args.size_count_threshold:
         logger.info("Filtering based on atomic size count threshold")
-        atoms_distribution = Counter(df["No. of atoms"].values)
+        atoms_distribution = Counter(analysis_df["No. of atoms"].values)
         atoms_distribution_df = pd.DataFrame.from_dict(
             atoms_distribution, orient="index"
         ).reset_index()
@@ -144,16 +146,18 @@ def main(args: Args):
             atoms_distribution_df["Count"] > int(args.size_count_threshold)
         ]
         no_of_atoms = set(atoms_distribution_df["No. of atoms"].values)
-        df = df[df["No. of atoms"].isin(no_of_atoms)]
+        analysis_df = analysis_df[analysis_df["No. of atoms"].isin(no_of_atoms)]
         logger.info(
             f"Filtering out atomic sizes: {no_of_atoms} based on threshold count"
         )
-        logger.info(f"Filtered atomic size threshold DataFrame length: {len(df)}")
+        logger.info(
+            f"Filtered atomic size threshold DataFrame length: {len(analysis_df)}"
+        )
 
     if parallel:
         logger.info("Using parallel processing")
-        final_df = parallel_apply(
-            df,
+        filtered_df = parallel_apply(
+            analysis_df,
             apply_filters_to_df,
             args.min_atomic_number,
             args.max_atomic_number,
@@ -162,7 +166,7 @@ def main(args: Args):
         )
     else:
         logger.info("Using single processing")
-        removed_indices_condition = df.apply(
+        removed_indices_condition = analysis_df.apply(
             apply_filters_to_df,
             axis=1,
             args=(
@@ -172,15 +176,17 @@ def main(args: Args):
                 args.filter_structures,
             ),
         )
-        final_df: pd.DataFrame = df[removed_indices_condition]
+        filtered_df: pd.DataFrame = analysis_df[removed_indices_condition]
 
-    # final_df = final_df.dropna()  # Drop rows that were filtered out
-    logger.info(f"Filtered DataFrame length: {len(final_df)}")
+    # filtered_df = filtered_df.dropna()  # Drop rows that were filtered out
+    logger.info(f"Filtered DataFrame length: {len(filtered_df)}")
 
-    final_df["ElementCategories"] = final_df["ElementCategories"].apply(
+    filtered_df["ElementCategories"] = filtered_df["ElementCategories"].apply(
         lambda x: json.dumps(dict(x))
     )
-    final_df["Elements"] = final_df["Elements"].apply(lambda x: json.dumps(dict(x)))
+    filtered_df["Elements"] = filtered_df["Elements"].apply(
+        lambda x: json.dumps(dict(x))
+    )
 
     analysis_dir = analysis_file.parent
     metadata_file = analysis_dir / "metadata.json"
@@ -201,7 +207,7 @@ def main(args: Args):
     logger.info(f"Filtered file path: {filtered_file_path}")
     if not filtered_file_path.parent.exists():
         filtered_file_path.parent.mkdir(parents=True)
-    final_df.to_csv(filtered_file_path)
+    filtered_df.to_csv(filtered_file_path)
 
     df: pd.DataFrame = read_as_ddf(
         data["filetype"],
