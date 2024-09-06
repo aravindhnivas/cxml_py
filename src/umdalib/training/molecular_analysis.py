@@ -81,13 +81,13 @@ def analyze_single_molecule(smi):
     }
 
 
-invalid_smiles = []
-
-
-def analyze_molecules(smiles_list: list[str], parallel=True):
+def analyze_molecules(
+    df: pd.DataFrame, smiles_column_name: str, parallel=True, filename: pt = None
+):
     """Analyze a list of SMILES strings in parallel and return a DataFrame with results."""
 
-    global invalid_smiles
+    smiles_list = df[smiles_column_name].tolist()
+    logger.info(f"Analyzing {len(smiles_list)} molecules...")
 
     results = []
     if parallel:
@@ -104,23 +104,15 @@ def analyze_molecules(smiles_list: list[str], parallel=True):
 
     # None values are returned for invalid SMILES strings
     invalid_smiles_indices = np.where(results == None)[0]  # noqa: E711
-    invalid_smiles = [smiles_list[i] for i in invalid_smiles_indices]
 
-    if len(invalid_smiles) == 0:
+    if len(invalid_smiles_indices) == 0:
         logger.success("All molecules are valid.")
-        # return pd.DataFrame(results.tolist())
-    else:
-        logger.warning(f"{len(invalid_smiles)} invalid molecules found.")
+        return pd.DataFrame(results.tolist())
+    invalid_smiles = [smiles_list[i] for i in invalid_smiles_indices]
+    logger.warning(f"{len(invalid_smiles)} invalid molecules found.")
 
-    with open(loc / "invalid_smiles_and_indices.csv", "w") as f:
-        f.write("Index,SMILES\n")
-        for i, smi in zip(invalid_smiles_indices, invalid_smiles):
-            f.write(f"{i},{smi}\n")
-        logger.warning(
-            f"Invalid SMILES strings saved to {str(loc / 'invalid_smiles_and_indices.txt')}."
-        )
-
-    # results = np.array([r for r in results if r is not None])
+    invalid_df = df.iloc[invalid_smiles_indices]
+    invalid_df.to_csv(loc / "invalid_smiles_df.csv", index=False)
     results = results[results != None]  # noqa: E711
     return pd.DataFrame(results.tolist())
 
@@ -150,7 +142,7 @@ def main(args: Args):
 
         analysis_file = pt(args.analysis_file)
         loc = analysis_file.parent
-        logger.info(f"Analysis file: {analysis_file}")
+        logger.info(f"Using analysis file: {analysis_file}")
         logger.info(f"Location: {loc}")
 
         if not loc.exists():
@@ -177,10 +169,12 @@ def main(args: Args):
         computed=args.use_dask,
     )
 
-    smiles_list = df[args.smiles_column_name].tolist()
+    # smiles_list = df[args.smiles_column_name].tolist()
 
-    logger.info(f"Analyzing {len(smiles_list)} molecules...")
-    df = analyze_molecules(smiles_list, parallel=True)
+    # logger.info(f"Analyzing {len(smiles_list)} molecules...")
+    df = analyze_molecules(
+        df, args.smiles_column_name, parallel=True, filename=filename
+    )
     logger.info(f"Analysis complete. {len(df)} valid molecules processed.")
 
     logger.info("Analysis Summary:")
@@ -217,6 +211,7 @@ def main(args: Args):
 
     analysis_file = loc / "molecule_analysis_results.csv"
     df.to_csv(analysis_file, index=False)
+    # df.to_csv(analysis_file)
     logger.success(f"Results saved as {analysis_file}")
 
     molecular_analysis(analysis_file, args.atoms_bin_size)
