@@ -92,6 +92,8 @@ def main(args: Args):
             nrows = ddf.tail(count).fillna("")
         data["nrows"] = nrows.to_dict(orient="records")
         data["shape"] = shape
+        data["index_name"] = ddf.index.name
+
     logger.info(f"{type(data)=}")
 
     return data
