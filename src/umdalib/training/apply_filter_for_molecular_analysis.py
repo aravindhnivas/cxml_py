@@ -209,14 +209,16 @@ def main(args: Args):
         filtered_file_path.parent.mkdir(parents=True)
     filtered_df.to_csv(filtered_file_path)
 
-    df: pd.DataFrame = read_as_ddf(
+    training_df: pd.DataFrame = read_as_ddf(
         data["filetype"],
         filename,
         data["key"],
     )
-    df = df.set_index(df.columns[0])
-    logger.info(f"Index name: {df.index.name}\n{df.index.values[:10]=}\n{df.columns=}")
-    logger.info(f"{df.head()=}")
+    training_df = training_df.set_index(training_df.columns[0])
+    logger.info(
+        f"Index name: {training_df.index.name}\n{training_df.index.values[:10]=}\n{training_df.columns=}"
+    )
+    logger.info(f"{training_df.head()=}")
 
     # remove invalid mol indices
     invalid_smiles_df_file = analysis_dir / "invalid_smiles_df.csv"
@@ -224,10 +226,10 @@ def main(args: Args):
         invalid_smiles_df = pd.read_csv(analysis_dir / "invalid_smiles_df.csv")
         invalid_smiles_df = invalid_smiles_df.set_index(invalid_smiles_df.columns[0])
 
-        df_cleaned = df.iloc[~df.index.isin(invalid_smiles_df.index)]
+        df_cleaned = training_df.iloc[~training_df.index.isin(invalid_smiles_df.index)]
         logger.info(f"Removed {len(invalid_smiles_df)} invalid molecules")
     else:
-        df_cleaned = df
+        df_cleaned = training_df
     logger.info(f"{df_cleaned.head()=}")
 
     df_filtered = df_cleaned[removed_indices_condition]
