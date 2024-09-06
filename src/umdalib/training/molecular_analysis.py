@@ -82,13 +82,13 @@ def analyze_single_molecule(smi):
 
 
 def analyze_molecules(
-    original_df: pd.DataFrame,
+    training_df: pd.DataFrame,
     smiles_column_name: str,
     parallel=True,
 ):
     """Analyze a list of SMILES strings in parallel and return a DataFrame with results."""
 
-    smiles_list = original_df[smiles_column_name].tolist()
+    smiles_list = training_df[smiles_column_name].tolist()
     logger.info(f"Analyzing {len(smiles_list)} molecules...")
 
     results = []
@@ -113,8 +113,8 @@ def analyze_molecules(
     invalid_smiles = [smiles_list[i] for i in invalid_smiles_indices]
     logger.warning(f"{len(invalid_smiles)} invalid molecules found.")
 
-    invalid_df = original_df.iloc[invalid_smiles_indices]
-    invalid_df.to_csv(loc / "invalid_smiles_df.csv", index=False)
+    invalid_training_df = training_df.iloc[invalid_smiles_indices]
+    invalid_training_df.to_csv(loc / "invalid_smiles_df.csv", index=False)
     results = results[results != None]  # noqa: E711
     return pd.DataFrame(results.tolist())
 
@@ -157,20 +157,21 @@ def main(args: Args):
 
     filename = pt(args.filename)
     logger.info(f"Filename: {filename}")
+
     loc = pt(filename).parent / f"{filename.stem}_analysis"
     logger.info(f"Location: {loc}")
 
     if not loc.exists():
         loc.mkdir(parents=True)
 
-    original_df = read_as_ddf(
+    training_df = read_as_ddf(
         args.filetype,
         args.filename,
         args.key,
         use_dask=args.use_dask,
         computed=True,
     )
-    analysis_df = analyze_molecules(original_df, args.smiles_column_name, parallel=True)
+    analysis_df = analyze_molecules(training_df, args.smiles_column_name, parallel=True)
     logger.info(f"Analysis complete. {len(analysis_df)} valid molecules processed.")
 
     logger.info("Analysis Summary:")
