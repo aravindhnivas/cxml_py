@@ -14,6 +14,7 @@ class Args:
     key: str
     use_dask: bool
     smiles_column_name: str
+    index_column_name: str
 
 
 def drop_duplicates_on_x_column(df: pd.DataFrame, column: str):

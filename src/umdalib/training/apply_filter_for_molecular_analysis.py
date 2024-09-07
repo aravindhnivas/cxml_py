@@ -78,6 +78,7 @@ class Args:
     filter_elements: list[str]
     filter_structures: list[str]
     filtered_filename: str
+    index_column_name: str
 
 
 # parallel = True
