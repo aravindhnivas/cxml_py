@@ -223,9 +223,7 @@ def main(args: Args):
     )
     logger.info(f"{training_df.head()=}")
     final_training_df = training_df.loc[training_df.index.isin(final_analysis_df.index)]
-    final_filtered_training_df_file = (
-        filtered_dir / f"{filtered_data_filename}_training.csv"
-    )
+    final_filtered_training_df_file = filtered_dir / f"{filtered_data_filename}.csv"
     final_training_df.to_csv(final_filtered_training_df_file)
     logger.info(
         f"Final filtered training data saved at {final_filtered_training_df_file}"
