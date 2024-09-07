@@ -134,6 +134,7 @@ class Args:
     mode: Literal[
         "all", "size_distribution", "structural_distribution", "elemental_distribution"
     ]
+    index_column_name: str
 
 
 def main(args: Args):
