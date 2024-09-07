@@ -76,7 +76,9 @@ def main(args: Args):
 
     if dropped_indices.size > 0:
         deduplicated_df.to_csv(
-            deduplicated_filename, index=True, index_label="OriginalIndex"
+            deduplicated_filename,
+            index=False,
+            # index_label="OriginalIndex"
         )
         logger.info(f"Saved deduplicated data to {deduplicated_filename}")
     else:
