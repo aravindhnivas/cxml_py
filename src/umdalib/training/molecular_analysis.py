@@ -85,10 +85,13 @@ def analyze_molecules(
     training_df: pd.DataFrame,
     smiles_column_name: str,
     parallel=True,
+    index_column_name: str = None,
 ):
     """Analyze a list of SMILES strings in parallel and return a DataFrame with results."""
 
+    original_index = training_df[index_column_name].tolist()
     smiles_list = training_df[smiles_column_name].tolist()
+
     logger.info(f"Analyzing {len(smiles_list)} molecules...")
 
     results = []
@@ -109,14 +112,26 @@ def analyze_molecules(
 
     if len(invalid_smiles_indices) == 0:
         logger.success("All molecules are valid.")
-        return pd.DataFrame(results.tolist())
+        df = pd.DataFrame(results.tolist())
+        df.insert(0, index_column_name, original_index)
+        return df
+
     invalid_smiles = [smiles_list[i] for i in invalid_smiles_indices]
     logger.warning(f"{len(invalid_smiles)} invalid molecules found.")
 
     invalid_training_df = training_df.iloc[invalid_smiles_indices]
     invalid_training_df.to_csv(loc / "invalid_smiles_df.csv", index=False)
+
+    final_index = [
+        original_index[i]
+        for i in range(len(original_index))
+        if i not in invalid_smiles_indices
+    ]
     results = results[results != None]  # noqa: E711
-    return pd.DataFrame(results.tolist())
+    # add first column as index in results array
+    df = pd.DataFrame(results.tolist())
+    df.insert(0, index_column_name, final_index)
+    return df
 
 
 loc: pt = None
@@ -172,7 +187,13 @@ def main(args: Args):
         use_dask=args.use_dask,
         computed=True,
     )
-    analysis_df = analyze_molecules(training_df, args.smiles_column_name, parallel=True)
+
+    analysis_df = analyze_molecules(
+        training_df,
+        args.smiles_column_name,
+        parallel=True,
+        index_column_name=args.index_column_name,
+    )
     logger.info(f"Analysis complete. {len(analysis_df)} valid molecules processed.")
 
     logger.info("Analysis Summary:")
@@ -224,11 +245,13 @@ def main(args: Args):
             "filetype": args.filetype,
             "key": args.key,
             "use_dask": args.use_dask,
+            "smiles_column_name": args.smiles_column_name,
+            "index_column_name": args.index_column_name,
         }
         json.dump(metadata, f, indent=4)
         logger.success(f"Metadata saved as {loc / 'metadata.json'}")
 
-    return {"analysis_file": str(analysis_file)}
+    return {"analysis_file": str(analysis_file), "metadata": metadata}
 
 
 def size_distribution(df: pd.DataFrame, bin_size=10):
