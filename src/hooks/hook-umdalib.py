@@ -40,6 +40,9 @@ lightning_fabric_datas += [
     (str(lightning_fabric_version.resolve()), "lightning_fabric")
 ]
 
+umdalib_version = pt(umdalib.__file__).parent / "__version__.dat"
+version_datas = [(str(umdalib_version.resolve()), "umdalib")]
+
 datas = (
     icons_files
     + distributed_datas
@@ -48,4 +51,5 @@ datas = (
     + libxgboost_datas
     + lgbm_datas
     + lightning_fabric_datas
+    + version_datas
 )
