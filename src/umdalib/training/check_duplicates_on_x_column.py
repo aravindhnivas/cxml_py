@@ -62,7 +62,6 @@ def main(args: Args):
         use_dask=args.use_dask,
         computed=True,
     )
-    logger.info(f"{training_df.columns=}")
     deduplicated_df, dropped_indices = drop_duplicates_on_x_column(
         training_df.copy(), args.smiles_column_name
     )
@@ -79,9 +78,15 @@ def main(args: Args):
         deduplicated_df.to_csv(
             deduplicated_filename,
             index=False,
-            # index_label="OriginalIndex"
         )
         logger.info(f"Saved deduplicated data to {deduplicated_filename}")
+
+        duplicated_df = training_df.loc[dropped_indices]
+        duplicated_df.to_csv(
+            duplicated_filename,
+            index=False,
+        )
+        logger.info(f"Saved duplicated data to {duplicated_filename}")
     else:
         logger.info("No duplicates found")
 
