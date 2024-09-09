@@ -1,4 +1,5 @@
 import sys
+import threading
 import traceback
 import warnings
 from importlib import import_module, reload
@@ -35,11 +36,44 @@ def home():
     return "Server running: umdapy"
 
 
+# Module cache
+module_cache = {}
+
+
 class MyClass(object):
     @logger.catch
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
+
+
+def preload_modules():
+    """Preload frequently used modules."""
+    frequently_used_modules = [
+        # Add your frequently used module names here
+        "training.read_data",
+        # "training.embedd_data",
+        # "training.ml_model",
+    ]
+    for module_name in frequently_used_modules:
+        try:
+            module = import_module(f"umdalib.{module_name}")
+            module_cache[module_name] = module
+            logger.info(f"Preloaded module: {module_name}")
+        except ImportError as e:
+            logger.error(f"Failed to preload module {module_name}: {e}")
+
+
+def warm_up():
+    """Perform warm-up tasks."""
+    logger.info("Starting warm-up phase...")
+    preload_modules()
+    # Add any other initialization tasks here
+    logger.info("Warm-up phase completed.")
+
+
+# Start warm-up in a separate thread
+threading.Thread(target=warm_up, daemon=True).start()
 
 
 @app.route("/", methods=["POST"])
@@ -56,7 +90,15 @@ def compute():
         logger.info(f"{pyfile=}\n{args=}")
 
         with warnings.catch_warnings(record=True) as warnings_list:
-            pyfunction = import_module(f"umdalib.{pyfile}")
+            # Use the module cache
+            if pyfile in module_cache:
+                pyfunction = module_cache[pyfile]
+            else:
+                pyfunction = import_module(f"umdalib.{pyfile}")
+                module_cache[pyfile] = pyfunction
+
+            # pyfunction = import_module(f"umdalib.{pyfile}")
+            # Always reload the module to ensure we have the latest version
             pyfunction = reload(pyfunction)
             output = pyfunction.main(args)
 
