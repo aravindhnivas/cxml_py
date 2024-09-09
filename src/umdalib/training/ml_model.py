@@ -401,7 +401,13 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     parameters_file = pre_trained_file.with_suffix(".parameters.json")
     if args.save_pretrained_model:
         with open(parameters_file, "w") as f:
-            json.dump(args.parameters, f, indent=4)
+            parameters_dict = {
+                "values": args.parameters,
+                "model": args.model,
+                "timestamp": current_time,
+            }
+            json.dump(parameters_dict, f, indent=4)
+            # json.dump(args.parameters, f, indent=4)
             logger.info(f"Model parameters saved to {parameters_file.name}")
 
     pop, _ = curve_fit(linear, y_test, y_pred)
