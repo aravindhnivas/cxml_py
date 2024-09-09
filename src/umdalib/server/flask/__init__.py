@@ -52,7 +52,8 @@ def preload_modules():
     frequently_used_modules = [
         # Add your frequently used module names here
         "training.read_data",
-        # "training.embedd_data",
+        "training.check_duplicates_on_x_column",
+        "training.embedd_data",
         # "training.ml_model",
     ]
     for module_name in frequently_used_modules:
