@@ -11,10 +11,6 @@ from flask_cors import CORS
 
 from umdalib.utils import logger
 
-# from umdalib.utils import Paths
-# import json
-# from pathlib import Path as pt
-
 app = Flask(__name__)
 CORS(app)
 
