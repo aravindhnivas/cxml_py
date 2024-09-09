@@ -9,4 +9,5 @@ hiddenimports = [
     "umdalib.training.molecular_analysis",
     "umdalib.training.apply_filter_for_molecular_analysis",
     "umdalib.training.make_index_and_save_file",
+    "umdalib.check_duplicates_on_x_column",
 ]
