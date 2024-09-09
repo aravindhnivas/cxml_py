@@ -68,6 +68,8 @@ def compute():
             output = {"info": "No result returned from main() function"}
 
         output["computed_time"] = f"{computed_time:.2f} s"
+        output["done"] = True
+        output["error"] = False
         logger.info(f"function execution done in {computed_time:.2f} s")
 
         if isinstance(output, dict):
