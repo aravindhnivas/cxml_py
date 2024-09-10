@@ -196,7 +196,9 @@ def main(args: Args):
     logger.info(data)
 
     filename = pt(data["filename"])
-    filtered_dir = analysis_file.parent / "filtered" / args.filtered_filename
+    filtered_dir = (
+        analysis_file.parent / "filtered" / f"{args.filtered_filename}_processed_data"
+    )
     if not filtered_dir.exists():
         filtered_dir.mkdir(parents=True)
 
@@ -219,9 +221,7 @@ def main(args: Args):
     )
     logger.info(f"{training_df.head()=}")
     final_training_df = training_df.loc[training_df.index.isin(final_analysis_df.index)]
-    final_filtered_training_df_file = (
-        filtered_dir / f"{args.filtered_filename}_training_file.csv"
-    )
+    final_filtered_training_df_file = filtered_dir / f"../{args.filtered_filename}.csv"
     final_training_df.to_csv(final_filtered_training_df_file)
     logger.info(
         f"Final filtered training data saved at {final_filtered_training_df_file}"
