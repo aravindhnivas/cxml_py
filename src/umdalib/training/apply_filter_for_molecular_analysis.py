@@ -196,15 +196,11 @@ def main(args: Args):
     logger.info(data)
 
     filename = pt(data["filename"])
-    filtered_data_filename = (
-        f"{filename.stem}_{args.filtered_filename.lower()}_filtered"
-    )
-
     filtered_dir = analysis_file.parent / "filtered" / args.filtered_filename
     if not filtered_dir.exists():
         filtered_dir.mkdir(parents=True)
 
-    filtered_analysis_dir = filtered_dir / f"{filtered_data_filename}_analysis"
+    filtered_analysis_dir = filtered_dir / "analysis_data"
     filtered_file_path: pt = filtered_analysis_dir / "molecule_analysis_results.csv"
     logger.info(f"Filtered file path: {filtered_file_path}")
     if not filtered_file_path.parent.exists():
@@ -223,7 +219,9 @@ def main(args: Args):
     )
     logger.info(f"{training_df.head()=}")
     final_training_df = training_df.loc[training_df.index.isin(final_analysis_df.index)]
-    final_filtered_training_df_file = filtered_dir / f"{filtered_data_filename}.csv"
+    final_filtered_training_df_file = (
+        filtered_dir / f"{args.filtered_filename}_training_file.csv"
+    )
     final_training_df.to_csv(final_filtered_training_df_file)
     logger.info(
         f"Final filtered training data saved at {final_filtered_training_df_file}"

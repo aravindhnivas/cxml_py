@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import json
 from pathlib import Path as pt
 from time import perf_counter
 from typing import Callable, Literal
@@ -20,7 +21,6 @@ class Args:
     key: str
     npartitions: int
     mol2vec_dim: int
-    PCA_dim: int
     df_column: str
     embedding: Literal["VICGAE", "mol2vec"]
     pretrained_model_location: str
@@ -28,6 +28,7 @@ class Args:
     test_smiles: str
     PCA_pipeline_location: str
     embedd_savefile: str
+    vectors_file: str
     use_dask: bool
 
 
@@ -193,8 +194,12 @@ def main(args: Args):
     if vectors is None:
         raise ValueError(f"Unknown embedding model: {args.embedding}")
 
-    embedd_savefile = fullfile.with_name(args.embedd_savefile).with_suffix(".npy")
-    logger.info(f"{embedd_savefile=}")
+    vectors_file = pt(args.vectors_file)
+    embedding_loc = vectors_file.parent
+    if not embedding_loc.exists():
+        embedding_loc.mkdir(parents=True)
+
+    logger.info(f"{vectors_file=}")
     logger.info(f"Begin computing embeddings for {fullfile.stem}...")
     time = perf_counter()
 
@@ -207,19 +212,38 @@ def main(args: Args):
 
         logger.info(f"{vec_computed.shape=}\n{vec_computed[0].shape=}")
         vec_computed = np.vstack(vec_computed)
-        np.save(embedd_savefile, vec_computed)
+        np.save(vectors_file, vec_computed)
+        logger.success(f"Embedded numpy array saved to {vectors_file}")
+
+        # save other meta informations such as embedder used and it's location, if PCA used and it's locations
+        with open(embedding_loc / f"{vectors_file.stem}_metadata.json", "w") as f:
+            json.dump(
+                {
+                    "embedder": args.embedding,
+                    "pre_trained_embedder_location": args.pretrained_model_location,
+                    "PCA_location": args.PCA_pipeline_location,
+                    "filename": args.filename,
+                    "filetype": args.filetype,
+                    "key": args.key,
+                    "npartitions": args.npartitions,
+                    "df_column": args.df_column,
+                },
+                f,
+                indent=4,
+            )
+        logger.success(
+            f"Metadata for embedding saved to {vectors_file.with_suffix('.json')}"
+        )
 
     logger.info(f"{vec_computed.shape=}")
     logger.info(
-        f"Embeddings computed in {(perf_counter() - time):.2f} s and saved to {embedd_savefile.name}"
+        f"Embeddings computed in {(perf_counter() - time):.2f} s and saved to {vectors_file.name}"
     )
 
     # \xa0 is a non-breaking space in Latin1 (ISO 8859-1), also known as NBSP in Unicode. It's a character that prevents an automatic line break at its position. In HTML, it's often used to create multiple spaces that are visible.
     invalid_smiles = [smiles.replace("\xa0", "").strip() for smiles in invalid_smiles]
 
-    invalid_smiles_filename = fullfile.with_name(
-        f"[INVALID_entries]_{args.embedd_savefile}"
-    ).with_suffix(".smi")
+    invalid_smiles_filename = embedding_loc / f"{vectors_file.stem}_invalid_smiles.smi"
 
     if len(invalid_smiles) > 0:
         with open(invalid_smiles_filename, "w") as f:
@@ -228,10 +252,10 @@ def main(args: Args):
 
     return {
         "file_mode": {
-            "name": embedd_savefile.name,
+            "name": vectors_file.name,
             "shape": vec_computed.shape[0],
             "invalid_smiles": len(invalid_smiles),
             "invalid_smiles_file": str(invalid_smiles_filename),
-            "saved_file": str(embedd_savefile),
+            "saved_file": str(vectors_file),
         }
     }

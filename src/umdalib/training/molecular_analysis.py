@@ -155,17 +155,18 @@ class Args:
 def main(args: Args):
     global loc
 
-    if args.analysis_file or args.mode != "all":
+    analysis_file = pt(args.analysis_file)
+
+    if analysis_file.exists() or args.mode != "all":
         logger.info(f"Analyzing molecules from file... mode: {args.mode}")
 
-        analysis_file = pt(args.analysis_file)
         loc = analysis_file.parent
         logger.info(f"Using analysis file: {analysis_file}")
         logger.info(f"Location: {loc}")
 
         if not loc.exists():
             loc.mkdir(parents=True)
-        molecular_analysis(args.analysis_file, args.atoms_bin_size, args.mode)
+        molecular_analysis(analysis_file, args.atoms_bin_size, args.mode)
         logger.success("Analysis complete.")
         return
 
@@ -174,7 +175,8 @@ def main(args: Args):
     filename = pt(args.filename)
     logger.info(f"Filename: {filename}")
 
-    loc = pt(filename).parent / f"{filename.stem}_analysis"
+    # loc = pt(filename).parent / f"{filename.stem}_analysis"
+    loc = analysis_file.parent
     logger.info(f"Location: {loc}")
 
     if not loc.exists():
@@ -231,7 +233,6 @@ def main(args: Args):
         lambda x: json.dumps(dict(x))
     )
 
-    analysis_file = loc / "molecule_analysis_results.csv"
     analysis_df.to_csv(analysis_file, index=False)
     logger.success(f"Results saved as {analysis_file}")
 
@@ -366,9 +367,8 @@ def elemental_distribution(df: pd.DataFrame):
     return elements_containing_df
 
 
-def molecular_analysis(csv_file: str = None, bin_size=10, mode="all"):
+def molecular_analysis(csv_file: pt = None, bin_size=10, mode="all"):
     logger.info("Analyzing molecules from file...")
-    csv_file = pt(csv_file)
     df = pd.read_csv(csv_file, index_col=False)
 
     logger.info(f"Fetched {len(df)} molecules from {csv_file}")

@@ -556,10 +556,12 @@ def main(args: Args):
         y = np.log10(y)
 
     invalid_embedding_indices = [i for i, arr in enumerate(X) if np.any(arr == 0)]
-    valid_embedding_mask = np.ones(len(X), dtype=bool)  # Initially, mark all as valid
-    valid_embedding_mask[invalid_embedding_indices] = (
-        False  # Mark invalid indices as False
-    )
+
+    # Initially, mark all as valid
+    valid_embedding_mask = np.ones(len(X), dtype=bool)
+    # Then, mark invalid indices as False
+    valid_embedding_mask[invalid_embedding_indices] = False
+
     X = X[
         valid_embedding_mask
     ]  # Keep only the rows that are marked as True in the valid_embedding_mask
