@@ -396,7 +396,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     logger.info(f"R2: {r2:.2f}, MSE: {mse:.2f}, MAE: {mae:.2f}")
 
     logger.info(f"Saving model to {pre_trained_file}")
-    current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
+    current_time = datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")
 
     parameters_file = pre_trained_file.with_suffix(".parameters.json")
     if args.save_pretrained_model:
@@ -473,7 +473,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         results["best_params"] = grid_search.best_params_
         results["best_score"] = f"{grid_search.best_score_:.2f}"
 
-    results["timeframe"] = current_time
+    results["timestamp"] = current_time
 
     end_time = perf_counter()
     logger.info(f"Training completed in {(end_time - start_time):.2f} s")
