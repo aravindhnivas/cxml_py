@@ -17,6 +17,10 @@ def read_as_ddf(
 ):
     logger.info(f"Reading {filename} as {filetype} using dask: {use_dask}")
 
+    if not filetype:
+        filetype = filename.split(".")[-1]
+        logger.info(f"{filetype=}")
+
     df_fn = None
     if use_dask:
         df_fn = dd
@@ -44,6 +48,8 @@ def read_as_ddf(
     elif filetype == "parquet":
         ddf = df_fn.read_parquet(filename)
     elif filetype == "hdf":
+        if not key:
+            raise ValueError("Key is required for HDF files")
         ddf = df_fn.read_hdf(filename, key)
     elif filetype == "json":
         ddf = df_fn.read_json(filename)
