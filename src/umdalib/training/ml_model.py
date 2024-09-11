@@ -229,9 +229,9 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     estimator = None
     grid_search = None
 
-    pre_trained_file = pt(args.pre_trained_file)
-    if pre_trained_file.suffix != ".pkl":
-        pre_trained_file = pre_trained_file.with_suffix(".pkl")
+    pre_trained_file = pt(args.pre_trained_file.strip()).with_suffix(".pkl")
+    if not pre_trained_file.parent.exists():
+        pre_trained_file.parent.mkdir(parents=True)
 
     # bootstrap data
     if args.bootstrap:
