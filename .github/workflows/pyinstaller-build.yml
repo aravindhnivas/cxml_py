@@ -2,10 +2,10 @@ name: Build with PyInstaller using Rye
 
 on:
   push:
-    # branches:
-    #   - main
-    tags:
-      - "v*" # Trigger on version tags
+    branches:
+      - main
+    # tags:
+    #   - "v*" # Trigger on version tags
 
 jobs:
   create_release:
@@ -26,8 +26,9 @@ jobs:
 
       - name: Output Release URL File
         run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
+
       - name: Save Release URL File for publish
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release_url
           path: release_url.txt
@@ -82,9 +83,12 @@ jobs:
         run: ${{ matrix.ZIP_IT }}
 
       - name: Load Release URL File from release job
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: release_url
+
+      - name: List downloaded artifacts
+        run: ls -R
 
       - name: Get Release File Name & Upload URL
         id: get_release_info
