@@ -52,9 +52,6 @@ jobs:
       - name: Set up Python environment with Rye
         run: rye sync
 
-      # - name: Install PyInstaller
-      #   run: rye add pyinstaller
-
       - name: Build with PyInstaller
         run: rye run ${{ matrix.CMD_BUILD }}
 
@@ -103,8 +100,8 @@ jobs:
             asset_mime: application/zip
           - asset_name: umdapy-win32.zip
             asset_mime: application/zip
-          - asset_name: umdapy-linux.zip
-            asset_mime: application/zip
+          # - asset_name: umdapy-linux.zip
+          #   asset_mime: application/zip
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v3
