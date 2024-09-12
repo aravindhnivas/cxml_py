@@ -230,8 +230,15 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     grid_search = None
 
     pre_trained_file = pt(args.pre_trained_file.strip()).with_suffix(".pkl")
-    if not pre_trained_file.parent.exists():
-        pre_trained_file.parent.mkdir(parents=True)
+    pre_trained_loc = pre_trained_file.parent
+    if not pre_trained_loc.exists():
+        pre_trained_loc.mkdir(parents=True)
+
+    arguments_file = pre_trained_loc / f"{pre_trained_file.stem}.arguments.json"
+
+    with open(arguments_file, "w") as f:
+        json.dump(args.__dict__, f, indent=4)
+        logger.info(f"Arguments saved to {arguments_file}")
 
     # bootstrap data
     if args.bootstrap:
@@ -407,27 +414,22 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
                 "timestamp": current_time,
             }
             json.dump(parameters_dict, f, indent=4)
-            # json.dump(args.parameters, f, indent=4)
             logger.info(f"Model parameters saved to {parameters_file.name}")
 
     pop, _ = curve_fit(linear, y_test, y_pred)
     y_linear_fit = linear(y_test, *pop)
 
     results = {
-        "size": {
+        "data_shapes": {
             "X": X.shape,
             "y": y.shape,
             "X_test": X_test.shape,
             "y_test": y_test.shape,
         },
-        "embedding": args.embedding,
-        "PCA": args.pca,
-        "y_test_data_size": len(y_test),
         "r2": f"{r2:.2f}",
         "mse": f"{mse:.2f}",
         "rmse": f"{rmse:.2f}",
         "mae": f"{mae:.2f}",
-        "model": args.model,
     }
 
     results["bootstrap"] = args.bootstrap
