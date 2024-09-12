@@ -2,10 +2,10 @@ name: Build with PyInstaller using Rye
 
 on:
   push:
-    branches:
-      - main
-    # tags:
-    #   - "v*" # Trigger on version tags
+    # branches:
+    #   - main
+    tags:
+      - "v*" # Trigger on version tags
 
 jobs:
   create_release:
