@@ -10,6 +10,7 @@ jobs:
     name: Build on ${{ matrix.TARGET }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false # Continue with other builds if one OS fails
       matrix:
         include:
           - os: macos-latest
@@ -45,10 +46,6 @@ jobs:
           version: "latest"
           enable-cache: true
 
-      - name: Check if cache was restored
-        if: steps.setup-rye.outputs.cache-hit == 'true'
-        run: echo "Cache was restored"
-
       - name: Set up Python environment with Rye
         run: rye sync
 
@@ -64,11 +61,6 @@ jobs:
           name: ${{ matrix.OUT_FILE_NAME }}
           path: dist/${{ matrix.OUT_FILE_NAME }}
 
-  create_release:
-    name: Create Release
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -80,51 +72,12 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Store Release URL
-        run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
-
-      - name: Upload Release URL
-        uses: actions/upload-artifact@v3
-        with:
-          name: release_url
-          path: release_url.txt
-
-  upload_assets:
-    name: Upload Assets to Release
-    needs: create_release
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - asset_name: umdapy-darwin.zip
-            asset_mime: application/zip
-          - asset_name: umdapy-win32.zip
-            asset_mime: application/zip
-          # - asset_name: umdapy-linux.zip
-          #   asset_mime: application/zip
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: ${{ matrix.asset_name }}
-
-      - name: Download Release URL
-        uses: actions/download-artifact@v3
-        with:
-          name: release_url
-
-      - name: Get Release URL
-        id: get_release_url
-        run: |
-          value=`cat release_url.txt`
-          echo "release_url=$value" >> $GITHUB_OUTPUT
-
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
-          upload_url: ${{ steps.get_release_url.outputs.release_url }}
-          asset_path: ./${{ matrix.asset_name }}
-          asset_name: ${{ matrix.asset_name }}
-          asset_content_type: ${{ matrix.asset_mime }}
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/${{ matrix.OUT_FILE_NAME }}
+          asset_name: ${{ matrix.OUT_FILE_NAME }}
+          asset_content_type: ${{ matrix.ASSET_MIME }}
