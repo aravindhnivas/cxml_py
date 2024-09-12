@@ -50,7 +50,7 @@ def preload_modules():
         "training.read_data",
         "training.check_duplicates_on_x_column",
         "training.embedd_data",
-        # "training.ml_model",
+        "training.ml_prediction",
     ]
     for module_name in frequently_used_modules:
         try:
