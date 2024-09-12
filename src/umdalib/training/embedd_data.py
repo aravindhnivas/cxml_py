@@ -216,7 +216,7 @@ def main(args: Args):
         logger.success(f"Embedded numpy array saved to {vectors_file}")
 
         # save other meta informations such as embedder used and it's location, if PCA used and it's locations
-        with open(embedding_loc / f"{vectors_file.stem}_metadata.json", "w") as f:
+        with open(embedding_loc / f"{vectors_file.stem}.metadata.json", "w") as f:
             json.dump(
                 {
                     "embedder": args.embedding,
