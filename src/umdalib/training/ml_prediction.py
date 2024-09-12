@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from functools import lru_cache
+import json
 from pathlib import Path as pt
 from typing import TypedDict
 
@@ -11,19 +12,11 @@ from umdalib.training.embedd_data import get_smi_to_vec
 from umdalib.utils import logger
 
 
-class Embedder(TypedDict):
-    name: str
-    file: str
-    pipeline_file: str
-
-
 @dataclass
 class Args:
     smiles: str
-    molecular_embedder: Embedder
     pretrained_model_file: str
     test_file: str
-    use_dask: bool
 
 
 @lru_cache()
@@ -78,20 +71,45 @@ pretrained_model_file = None
 def main(args: Args):
     global pretrained_model_file
 
-    if not args.pretrained_model_file:
-        raise ValueError("Pretrained model file not found")
-
     pretrained_model_file = pt(args.pretrained_model_file)
+    pretrained_model_loc = pretrained_model_file.parent
 
-    logger.info(f"Parsing SMILES: {args.smiles}")
+    arguments_file = (
+        pretrained_model_loc / f"{pretrained_model_file.stem}.arguments.json"
+    )
+    if not arguments_file.exists():
+        raise ValueError(f"Arguments file not found: {arguments_file}")
+
+    with open(arguments_file, "r") as f:
+        arguments = json.load(f)
+        logger.info(
+            f"Arguments: {arguments} from {arguments_file} for {pretrained_model_file} loaded"
+        )
+
+    vectors_file = pt(arguments["vectors_file"])
+    vectors_metadata_file = vectors_file.parent / f"{vectors_file.stem}.metadata.json"
+    if not vectors_metadata_file.exists():
+        raise ValueError(f"Vectors metadata file not found: {vectors_metadata_file}")
+
+    vectors_metadata = None
+    with open(vectors_metadata_file, "r") as f:
+        vectors_metadata = json.load(f)
+        logger.info(
+            f"Vectors metadata: {vectors_metadata} loaded from {vectors_metadata_file}"
+        )
+
+    if not vectors_metadata:
+        raise ValueError(f"Vectors metadata not found in {vectors_metadata_file}")
+
+    # logger.info(f"Parsing SMILES: {args.smiles}")
 
     predicted_value = None
     estimator = None
 
     smi_to_vector, model = get_smi_to_vec(
-        args.molecular_embedder["name"],
-        args.molecular_embedder["file"],
-        args.molecular_embedder["pipeline_file"],
+        vectors_metadata["embedder"],
+        vectors_metadata["pre_trained_embedder_location"],
+        vectors_metadata["PCA_location"],
     )
 
     logger.info(f"Loading estimator from {pretrained_model_file}")
