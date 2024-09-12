@@ -6,6 +6,32 @@ on:
       - "v*" # Trigger on version tags
 
 jobs:
+  create_release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if release exists
+        id: check_release
+        run: |
+          TAG_NAME=$(echo $GITHUB_REF | sed 's/refs\/tags\///')
+          RELEASE_ID=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME | jq -r .id)
+          echo "release_id=$RELEASE_ID" >> $GITHUB_ENV
+
+      - name: Create Release
+        id: create_release
+        if: env.release_id == 'null'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            Changes in this Release
+          draft: false
+          prerelease: false
+
   build:
     name: Build on ${{ matrix.TARGET }}
     runs-on: ${{ matrix.os }}
@@ -61,23 +87,12 @@ jobs:
           name: ${{ matrix.OUT_FILE_NAME }}
           path: dist/${{ matrix.OUT_FILE_NAME }}
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
           asset_path: ./dist/${{ matrix.OUT_FILE_NAME }}
           asset_name: ${{ matrix.OUT_FILE_NAME }}
           asset_content_type: ${{ matrix.ASSET_MIME }}
