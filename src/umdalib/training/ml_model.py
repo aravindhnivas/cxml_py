@@ -214,6 +214,31 @@ def make_custom_kernels(kernel_dict: Dict[str, Dict[str, str]]) -> kernels.Kerne
     return kernel
 
 
+def get_stats(
+    estimator, X_true: np.ndarray, y_true: np.ndarray, yscale: bool, scaler=None
+):
+    y_pred: np.ndarray = estimator.predict(X_true)
+    # inverse transform if data was scaled
+    if yscale and scaler is not None:
+        logger.info("Inverse transforming Y-data")
+        y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
+        y_true = scaler.inverse_transform(y_true.reshape(-1, 1)).flatten()
+
+    logger.info("Evaluating model")
+    r2 = metrics.r2_score(y_true, y_pred)
+    mse = metrics.mean_squared_error(y_true, y_pred)
+    rmse = np.sqrt(mse)
+    mae = metrics.mean_absolute_error(y_true, y_pred)
+
+    logger.info(f"R2: {r2:.2f}, MSE: {mse:.2f}, RMSE: {rmse:.2f}, MAE: {mae:.2f}")
+
+    pop, _ = curve_fit(linear, y_true, y_pred)
+    y_linear_fit = linear(y_true, *pop)
+    y_linear_fit = np.array(y_linear_fit, dtype=float)
+
+    return r2, mse, rmse, mae, y_true, y_pred, y_linear_fit
+
+
 def save_intermediate_results(
     grid_search: GridSearchCV, filename: str = "intermediate_results.csv"
 ) -> None:
@@ -278,6 +303,8 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         )
     else:
         X_train, X_test, y_train, y_test = X, X, y, y
+    logger.info(f"{X_train.shape=}, {X_test.shape=}")
+    logger.info(f"{y_train.shape=}, {y_test.shape=}")
 
     if (
         args.model in random_state_supported_models
@@ -299,6 +326,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         logger.info(f"catboost_info: {args.parameters['train_dir']=}")
 
     logger.info(f"{models_dict[args.model]=}")
+
     if args.fine_tune_model:
         logger.info("Fine-tuning model")
         opts = {
@@ -358,7 +386,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             df.to_csv(grid_savefile.with_suffix(".csv"))
 
             logger.info(f"Grid search saved to {grid_savefile}")
-
     else:
         if args.parallel_computation and args.model in n_jobs_keyword_available_models:
             args.parameters["n_jobs"] = n_jobs
@@ -380,27 +407,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         logger.info("Using best estimator from grid search")
 
     if args.save_pretrained_model:
-        # dump(estimator, pre_trained_file)
         dump((estimator, scaler), pre_trained_file)
-
-    y_pred: np.ndarray = estimator.predict(X_test)
-
-    # inverse transform if data was scaled
-    if args.scaleYdata and scaler is not None:
-        logger.info("Inverse transforming Y-data")
-        y = scaler.inverse_transform(y.reshape(-1, 1)).flatten()
-        y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
-        y_test = scaler.inverse_transform(y_test.reshape(-1, 1)).flatten()
-
-    logger.info("Evaluating model")
-    # evaluate model
-    r2 = metrics.r2_score(y_test, y_pred)
-    mse = metrics.mean_squared_error(y_test, y_pred)
-    rmse = np.sqrt(mse)
-    mae = metrics.mean_absolute_error(y_test, y_pred)
-
-    # logger.info(f"{y_test[:5]=}, {y_pred[:5]=}")
-    logger.info(f"R2: {r2:.2f}, MSE: {mse:.2f}, MAE: {mae:.2f}")
 
     logger.info(f"Saving model to {pre_trained_file}")
     current_time = datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")
@@ -416,8 +423,37 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             json.dump(parameters_dict, f, indent=4)
             logger.info(f"Model parameters saved to {parameters_file.name}")
 
-    pop, _ = curve_fit(linear, y_test, y_pred)
-    y_linear_fit = linear(y_test, *pop)
+    # y_pred: np.ndarray = estimator.predict(X_test)
+
+    # # inverse transform if data was scaled
+    # if args.scaleYdata and scaler is not None:
+    #     logger.info("Inverse transforming Y-data")
+    #     y = scaler.inverse_transform(y.reshape(-1, 1)).flatten()
+    #     y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
+    #     y_test = scaler.inverse_transform(y_test.reshape(-1, 1)).flatten()
+
+    # logger.info("Evaluating model")
+    # # evaluate model
+    # r2 = metrics.r2_score(y_test, y_pred)
+    # mse = metrics.mean_squared_error(y_test, y_pred)
+    # rmse = np.sqrt(mse)
+    # mae = metrics.mean_absolute_error(y_test, y_pred)
+
+    # # logger.info(f"{y_test[:5]=}, {y_pred[:5]=}")
+    # logger.info(f"R2: {r2:.2f}, MSE: {mse:.2f}, MAE: {mae:.2f}")
+
+    # pop, _ = curve_fit(linear, y_test, y_pred)
+    # y_linear_fit = linear(y_test, *pop)
+
+    if args.scaleYdata and scaler is not None:
+        # logger.info("Inverse transforming Y-data")
+        y = scaler.inverse_transform(y.reshape(-1, 1)).flatten()
+        # y_test = scaler.inverse_transform(y_test.reshape(-1, 1)).flatten()
+        # y_train = scaler.inverse_transform(y_train.reshape(-1, 1)).flatten()
+    # r2, mse, rmse, mae, y_pred, y_linear_fit
+
+    test_stats = get_stats(estimator, X_test, y_test, args.scaleYdata, scaler)
+    train_stats = get_stats(estimator, X_train, y_train, args.scaleYdata, scaler)
 
     results = {
         "data_shapes": {
@@ -425,11 +461,21 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             "y": y.shape,
             "X_test": X_test.shape,
             "y_test": y_test.shape,
+            "X_train": X_train.shape,
+            "y_train": y_train.shape,
         },
-        "r2": f"{r2:.2f}",
-        "mse": f"{mse:.2f}",
-        "rmse": f"{rmse:.2f}",
-        "mae": f"{mae:.2f}",
+        "test_stats": {
+            "r2": f"{test_stats[0]:.2f}",
+            "mse": f"{test_stats[1]:.2f}",
+            "rmse": f"{test_stats[2]:.2f}",
+            "mae": f"{test_stats[3]:.2f}",
+        },
+        "train_stats": {
+            "r2": f"{train_stats[0]:.2f}",
+            "mse": f"{train_stats[1]:.2f}",
+            "rmse": f"{train_stats[2]:.2f}",
+            "mae": f"{train_stats[3]:.2f}",
+        },
     }
 
     results["bootstrap"] = args.bootstrap
@@ -441,9 +487,16 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     with open(f"{pre_trained_file.with_suffix('.dat.json')}", "w") as f:
         json.dump(
             {
-                "y_true": y_test.tolist(),
-                "y_pred": y_pred.tolist(),
-                "y_linear_fit": y_linear_fit.tolist(),
+                "test": {
+                    "y_true": test_stats[4].tolist(),
+                    "y_pred": test_stats[5].tolist(),
+                    "y_linear_fit": test_stats[6].tolist(),
+                },
+                "train": {
+                    "y_true": train_stats[4].tolist(),
+                    "y_pred": train_stats[5].tolist(),
+                    "y_linear_fit": train_stats[6].tolist(),
+                },
             },
             f,
             indent=4,
@@ -513,6 +566,7 @@ skip_invalid_y_values = False
 
 
 def main(args: Args):
+    # raise NotImplementedError("This function is not implemented yet")
     global n_jobs, backend, skip_invalid_y_values
     skip_invalid_y_values = args.skip_invalid_y_values
     if args.parallel_computation:
