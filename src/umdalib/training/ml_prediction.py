@@ -1,8 +1,6 @@
-from dataclasses import dataclass
-from functools import lru_cache
 import json
+from dataclasses import dataclass
 from pathlib import Path as pt
-from typing import TypedDict
 
 import numpy as np
 import pandas as pd
@@ -19,7 +17,6 @@ class Args:
     test_file: str
 
 
-@lru_cache()
 def load_model():
     if not pretrained_model_file:
         raise ValueError("Pretrained model file not found")
