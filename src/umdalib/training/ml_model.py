@@ -239,12 +239,6 @@ def get_stats(estimator, X_true: np.ndarray, y_true: np.ndarray):
     y_linear_fit = linear(y_true, *pop)
     y_linear_fit = np.array(y_linear_fit, dtype=float)
 
-    # if logYscale:
-    #     logger.info("Inversing log10 transformation")
-    #     y_true = 10**y_true
-    #     y_pred = 10**y_pred
-    #     y_linear_fit = 10**y_linear_fit
-
     return r2, mse, rmse, mae, y_true, y_pred, y_linear_fit
 
 
