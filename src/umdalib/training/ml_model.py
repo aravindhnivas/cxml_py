@@ -214,15 +214,18 @@ def make_custom_kernels(kernel_dict: Dict[str, Dict[str, str]]) -> kernels.Kerne
     return kernel
 
 
-def get_stats(
-    estimator, X_true: np.ndarray, y_true: np.ndarray, yscale: bool, scaler=None
-):
+def get_stats(estimator, X_true: np.ndarray, y_true: np.ndarray):
     y_pred: np.ndarray = estimator.predict(X_true)
     # inverse transform if data was scaled
-    if yscale and scaler is not None:
+    if scaler:
         logger.info("Inverse transforming Y-data")
         y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
         y_true = scaler.inverse_transform(y_true.reshape(-1, 1)).flatten()
+
+    # if logYscale:
+    #     logger.info("Inversing log10 transformation")
+    #     y_true = 10**y_true
+    #     y_pred = 10**y_pred
 
     logger.info("Evaluating model")
     r2 = metrics.r2_score(y_true, y_pred)
@@ -235,6 +238,12 @@ def get_stats(
     pop, _ = curve_fit(linear, y_true, y_pred)
     y_linear_fit = linear(y_true, *pop)
     y_linear_fit = np.array(y_linear_fit, dtype=float)
+
+    # if logYscale:
+    #     logger.info("Inversing log10 transformation")
+    #     y_true = 10**y_true
+    #     y_pred = 10**y_pred
+    #     y_linear_fit = 10**y_linear_fit
 
     return r2, mse, rmse, mae, y_true, y_pred, y_linear_fit
 
@@ -283,26 +292,21 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     logger.info(f"{X[0].shape=}\n{y[0]=}")
     logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
 
-    # scale data if needed
-    scaler = None
-    if args.scaleYdata:
-        scaler = StandardScaler()
-        y = scaler.fit_transform(y.reshape(-1, 1)).flatten()
-
     test_size = float(args.test_size)
-
+    y_copy = y.copy()
     if test_size > 0:
         # split data
         logger.info("Splitting data for training and testing")
         X_train, X_test, y_train, y_test = train_test_split(
             X,
-            y,
+            y_copy,
             test_size=test_size,
             shuffle=True,
             # random_state=rng
         )
     else:
-        X_train, X_test, y_train, y_test = X, X, y, y
+        X_train, X_test, y_train, y_test = X, X, y_copy, y_copy
+
     logger.info(f"{X_train.shape=}, {X_test.shape=}")
     logger.info(f"{y_train.shape=}, {y_test.shape=}")
 
@@ -423,37 +427,11 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             json.dump(parameters_dict, f, indent=4)
             logger.info(f"Model parameters saved to {parameters_file.name}")
 
-    # y_pred: np.ndarray = estimator.predict(X_test)
+    test_stats = get_stats(estimator, X_test, y_test)
+    train_stats = get_stats(estimator, X_train, y_train)
 
-    # # inverse transform if data was scaled
-    # if args.scaleYdata and scaler is not None:
-    #     logger.info("Inverse transforming Y-data")
-    #     y = scaler.inverse_transform(y.reshape(-1, 1)).flatten()
-    #     y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
-    #     y_test = scaler.inverse_transform(y_test.reshape(-1, 1)).flatten()
-
-    # logger.info("Evaluating model")
-    # # evaluate model
-    # r2 = metrics.r2_score(y_test, y_pred)
-    # mse = metrics.mean_squared_error(y_test, y_pred)
-    # rmse = np.sqrt(mse)
-    # mae = metrics.mean_absolute_error(y_test, y_pred)
-
-    # # logger.info(f"{y_test[:5]=}, {y_pred[:5]=}")
-    # logger.info(f"R2: {r2:.2f}, MSE: {mse:.2f}, MAE: {mae:.2f}")
-
-    # pop, _ = curve_fit(linear, y_test, y_pred)
-    # y_linear_fit = linear(y_test, *pop)
-
-    if args.scaleYdata and scaler is not None:
-        # logger.info("Inverse transforming Y-data")
+    if scaler:
         y = scaler.inverse_transform(y.reshape(-1, 1)).flatten()
-        # y_test = scaler.inverse_transform(y_test.reshape(-1, 1)).flatten()
-        # y_train = scaler.inverse_transform(y_train.reshape(-1, 1)).flatten()
-    # r2, mse, rmse, mae, y_pred, y_linear_fit
-
-    test_stats = get_stats(estimator, X_test, y_test, args.scaleYdata, scaler)
-    train_stats = get_stats(estimator, X_train, y_train, args.scaleYdata, scaler)
 
     results = {
         "data_shapes": {
@@ -563,11 +541,17 @@ def convert_to_float(value: Union[str, float]) -> float:
 n_jobs = None
 backend = "threading"
 skip_invalid_y_values = False
+logYscale = False
+scaleYdata = False
+scaler = None
 
 
 def main(args: Args):
-    # raise NotImplementedError("This function is not implemented yet")
-    global n_jobs, backend, skip_invalid_y_values
+    global n_jobs, backend, skip_invalid_y_values, logYscale, scaleYdata, scaler
+
+    logYscale = args.logYscale
+    scaleYdata = args.scaleYdata
+
     skip_invalid_y_values = args.skip_invalid_y_values
     if args.parallel_computation:
         n_jobs = int(args.n_jobs)
@@ -608,9 +592,6 @@ def main(args: Args):
 
     y = y.values
 
-    if args.logYscale:
-        y = np.log10(y)
-
     invalid_embedding_indices = [i for i, arr in enumerate(X) if np.any(arr == 0)]
 
     # Initially, mark all as valid
@@ -622,6 +603,14 @@ def main(args: Args):
         valid_embedding_mask
     ]  # Keep only the rows that are marked as True in the valid_embedding_mask
     y = y[valid_embedding_mask]
+
+    if logYscale:
+        y = np.log10(y)
+
+    scaler = None
+    if scaleYdata:
+        scaler = StandardScaler()
+        y = scaler.fit_transform(y.reshape(-1, 1)).flatten()
 
     logger.info(f"{y[:5]=}, {type(y)=}")
 
