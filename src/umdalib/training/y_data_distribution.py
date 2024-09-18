@@ -33,12 +33,12 @@ def main(args: Args):
 
     y: pd.Series = df[args.column_name]
 
-    bin_size = int(args.bin_size)
     if args.auto_bin_size:
-        # Compute bin size
         n = len(y)
         bin_size = int(np.ceil(np.sqrt(n)))
         logger.info(f"Auto bin size: {args.bin_size}")
+    else:
+        bin_size = int(args.bin_size)
 
     # Compute histogram data
     hist, bin_edges = np.histogram(y, bins=bin_size)
