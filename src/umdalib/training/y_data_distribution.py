@@ -109,6 +109,9 @@ def main(args: Args):
     }
 
     # Save to JSON file
+    if not save_loc.exists():
+        save_loc.mkdir(parents=True)
+
     savefile = save_loc / args.savefilename
     with open(savefile, "w") as f:
         json.dump(analysis_results, f, indent=2)

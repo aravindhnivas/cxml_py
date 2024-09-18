@@ -29,8 +29,6 @@ def read_as_ddf(
         df_fn = pd
         logger.info(f"Using Pandas: {df_fn=}")
 
-    # df_fn = dd
-
     ddf: Union[dd.DataFrame, pd.DataFrame] = None
 
     if filetype == "smi":
