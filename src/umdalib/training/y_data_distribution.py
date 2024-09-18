@@ -35,10 +35,6 @@ def main(args: Args):
     # Compute histogram data
     hist, bin_edges = np.histogram(y, bins=int(args.bin_size))
 
-    # Print histogram data
-    print("Histogram counts:", hist)
-    print("Bin edges:", bin_edges)
-
     histogram_data = {
         "hist": hist.tolist(),
         "bin_edges": bin_edges.tolist(),
