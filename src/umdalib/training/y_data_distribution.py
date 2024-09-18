@@ -32,7 +32,6 @@ def main(args: Args):
 
     y: pd.Series = df[args.column_name]
 
-    # y = pd.DataFrame([[1, 1, 1, 1, 1, 1, 5, 6, 7, 8, 9, 10]])
     # Compute histogram data
     hist, bin_edges = np.histogram(y, bins=int(args.bin_size))
 
