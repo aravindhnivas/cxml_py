@@ -32,6 +32,7 @@ def main(args: Args):
 
     y: pd.Series = df[args.column_name]
 
+    # y = pd.DataFrame([[1, 1, 1, 1, 1, 1, 5, 6, 7, 8, 9, 10]])
     # Compute histogram data
     hist, bin_edges = np.histogram(y, bins=int(args.bin_size))
 
@@ -45,10 +46,10 @@ def main(args: Args):
     }
 
     # Save histogram data to JSON file
-    with open(training_save_directory / "histogram_data.json", "w") as f:
+    filename = training_save_directory / "histogram_data.json"
+    with open(filename, "w") as f:
         json.dump(histogram_data, f, indent=2)
 
     return {
-        "hist": hist.tolist(),
-        "bin_edges": bin_edges.tolist(),
+        "filename": str(filename),
     }
