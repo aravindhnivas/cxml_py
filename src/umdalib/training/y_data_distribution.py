@@ -118,6 +118,6 @@ def main(args: Args):
     )
 
     return {
-        "savedfile": str(savefile),
+        "savefile": str(savefile),
         "stats": desc_stats,
     }
