@@ -3,6 +3,7 @@ import threading
 import traceback
 import warnings
 from importlib import import_module, reload
+from pathlib import Path as pt
 from time import perf_counter
 
 import numpy as np
@@ -117,6 +118,10 @@ def compute():
             for k, v in output.items():
                 if isinstance(v, np.ndarray):
                     output[k] = v.tolist()
+
+                if isinstance(v, pt):
+                    output[k] = str(v)
+
             logger.info(f"Returning received to client\n{output=}")
             return jsonify(output)
 
