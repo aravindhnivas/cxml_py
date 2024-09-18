@@ -16,6 +16,7 @@ class Args:
     column_name: str
     training_save_directory: str
     bin_size: int
+    auto_bin_size: bool
 
 
 def main(args: Args):
@@ -32,8 +33,15 @@ def main(args: Args):
 
     y: pd.Series = df[args.column_name]
 
+    bin_size = int(args.bin_size)
+    if args.auto_bin_size:
+        # Compute bin size
+        n = len(y)
+        bin_size = int(np.ceil(np.sqrt(n)))
+        logger.info(f"Auto bin size: {args.bin_size}")
+
     # Compute histogram data
-    hist, bin_edges = np.histogram(y, bins=int(args.bin_size))
+    hist, bin_edges = np.histogram(y, bins=bin_size)
 
     histogram_data = {
         "hist": hist.tolist(),
@@ -48,4 +56,7 @@ def main(args: Args):
 
     return {
         "filename": str(filename),
+        "bin_size": bin_size,
+        "min": y.min(),
+        "max": y.max(),
     }
