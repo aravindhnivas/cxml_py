@@ -57,6 +57,8 @@ def main(args: Args):
     return {
         "filename": str(filename),
         "bin_size": bin_size,
-        "min": y.min(),
-        "max": y.max(),
+        "min": f"{y.min():.2f}",
+        "max": f"{y.max():.2f}",
+        "mean": f"{y.mean():.2f}",
+        "std": f"{y.std():.2f}",
     }
