@@ -44,6 +44,7 @@ def main(args: Args):
     filename = training_save_directory / "histogram_data.json"
     with open(filename, "w") as f:
         json.dump(histogram_data, f, indent=2)
+        logger.info(f"Saved histogram data to {filename}")
 
     return {
         "filename": str(filename),
