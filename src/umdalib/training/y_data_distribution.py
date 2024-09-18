@@ -19,6 +19,7 @@ class Args:
     save_loc: str
     bin_size: int
     auto_bin_size: bool
+    savefilename: str
 
 
 def main(args: Args):
@@ -108,7 +109,7 @@ def main(args: Args):
     }
 
     # Save to JSON file
-    savefile = save_loc / "ydata-distributions.json"
+    savefile = save_loc / args.savefilename
     with open(savefile, "w") as f:
         json.dump(analysis_results, f, indent=2)
 
@@ -117,6 +118,6 @@ def main(args: Args):
     )
 
     return {
-        "savefile": str(savefile),
+        "savedfile": str(savefile),
         "stats": desc_stats,
     }
