@@ -4,9 +4,11 @@ from pathlib import Path as pt
 import numpy as np
 
 # import pandas as pd
+import pandas as pd
 from scipy import stats
 from umdalib.training.read_data import read_as_ddf
 from umdalib.utils import logger
+from sklearn.preprocessing import PowerTransformer
 
 
 @dataclass
@@ -20,12 +22,140 @@ class Args:
     bin_size: int
     auto_bin_size: bool
     savefilename: str
+    auto_transform_data: bool
+
+
+boxcox_lambda_param = None
+
+
+def get_transformed_data(
+    data: np.ndarray, method: str, inverse=False, lambda_param=None
+) -> np.ndarray:
+    global boxcox_lambda_param
+    data = np.array(data, dtype=float)
+    if method == "log1p":
+        if inverse:
+            return np.expm1(data)
+        return np.log1p(data)
+    elif method == "sqrt":
+        if inverse:
+            return np.power(data, 2)
+        return np.sqrt(data)
+    elif method == "reciprocal":
+        if inverse:
+            return (1 / data) - 1
+        return 1 / (data + 1)
+    elif method == "square":
+        if inverse:
+            return np.sqrt(data)
+        return np.power(data, 2)
+    elif method == "exp":
+        if inverse:
+            return np.log(data)
+        return np.exp(data)
+    elif method == "boxcox":
+        if inverse:
+            # raise ValueError("Inverse transformation not supported for Box-Cox.")
+
+            if not lambda_param:
+                raise ValueError(
+                    "Lambda parameter is required for inverse Box-Cox transformation."
+                )
+
+            # Inverse Box-Cox Transformation
+            if lambda_param != 0:
+                # Inverse transformation when lambda is not 0
+                inverse_transformed = np.power(
+                    data * lambda_param + 1, 1 / lambda_param
+                )
+            else:
+                # Inverse transformation when lambda is 0
+                inverse_transformed = np.exp(data)
+            return inverse_transformed
+        boxcox_transformed, boxcox_lambda_param = stats.boxcox(data)
+        return boxcox_transformed
+    elif method == "yeo_johnson":
+        power_transformer = PowerTransformer(method="yeo-johnson")
+        if inverse:
+            return power_transformer.inverse_transform(data.reshape(-1, 1)).flatten()
+        return power_transformer.fit_transform(data.reshape(-1, 1)).flatten()
+    else:
+        return data
+
+
+def get_skew_and_transformation(df_y: pd.Series):
+    """
+    Check if the data is transformed based on the skewness value.
+    If the skewness is greater than 1, the data is highly skewed.
+    In this case, the data can be transformed using a power transformation.
+    """
+    skewness = df_y.skew()
+    if skewness > 1:
+        logger.info(
+            f"Data is highly skewed (skewness = {skewness:.2f}). Consider transforming the data."
+        )
+    else:
+        logger.info(f"Data is not highly skewed (skewness = {skewness:.2f}).")
+
+    data = df_y.values
+    logger.info(f"{len(data)=}")
+
+    transformed_data = {}
+    transformed_data["original"] = data
+
+    # Apply transformations based on skewness
+    if skewness > 0:
+        # Positive Skew (Right Skew)
+        log_transformed = get_transformed_data(data, "log1p")
+        sqrt_transformed = get_transformed_data(data, "sqrt")
+        reciprocal_transformed = get_transformed_data(data, "reciprocal")
+
+        transformed_data["log1p"] = log_transformed
+        transformed_data["sqrt"] = sqrt_transformed
+        transformed_data["reciprocal"] = reciprocal_transformed
+
+    elif skewness < 0:
+        # Negative Skew (Left Skew)
+        square_transformed = get_transformed_data(data, "square")
+        exp_transformed = get_transformed_data(data, "exp")
+
+        transformed_data["square"] = square_transformed
+        transformed_data["exp"] = exp_transformed
+
+    # Box-Cox Transformation (Works for positive data only, needs scipy)
+    # Make sure data is strictly positive for Box-Cox
+    if np.all(data > 0):
+        boxcox_transformed = get_transformed_data(data, "boxcox")
+        transformed_data["boxcox"] = boxcox_transformed
+
+    # Yeo-Johnson Transformation (Can handle zero and negative values)
+    yeo_johnson_transformed = get_transformed_data(data, "yeo_johnson")
+
+    transformed_data["yeo_johnson"] = yeo_johnson_transformed
+
+    # Compute skewness for each transformation
+    computed_skewness = {}
+    for method, transformed in transformed_data.items():
+        skew = stats.skew(transformed)
+        logger.info(f"{method}: {skew:.2f}")
+        computed_skewness[method] = skew
+
+    # Find the key with the minimum skewness value
+    lowest_skew_key = None
+    if computed_skewness:
+        lowest_skew_key = min(computed_skewness, key=computed_skewness.get)
+        logger.info(f"Lowest skewness transformation: {lowest_skew_key}")
+        return computed_skewness, lowest_skew_key, transformed_data[lowest_skew_key]
+
+    logger.info("No valid skewness transformations found.")
+    return None, None, None
 
 
 def main(args: Args):
-    logger.info(f"{args.property_column=}")
-    save_loc = pt(args.save_loc)
+    global boxcox_lambda_param
+    boxcox_lambda_param = None
 
+    save_loc = pt(args.save_loc)
     df = read_as_ddf(
         args.filetype,
         args.filename,
@@ -36,37 +166,43 @@ def main(args: Args):
 
     # Assuming your target property is named 'property'
     property_column = args.property_column
+    df_y = df[property_column]
+
+    if args.auto_transform_data:
+        computed_skewness, lowest_skew_key, y_transformed = get_skew_and_transformation(
+            df_y
+        )
+        logger.info(f"{lowest_skew_key=}\n{computed_skewness=}")
+        if lowest_skew_key:
+            df_y = pd.Series(y_transformed)
+
+    # logger.info(f"Skewness after transformation: {skewness:.2f}")
 
     # 1. Descriptive Statistics
-    desc_stats = df[property_column].describe().to_dict()
+    desc_stats = df_y.describe().to_dict()
 
     # 2. Histogram data
-    hist, bin_edges = np.histogram(df[property_column], bins="auto")
+    hist, bin_edges = np.histogram(df_y, bins="auto")
     hist_data = {"counts": hist.tolist(), "bin_edges": bin_edges.tolist()}
 
     # 3. Box Plot data
     box_plot_data = {
-        "min": float(df[property_column].min()),
-        "q1": float(df[property_column].quantile(0.25)),
-        "median": float(df[property_column].median()),
-        "q3": float(df[property_column].quantile(0.75)),
-        "max": float(df[property_column].max()),
+        "min": float(df_y.min()),
+        "q1": float(df_y.quantile(0.25)),
+        "median": float(df_y.median()),
+        "q3": float(df_y.quantile(0.75)),
+        "max": float(df_y.max()),
     }
 
     # 4. Q-Q Plot data
-    qq_data = stats.probplot(df[property_column], dist="norm")
+    qq_data = stats.probplot(df_y, dist="norm")
     qq_plot_data = {
         "theoretical_quantiles": qq_data[0][0].tolist(),
         "sample_quantiles": qq_data[0][1].tolist(),
     }
 
-    # 5. Shapiro-Wilk Test for Normality
-    # scipy.stats.shapiro: For N > 5000, computed p-value may not be accurate.
-    # stat, p_value = stats.shapiro(df[property_column])
-    # shapiro_test = {"statistic": float(stat), "p_value": float(p_value)}
-
     # Perform the Anderson-Darling test
-    ad_result = stats.anderson(df[property_column])
+    ad_result = stats.anderson(df_y)
 
     # Extract the test statistic and significance level
     ad_statistic = ad_result.statistic
@@ -87,12 +223,12 @@ def main(args: Args):
         logger.info(f"At {sl}% significance level: critical value is {cv:.4f}")
 
     # 6. Skewness and Kurtosis
-    skewness = float(df[property_column].skew())
-    kurtosis = float(df[property_column].kurtosis())
+    skewness = float(df_y.skew())
+    kurtosis = float(df_y.kurtosis())
 
     # 7. KDE data
-    kde = stats.gaussian_kde(df[property_column])
-    x_range = np.linspace(df[property_column].min(), df[property_column].max(), 100)
+    kde = stats.gaussian_kde(df_y)
+    x_range = np.linspace(df_y.min(), df_y.max(), 100)
     kde_data = {"x": x_range.tolist(), "y": kde(x_range).tolist()}
 
     # Combine all data
@@ -101,12 +237,16 @@ def main(args: Args):
         "histogram": hist_data,
         "box_plot": box_plot_data,
         "qq_plot": qq_plot_data,
-        # "shapiro_wilk_test": shapiro_test,
         "anderson_darling_test": anderson_darling_test,
         "skewness": skewness,
         "kurtosis": kurtosis,
         "kde": kde_data,
     }
+
+    if args.auto_transform_data:
+        analysis_results["applied_transformation"] = lowest_skew_key
+        if boxcox_lambda_param:
+            analysis_results["boxcox_lambda"] = boxcox_lambda_param
 
     # Save to JSON file
     if not save_loc.exists():
