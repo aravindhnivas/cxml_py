@@ -78,13 +78,19 @@ def get_skew_and_transformation(df_y: pd.Series):
         transformed_data["boxcox"] = boxcox_transformed
 
     # Yeo-Johnson Transformation (Can handle zero and negative values)
-    yeo_johnson_transformed = get_transformed_data(data, "yeo_johnson")
+    yeo_johnson_transformed, _yeo_johnson_power_transformer = get_transformed_data(
+        data, "yeo_johnson"
+    )
 
     transformed_data["yeo_johnson"] = yeo_johnson_transformed
-
+    logger.info(f"{transformed_data.keys()=}")
     # Compute skewness for each transformation
+    logger.info("Skewness after transformation:")
     computed_skewness = {}
     for method, transformed in transformed_data.items():
+        logger.info(f"Method: {method}")
+        logger.info(f"{type(transformed)=}")
+        logger.info(f"{transformed.shape=}")
         skew = stats.skew(transformed)
         logger.info(f"{method}: {skew:.2f}")
         computed_skewness[method] = skew

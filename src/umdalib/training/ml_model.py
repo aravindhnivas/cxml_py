@@ -652,7 +652,7 @@ def main(args: Args):
             logger.info(f"{boxcox_lambda_param=}")
         elif ytransformation == "yeo_johnson":
             logger.info("Applying yeo-johnson transformation")
-            y_transformer, y = get_transformed_data(y, ytransformation)
+            y, y_transformer = get_transformed_data(y, ytransformation)
             logger.info(f"{y_transformer=}")
         else:
             logger.info(f"Applying {ytransformation} transformation")

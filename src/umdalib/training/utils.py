@@ -68,6 +68,6 @@ def get_transformed_data(
         transformed_data = power_transformer.fit_transform(
             data.reshape(-1, 1)
         ).flatten()
-        return power_transformer, transformed_data
+        return transformed_data, power_transformer
     else:
         return data
