@@ -74,16 +74,15 @@ def get_skew_and_transformation(df_y: pd.Series):
     # Box-Cox Transformation (Works for positive data only, needs scipy)
     # Make sure data is strictly positive for Box-Cox
     if np.all(data > 0):
-        boxcox_transformed, boxcox_lambda_param = get_transformed_data(data, "boxcox")
+        boxcox_transformed, boxcox_lambda_param = get_transformed_data(
+            data, "boxcox", get_other_params=True
+        )
         transformed_data["boxcox"] = boxcox_transformed
 
     # Yeo-Johnson Transformation (Can handle zero and negative values)
-    yeo_johnson_transformed, _yeo_johnson_power_transformer = get_transformed_data(
-        data, "yeo_johnson"
-    )
-
-    transformed_data["yeo_johnson"] = yeo_johnson_transformed
+    transformed_data["yeo_johnson"] = get_transformed_data(data, "yeo_johnson")
     logger.info(f"{transformed_data.keys()=}")
+
     # Compute skewness for each transformation
     logger.info("Skewness after transformation:")
     computed_skewness = {}
@@ -131,10 +130,11 @@ def main(args: Args):
             df_y = pd.Series(y_transformed)
     elif args.ytransformation:
         if args.ytransformation == "boxcox":
-            df_y, boxcox_lambda_param = get_transformed_data(df_y, args.ytransformation)
+            df_y, boxcox_lambda_param = get_transformed_data(
+                df_y.values, args.ytransformation, get_other_params=True
+            )
         else:
-            y_values = get_transformed_data(df_y.values, args.ytransformation)
-            df_y = pd.Series(y_values)
+            df_y = get_transformed_data(df_y.values, args.ytransformation)
 
     # logger.info(f"Skewness after transformation: {skewness:.2f}")
     if not isinstance(df_y, pd.Series):
@@ -209,6 +209,13 @@ def main(args: Args):
         analysis_results["applied_transformation"] = best_skew_key
         if boxcox_lambda_param:
             analysis_results["boxcox_lambda"] = boxcox_lambda_param
+    elif args.ytransformation:
+        analysis_results["applied_transformation"] = args.ytransformation
+        if args.ytransformation == "boxcox":
+            analysis_results["boxcox_lambda"] = boxcox_lambda_param
+    else:
+        analysis_results["applied_transformation"] = None
+        analysis_results["boxcox_lambda"] = None
 
     # Save to JSON file
     if not save_loc.exists():

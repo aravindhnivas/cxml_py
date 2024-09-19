@@ -22,7 +22,11 @@ Yscalers = {
 
 
 def get_transformed_data(
-    data: np.ndarray, method: str, inverse=False, lambda_param=None
+    data: np.ndarray,
+    method: str,
+    inverse=False,
+    lambda_param=None,
+    get_other_params=False,
 ) -> np.ndarray:
     if isinstance(data, list):
         data = np.array(data, dtype=float)
@@ -59,6 +63,9 @@ def get_transformed_data(
             return inverse_transformed
 
         boxcox_transformed, boxcox_lambda_param = stats.boxcox(data)
+        if not get_other_params:
+            return boxcox_transformed
+
         return boxcox_transformed, boxcox_lambda_param
     elif method == "yeo_johnson":
         power_transformer = PowerTransformer(method="yeo-johnson")
@@ -68,6 +75,9 @@ def get_transformed_data(
         transformed_data = power_transformer.fit_transform(
             data.reshape(-1, 1)
         ).flatten()
+        if not get_other_params:
+            return transformed_data
+
         return transformed_data, power_transformer
     else:
         return data
