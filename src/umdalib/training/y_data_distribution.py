@@ -132,6 +132,8 @@ def main(args: Args):
             df_y = pd.Series(y_values)
 
     # logger.info(f"Skewness after transformation: {skewness:.2f}")
+    if not isinstance(df_y, pd.Series):
+        df_y = pd.Series(df_y)
 
     # 1. Descriptive Statistics
     desc_stats = df_y.describe().to_dict()
