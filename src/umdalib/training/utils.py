@@ -8,6 +8,7 @@ from sklearn.preprocessing import (
     QuantileTransformer,
     MaxAbsScaler,
 )
+from scipy.special import inv_boxcox
 # import pandas as pd
 
 Yscalers = {
@@ -48,22 +49,7 @@ def get_transformed_data(
         return np.exp(data)
     elif method == "boxcox":
         if inverse:
-            # raise ValueError("Inverse transformation not supported for Box-Cox.")
-
-            if not lambda_param:
-                raise ValueError(
-                    "Lambda parameter is required for inverse Box-Cox transformation."
-                )
-
-            # Inverse Box-Cox Transformation
-            if lambda_param != 0:
-                # Inverse transformation when lambda is not 0
-                inverse_transformed = np.power(
-                    data * lambda_param + 1, 1 / lambda_param
-                )
-            else:
-                # Inverse transformation when lambda is 0
-                inverse_transformed = np.exp(data)
+            inverse_transformed = inv_boxcox(data, lambda_param)
             return inverse_transformed
 
         boxcox_transformed, boxcox_lambda_param = stats.boxcox(data)
