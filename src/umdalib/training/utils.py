@@ -9,7 +9,7 @@ from sklearn.preprocessing import (
     MaxAbsScaler,
 )
 from scipy.special import inv_boxcox
-# import pandas as pd
+
 
 Yscalers = {
     "StandardScaler": StandardScaler,
@@ -26,6 +26,12 @@ def get_transformed_data(
 ) -> np.ndarray:
     if isinstance(data, list):
         data = np.array(data, dtype=float)
+
+    if method in Yscalers.keys():
+        scaler = Yscalers[method]()
+        if inverse:
+            return scaler.inverse_transform(data.reshape(-1, 1)).flatten()
+        return scaler.fit_transform(data.reshape(-1, 1)).flatten()
 
     if method == "log1p":
         if inverse:
