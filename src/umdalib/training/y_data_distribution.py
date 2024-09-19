@@ -224,11 +224,13 @@ def main(args: Args):
     if not save_loc.exists():
         save_loc.mkdir(parents=True)
 
+    # Save the analysis results
     savefile = save_loc / args.savefilename
     with open(savefile, "w") as f:
         json.dump(analysis_results, f, indent=2)
         logger.info(f"Analysis complete. Results saved to {savefile}.json")
 
+    # save the transformed data
     if args.ytransformation:
         logger.info(f"Saving transformed data to {save_loc}")
         y_transformed_data = {"data": y_transformed.tolist()}
@@ -239,6 +241,13 @@ def main(args: Args):
         with open(savefile_y, "w") as f:
             json.dump(y_transformed_data, f, indent=2)
             logger.info(f"Transformed data saved to {savefile_y}")
+
+    # save the original data
+    savefile_y = save_loc / "original_y_data.json"
+    if not savefile_y.exists():
+        with open(savefile_y, "w") as f:
+            json.dump({"data": df_y.tolist()}, f, indent=2)
+            logger.info(f"Original data saved to {savefile_y}")
 
     return {
         "savefile": str(savefile),
