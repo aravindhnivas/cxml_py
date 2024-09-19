@@ -8,6 +8,7 @@ from sklearn.preprocessing import (
     QuantileTransformer,
     MaxAbsScaler,
 )
+import pandas as pd
 
 Yscalers = {
     "StandardScaler": StandardScaler,
@@ -22,7 +23,9 @@ Yscalers = {
 def get_transformed_data(
     data: np.ndarray, method: str, inverse=False, lambda_param=None
 ) -> np.ndarray:
-    data = np.array(data, dtype=float)
+    if isinstance(data, list):
+        data = np.array(data, dtype=float)
+
     if method == "log1p":
         if inverse:
             return np.expm1(data)
