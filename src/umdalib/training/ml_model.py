@@ -45,7 +45,6 @@ from sklearn.neighbors import KNeighborsRegressor
 
 # from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVR
 
 # for saving models
@@ -658,11 +657,15 @@ def main(args: Args):
         else:
             logger.info(f"Applying {ytransformation} transformation")
             y = get_transformed_data(y, ytransformation)
+    else:
+        logger.warning("No transformation applied")
 
     yscaler = None
     if yscaling:
         yscaler = Yscalers[yscaling]()
         y = yscaler.fit_transform(y.reshape(-1, 1)).flatten()
+    else:
+        logger.warning("No scaling applied")
 
     logger.info(f"{y[:5]=}, {type(y)=}")
 
