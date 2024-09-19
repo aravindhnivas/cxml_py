@@ -92,7 +92,11 @@ def get_skew_and_transformation(df_y: pd.Series):
     # Find the key with the minimum skewness value
     lowest_skew_key = None
     if computed_skewness:
-        lowest_skew_key = min(computed_skewness, key=computed_skewness.get)
+        lowest_skew_key = min(
+            computed_skewness, key=lambda k: abs(computed_skewness[k])
+        )
+        # best_transformation = min(computed_skewness, key=lambda k: abs(computed_skewness[k]))
+        # best_skewness_value = skewness_dict[best_transformation]
         logger.info(f"Lowest skewness transformation: {lowest_skew_key}")
         return computed_skewness, lowest_skew_key, transformed_data[lowest_skew_key]
 
