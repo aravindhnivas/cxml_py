@@ -89,19 +89,14 @@ def get_skew_and_transformation(df_y: pd.Series):
         logger.info(f"{method}: {skew:.2f}")
         computed_skewness[method] = skew
 
-    # Find the key with the minimum skewness value
-    lowest_skew_key = None
-    if computed_skewness:
-        lowest_skew_key = min(
-            computed_skewness, key=lambda k: abs(computed_skewness[k])
-        )
-        # best_transformation = min(computed_skewness, key=lambda k: abs(computed_skewness[k]))
-        # best_skewness_value = skewness_dict[best_transformation]
-        logger.info(f"Lowest skewness transformation: {lowest_skew_key}")
-        return computed_skewness, lowest_skew_key, transformed_data[lowest_skew_key]
+    if not computed_skewness:
+        logger.info("No valid skewness transformations found.")
+        return None, None, None
 
-    logger.info("No valid skewness transformations found.")
-    return None, None, None
+    best_skew_key = None
+    best_skew_key = min(computed_skewness, key=lambda k: abs(computed_skewness[k]))
+    logger.info(f"Best transformation: {best_skew_key}")
+    return computed_skewness, best_skew_key, transformed_data[best_skew_key]
 
 
 def main(args: Args):
@@ -122,11 +117,11 @@ def main(args: Args):
     df_y = df[property_column]
 
     if args.auto_transform_data:
-        computed_skewness, lowest_skew_key, y_transformed = get_skew_and_transformation(
+        computed_skewness, best_skew_key, y_transformed = get_skew_and_transformation(
             df_y
         )
-        logger.info(f"{lowest_skew_key=}\n{computed_skewness=}")
-        if lowest_skew_key:
+        logger.info(f"{best_skew_key=}\n{computed_skewness=}")
+        if best_skew_key:
             df_y = pd.Series(y_transformed)
     elif args.ytransformation:
         if args.ytransformation == "boxcox":
@@ -205,7 +200,7 @@ def main(args: Args):
     }
 
     if args.auto_transform_data:
-        analysis_results["applied_transformation"] = lowest_skew_key
+        analysis_results["applied_transformation"] = best_skew_key
         if boxcox_lambda_param:
             analysis_results["boxcox_lambda"] = boxcox_lambda_param
 
