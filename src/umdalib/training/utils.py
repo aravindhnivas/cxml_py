@@ -64,6 +64,10 @@ def get_transformed_data(
         power_transformer = PowerTransformer(method="yeo-johnson")
         if inverse:
             return power_transformer.inverse_transform(data.reshape(-1, 1)).flatten()
-        return power_transformer.fit_transform(data.reshape(-1, 1)).flatten()
+
+        transformed_data = power_transformer.fit_transform(
+            data.reshape(-1, 1)
+        ).flatten()
+        return power_transformer, transformed_data
     else:
         return data
