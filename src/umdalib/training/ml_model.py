@@ -162,6 +162,8 @@ class Args:
     parallel_computation_backend: str
     use_dask: bool
     skip_invalid_y_values: bool
+    inverse_scaling: bool
+    inverse_transform: bool
 
 
 def augment_data(
@@ -218,25 +220,34 @@ def make_custom_kernels(kernel_dict: Dict[str, Dict[str, str]]) -> kernels.Kerne
 
 def get_stats(estimator, X_true: np.ndarray, y_true: np.ndarray):
     y_pred: np.ndarray = estimator.predict(X_true)
-    # inverse transform if data was scaled
-    if scaler:
-        logger.info("Inverse transforming Y-data")
-        y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
-        y_true = scaler.inverse_transform(y_true.reshape(-1, 1)).flatten()
 
-    # if ytransformation:
-    #     y_true = get_transformed_data(
-    #         y_true,
-    #         ytransformation,
-    #         inverse=True,
-    #         lambda_param=boxcox_lambda_param,
-    #     )
-    #     y_pred = get_transformed_data(
-    #         y_pred,
-    #         ytransformation,
-    #         inverse=True,
-    #         lambda_param=boxcox_lambda_param,
-    #     )
+    if inverse_scaling and yscaler:
+        logger.info("Inverse transforming Y-data")
+        y_pred = yscaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
+        y_true = yscaler.inverse_transform(y_true.reshape(-1, 1)).flatten()
+
+    if inverse_transform and ytransformation:
+        logger.info("Inverse transforming Y-data")
+        if y_transformer:
+            logger.info(
+                f"Using Yeo-Johnson inverse transformation using {y_transformer=}"
+            )
+            y_pred = y_transformer.inverse_transform(y_pred.reshape(-1, 1)).flatten()
+            y_true = y_transformer.inverse_transform(y_true.reshape(-1, 1)).flatten()
+        else:
+            logger.info("Using other inverse transformation")
+            y_true = get_transformed_data(
+                y_true,
+                ytransformation,
+                inverse=True,
+                lambda_param=boxcox_lambda_param,
+            )
+            y_pred = get_transformed_data(
+                y_pred,
+                ytransformation,
+                inverse=True,
+                lambda_param=boxcox_lambda_param,
+            )
 
     logger.info("Evaluating model")
     r2 = metrics.r2_score(y_true, y_pred)
@@ -416,7 +427,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         logger.info("Using best estimator from grid search")
 
     if args.save_pretrained_model:
-        dump((estimator, scaler), pre_trained_file)
+        dump((estimator, yscaler), pre_trained_file)
 
     logger.info(f"Saving model to {pre_trained_file}")
     current_time = datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")
@@ -435,8 +446,15 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     test_stats = get_stats(estimator, X_test, y_test)
     train_stats = get_stats(estimator, X_train, y_train)
 
-    if scaler:
-        y = scaler.inverse_transform(y.reshape(-1, 1)).flatten()
+    if inverse_scaling and yscaler:
+        y = yscaler.inverse_transform(y.reshape(-1, 1)).flatten()
+    if inverse_transform and ytransformation:
+        if y_transformer:
+            y = y_transformer.inverse_transform(y.reshape(-1, 1)).flatten()
+        else:
+            y = get_transformed_data(
+                y, ytransformation, inverse=True, lambda_param=boxcox_lambda_param
+            )
 
     results = {
         "data_shapes": {
@@ -547,9 +565,13 @@ n_jobs = None
 backend = "threading"
 skip_invalid_y_values = False
 ytransformation: str = None
+y_transformer = None
 yscaling: str = "StandardScaler"
-scaler = None
+yscaler = None
 boxcox_lambda_param = None
+
+inverse_scaling = True
+inverse_transform = True
 
 
 def main(args: Args):
@@ -559,11 +581,16 @@ def main(args: Args):
         skip_invalid_y_values, \
         ytransformation, \
         yscaling, \
-        scaler, \
-        boxcox_lambda_param
+        yscaler, \
+        boxcox_lambda_param, \
+        inverse_scaling, \
+        inverse_transform, \
+        y_transformer
 
     ytransformation = args.ytransformation
     yscaling = args.yscaling
+    inverse_scaling = args.inverse_scaling
+    inverse_transform = args.inverse_transform
 
     skip_invalid_y_values = args.skip_invalid_y_values
     if args.parallel_computation:
@@ -617,16 +644,25 @@ def main(args: Args):
     ]  # Keep only the rows that are marked as True in the valid_embedding_mask
     y = y[valid_embedding_mask]
 
+    y_transformer = None
+
     if ytransformation:
         if ytransformation == "boxcox":
+            logger.info("Applying boxcox transformation")
             y, boxcox_lambda_param = get_transformed_data(y, ytransformation)
+            logger.info(f"{boxcox_lambda_param=}")
+        elif ytransformation == "yeo_johnson":
+            logger.info("Applying yeo-johnson transformation")
+            y_transformer, y = get_transformed_data(y, ytransformation)
+            logger.info(f"{y_transformer=}")
         else:
+            logger.info(f"Applying {ytransformation} transformation")
             y = get_transformed_data(y, ytransformation)
 
-    scaler = None
+    yscaler = None
     if yscaling:
-        scaler = Yscalers[yscaling]()
-        y = scaler.fit_transform(y.reshape(-1, 1)).flatten()
+        yscaler = Yscalers[yscaling]()
+        y = yscaler.fit_transform(y.reshape(-1, 1)).flatten()
 
     logger.info(f"{y[:5]=}, {type(y)=}")
 
