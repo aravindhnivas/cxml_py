@@ -57,6 +57,8 @@ from xgboost import __version__ as xgboost_version
 from umdalib.training.read_data import read_as_ddf
 from umdalib.utils import Paths
 
+from umdalib.training.utils import get_transformed_data, Yscalers
+
 tqdm.pandas()
 
 logger.info(f"xgboost version {xgboost_version}")
@@ -147,8 +149,8 @@ class Args:
     npartitions: int
     vectors_file: str
     noise_percentage: float
-    logYscale: bool
-    scaleYdata: bool
+    ytransformation: str
+    yscaling: str
     embedding: str
     pca: bool
     save_pretrained_model: bool
@@ -222,10 +224,19 @@ def get_stats(estimator, X_true: np.ndarray, y_true: np.ndarray):
         y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
         y_true = scaler.inverse_transform(y_true.reshape(-1, 1)).flatten()
 
-    # if logYscale:
-    #     logger.info("Inversing log10 transformation")
-    #     y_true = 10**y_true
-    #     y_pred = 10**y_pred
+    # if ytransformation:
+    #     y_true = get_transformed_data(
+    #         y_true,
+    #         ytransformation,
+    #         inverse=True,
+    #         lambda_param=boxcox_lambda_param,
+    #     )
+    #     y_pred = get_transformed_data(
+    #         y_pred,
+    #         ytransformation,
+    #         inverse=True,
+    #         lambda_param=boxcox_lambda_param,
+    #     )
 
     logger.info("Evaluating model")
     r2 = metrics.r2_score(y_true, y_pred)
@@ -535,16 +546,24 @@ def convert_to_float(value: Union[str, float]) -> float:
 n_jobs = None
 backend = "threading"
 skip_invalid_y_values = False
-logYscale = False
-scaleYdata = False
+ytransformation: str = None
+yscaling: str = "StandardScaler"
 scaler = None
+boxcox_lambda_param = None
 
 
 def main(args: Args):
-    global n_jobs, backend, skip_invalid_y_values, logYscale, scaleYdata, scaler
+    global \
+        n_jobs, \
+        backend, \
+        skip_invalid_y_values, \
+        ytransformation, \
+        yscaling, \
+        scaler, \
+        boxcox_lambda_param
 
-    logYscale = args.logYscale
-    scaleYdata = args.scaleYdata
+    ytransformation = args.ytransformation
+    yscaling = args.yscaling
 
     skip_invalid_y_values = args.skip_invalid_y_values
     if args.parallel_computation:
@@ -598,12 +617,15 @@ def main(args: Args):
     ]  # Keep only the rows that are marked as True in the valid_embedding_mask
     y = y[valid_embedding_mask]
 
-    if logYscale:
-        y = np.log10(y)
+    if ytransformation:
+        if ytransformation == "boxcox":
+            y, boxcox_lambda_param = get_transformed_data(y, ytransformation)
+        else:
+            y = get_transformed_data(y, ytransformation)
 
     scaler = None
-    if scaleYdata:
-        scaler = StandardScaler()
+    if yscaling:
+        scaler = Yscalers[yscaling]()
         y = scaler.fit_transform(y.reshape(-1, 1)).flatten()
 
     logger.info(f"{y[:5]=}, {type(y)=}")
