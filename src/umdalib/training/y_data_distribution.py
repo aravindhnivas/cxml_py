@@ -23,6 +23,7 @@ class Args:
     auto_bin_size: bool
     savefilename: str
     auto_transform_data: bool
+    ytransformation: str
 
 
 boxcox_lambda_param = None
@@ -123,6 +124,12 @@ def main(args: Args):
         logger.info(f"{lowest_skew_key=}\n{computed_skewness=}")
         if lowest_skew_key:
             df_y = pd.Series(y_transformed)
+    elif args.ytransformation:
+        if args.ytransformation == "boxcox":
+            df_y, boxcox_lambda_param = get_transformed_data(df_y, args.ytransformation)
+        else:
+            y_values = get_transformed_data(df_y.values, args.ytransformation)
+            df_y = pd.Series(y_values)
 
     # logger.info(f"Skewness after transformation: {skewness:.2f}")
 
