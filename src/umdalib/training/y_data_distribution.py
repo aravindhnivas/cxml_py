@@ -120,6 +120,7 @@ def main(args: Args):
     # Assuming your target property is named 'property'
     property_column = args.property_column
     df_y = df[property_column]
+    y_transformed = None
 
     if args.auto_transform_data:
         computed_skewness, best_skew_key, y_transformed = get_skew_and_transformation(
@@ -130,11 +131,13 @@ def main(args: Args):
             df_y = pd.Series(y_transformed)
     elif args.ytransformation:
         if args.ytransformation == "boxcox":
-            df_y, boxcox_lambda_param = get_transformed_data(
+            y_transformed, boxcox_lambda_param = get_transformed_data(
                 df_y.values, args.ytransformation, get_other_params=True
             )
         else:
-            df_y = get_transformed_data(df_y.values, args.ytransformation)
+            y_transformed = get_transformed_data(df_y.values, args.ytransformation)
+
+        df_y = pd.Series(y_transformed)
 
     # logger.info(f"Skewness after transformation: {skewness:.2f}")
     if not isinstance(df_y, pd.Series):
@@ -224,10 +227,18 @@ def main(args: Args):
     savefile = save_loc / args.savefilename
     with open(savefile, "w") as f:
         json.dump(analysis_results, f, indent=2)
+        logger.info(f"Analysis complete. Results saved to {savefile}.json")
 
-    logger.info(
-        "Analysis complete. Results saved to 'molecular_property_analysis.json'"
-    )
+    if args.ytransformation:
+        logger.info(f"Saving transformed data to {save_loc}")
+        y_transformed_data = {"data": y_transformed.tolist()}
+        if args.ytransformation == "boxcox":
+            y_transformed_data["lambda"] = boxcox_lambda_param
+        savefile_y = save_loc / f"{args.ytransformation}_y_transformed_data.json"
+
+        with open(savefile_y, "w") as f:
+            json.dump(y_transformed_data, f, indent=2)
+            logger.info(f"Transformed data saved to {savefile_y}")
 
     return {
         "savefile": str(savefile),
