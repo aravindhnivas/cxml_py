@@ -8,7 +8,7 @@ from sklearn.preprocessing import (
     QuantileTransformer,
     MaxAbsScaler,
 )
-import pandas as pd
+# import pandas as pd
 
 Yscalers = {
     "StandardScaler": StandardScaler,
