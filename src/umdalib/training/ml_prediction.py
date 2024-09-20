@@ -14,7 +14,7 @@ from umdalib.utils import logger
 class Args:
     smiles: str
     pretrained_model_file: str
-    test_file: str
+    prediction_file: str
 
 
 def load_model():
@@ -23,9 +23,9 @@ def load_model():
     return load(pretrained_model_file)
 
 
-def predict_from_file(test_file: pt, smi_to_vector, model, estimator, scaler):
-    logger.info(f"Reading test file: {test_file}")
-    data = pd.read_csv(test_file)
+def predict_from_file(prediction_file: pt, smi_to_vector, model, estimator, scaler):
+    logger.info(f"Reading test file: {prediction_file}")
+    data = pd.read_csv(prediction_file)
     logger.info(f"Data shape: {data.shape}")
 
     columns = data.columns.tolist()
@@ -53,8 +53,8 @@ def predict_from_file(test_file: pt, smi_to_vector, model, estimator, scaler):
     predicted_value = predicted_value.tolist()
     data["predicted_value"] = predicted_value
     savefile = (
-        test_file.parent
-        / f"{test_file.stem}_predicted_values_{pretrained_model_file.stem}.csv"
+        prediction_file.parent
+        / f"{prediction_file.stem}_predicted_values_{pretrained_model_file.stem}.csv"
     )
     data.to_csv(savefile, index=False)
 
@@ -119,9 +119,9 @@ def main(args: Args):
     logger.info(f"Loaded estimator: {estimator}")
     logger.info(f"Loaded scaler: {scaler}")
 
-    if args.test_file:
+    if args.prediction_file:
         return predict_from_file(
-            pt(args.test_file), smi_to_vector, model, estimator, scaler
+            pt(args.prediction_file), smi_to_vector, model, estimator, scaler
         )
 
     X = smi_to_vector(args.smiles, model)
