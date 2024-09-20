@@ -44,7 +44,6 @@ from sklearn.model_selection import (
 from sklearn.neighbors import KNeighborsRegressor
 
 # from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.pipeline import Pipeline
 from sklearn.svm import SVR
 
 # for saving models
@@ -414,8 +413,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         else:
             estimator = models_dict[args.model](**args.parameters)
 
-    # Create the pipeline
-    estimator = Pipeline([("estimator", estimator)])  # Train the model
+    # estimator = Pipeline([("estimator", estimator)])
 
     # train model
     if not args.fine_tune_model:
@@ -431,11 +429,13 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     logger.info(f"Saving model to {pre_trained_file}")
     current_time = datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")
 
+    logger.info(f"{args.model=}, {estimator.get_params()=}, {yscaler=}")
+
     parameters_file = pre_trained_file.with_suffix(".parameters.json")
     if args.save_pretrained_model:
         with open(parameters_file, "w") as f:
             parameters_dict = {
-                "values": args.parameters,
+                "values": args.parameters | estimator.get_params(),
                 "model": args.model,
                 "timestamp": current_time,
             }
