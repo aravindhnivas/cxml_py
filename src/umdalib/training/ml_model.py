@@ -138,7 +138,7 @@ class Args:
     bootstrap: bool
     bootstrap_nsamples: int
     parameters: Dict[str, Union[str, int, None]]
-    fine_tuned_hyperparameters: Dict[str, Union[str, int, float, None]]
+    fine_tuned_values: Dict[str, Union[str, int, float, None]]
     pre_trained_file: str
     cv_fold: int
     cross_validation: bool
@@ -350,7 +350,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         opts = {
             k: v
             for k, v in args.parameters.items()
-            if k not in args.fine_tuned_hyperparameters.keys()
+            if k not in args.fine_tuned_values.keys()
         }
 
         if args.parallel_computation and args.model in n_jobs_keyword_available_models:
@@ -375,7 +375,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
         grid_search = GridCV(
             initial_estimator,
-            args.fine_tuned_hyperparameters,
+            args.fine_tuned_values,
             cv=int(args.cv_fold),
             **GridCV_parameters,
         )
