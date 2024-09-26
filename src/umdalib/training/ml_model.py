@@ -39,6 +39,7 @@ from sklearn.model_selection import (
     KFold,
     RandomizedSearchCV,
     cross_val_score,
+    cross_validate,
     train_test_split,
 )
 from sklearn.neighbors import KNeighborsRegressor
@@ -269,6 +270,59 @@ def save_intermediate_results(
     df = pd.DataFrame(grid_search.cv_results_)
     df = df.sort_values(by="rank_test_score")
     df.to_csv(filename, index=False)
+
+
+def compute_cv(cv_fold: int, estimator, X: np.ndarray, y: np.ndarray):
+    scoring = {
+        "r2": "r2",
+        "mse": "neg_mean_squared_error",
+        "mae": "neg_mean_absolute_error",
+    }
+
+    logger.info("Cross-validating model")
+
+    cv_fold = KFold(n_splits=int(cv_fold), shuffle=True)
+    cv_results = cross_validate(
+        estimator, X, y, cv=cv_fold, scoring=scoring, return_train_score=True
+    )
+    logger.info(f"{cv_results=}")
+
+    cv_scores = {}
+    for t in ["test", "train"]:
+        cv_scores[t] = {}
+        for k in ["r2", "mse", "mae"]:
+            scores = np.array(cv_results[f"{t}_{k}"])
+            if k in ["mse", "mae"]:
+                # Negate because sklearn returns negative MSE and MAE
+                scores = -scores
+
+            avg = np.mean(scores)
+            std = np.std(scores, ddof=1)  # Use ddof=1 for sample standard deviation
+
+            if k == "mse":
+                rmse_scores = np.sqrt(scores)
+                rmse_avg = np.mean(rmse_scores)
+                rmse_std = np.std(rmse_scores, ddof=1)
+
+                cv_scores[t]["rmse"] = {
+                    "mean": f"{rmse_avg:.4f}",
+                    "std": f"{rmse_std:.4f}",
+                    "ci_lower": f"{rmse_avg - 1.96 * rmse_std:.4f}",
+                    "ci_upper": f"{rmse_avg + 1.96 * rmse_std:.4f}",
+                    "scores": rmse_scores.tolist(),
+                }
+
+            cv_scores[t][k] = {
+                "mean": f"{avg:.4f}",
+                "std": f"{std:.4f}",
+                "ci_lower": f"{avg - 1.96 * std:.4f}",
+                "ci_upper": f"{avg + 1.96 * std:.4f}",
+                "scores": scores.tolist(),
+            }
+
+    logger.info(f"{cv_scores=}")
+
+    return cv_scores
 
 
 def compute(args: Args, X: np.ndarray, y: np.ndarray):
@@ -514,23 +568,9 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     results["cross_validation"] = args.cross_validation
 
     if args.cross_validation and not args.fine_tune_model and test_size > 0:
-        logger.info("Cross-validating model")
-
         results["cv_fold"] = args.cv_fold
-
-        cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True)
-        cv_scores = cross_val_score(
-            estimator, X, y, cv=cv_fold, scoring="r2", n_jobs=n_jobs
-        )
-        logger.info(f"Cross-validation R2 scores: {cv_scores}")
-        logger.info(
-            f"Mean CV R2 score: {cv_scores.mean():.4f} (+/- {cv_scores.std() * 2:.4f})"
-        )
-        results["cv_scores"] = {
-            "mean": f"{cv_scores.mean():.2f}",
-            "std": f"{cv_scores.std() * 2:.2f}",
-            "scores": cv_scores.tolist(),
-        }
+        cv_scores = compute_cv(args.cv_fold, estimator, X, y)
+        results["cv_scores"] = cv_scores
 
     if args.fine_tune_model:
         results["best_params"] = grid_search.best_params_
