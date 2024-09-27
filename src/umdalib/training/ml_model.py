@@ -348,14 +348,33 @@ def learn_curve(
         n_jobs=n_jobs,
     )
 
+    output = {}
     for train_size, cv_train_scores, cv_test_scores in zip(
         train_sizes, train_scores, test_scores
     ):
-        logger.info(f"{train_size} samples were used to train the model")
-        logger.info(f"The average train accuracy is {cv_train_scores.mean():.2f}")
-        logger.info(f"The average test accuracy is {cv_test_scores.mean():.2f}")
+        test_mean = np.mean(cv_test_scores)
+        test_std = np.std(cv_test_scores, ddof=1)
+        train_mean = np.mean(cv_train_scores)
+        train_std = np.std(cv_train_scores, ddof=1)
 
-    return train_sizes, train_scores, test_scores
+        output[f"{train_size}"] = {
+            "test": {
+                "mean": f"{test_mean:.2f}",
+                "std": f"{test_std :.2f}",
+                "scores": cv_test_scores.tolist(),
+            },
+            "train": {
+                "mean": f"{train_mean:.2f}",
+                "std": f"{train_std:.2f}",
+                "scores": cv_train_scores.tolist(),
+            },
+        }
+
+        logger.info(f"{train_size} samples were used to train the model")
+        logger.info(f"The average train accuracy is {train_mean:.2f}")
+        logger.info(f"The average test accuracy is {test_mean:.2f}")
+
+    return output
 
 
 def analyse_shap_values(estimator, X: np.ndarray):
@@ -377,7 +396,7 @@ def analyse_shap_values(estimator, X: np.ndarray):
     data = {
         "feature_names": explainer.feature_names or feature_names,
         "shap_values": shap_values_array.tolist(),
-        # "feature_values": X.tolist(),
+        "feature_values": X.tolist(),
         "mean_abs_shap": mean_abs_shap.tolist(),
     }
 
@@ -543,7 +562,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     # Learning curve
     learning_curve_results = None
     if args.learning_curve_train_sizes is not None:
-        train_sizes, train_scores, test_scores = learn_curve(
+        learning_curve_results = learn_curve(
             estimator,
             X,
             y,
@@ -551,11 +570,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             n_jobs=n_jobs,
             cv=int(args.cv_fold),
         )
-        learning_curve_results = {
-            "train_sizes": train_sizes.tolist(),
-            "train_scores": train_scores.tolist(),
-            "test_scores": test_scores.tolist(),
-        }
 
     if not args.fine_tune_model:
         logger.info("Training model")
