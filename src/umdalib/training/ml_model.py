@@ -565,7 +565,9 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         logger.info("Using best estimator from grid search")
 
     if args.save_pretrained_model:
+        logger.info(f"Saving model to {pre_trained_file}")
         dump((estimator, yscaler), pre_trained_file)
+        logger.success("Trained model saved")
 
     if args.analyse_shapley_values:
         analyse_shap_values(estimator, X)
