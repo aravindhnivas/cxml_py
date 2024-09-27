@@ -15,8 +15,10 @@ import pandas as pd
 from catboost import CatBoostRegressor
 from catboost import __version__ as catboost_version
 from dask.diagnostics import ProgressBar
-from dask_ml.model_selection import GridSearchCV as DaskGridSearchCV
-from dask_ml.model_selection import RandomizedSearchCV as DaskRandomizedSearchCV
+from dask_ml.model_selection import (
+    RandomizedSearchCV as DaskRandomizedSearchCV,
+    GridSearchCV as DaskGridSearchCV,
+)
 from joblib import __version__ as joblib_version
 from joblib import dump, parallel_config
 from lightgbm import LGBMRegressor
@@ -38,9 +40,9 @@ from sklearn.model_selection import (
     HalvingRandomSearchCV,
     KFold,
     RandomizedSearchCV,
-    cross_val_score,
     cross_validate,
     train_test_split,
+    learning_curve,
 )
 from sklearn.neighbors import KNeighborsRegressor
 
@@ -163,6 +165,7 @@ class Args:
     skip_invalid_y_values: bool
     inverse_scaling: bool
     inverse_transform: bool
+    learning_curve_train_sizes: list[float] | None
 
 
 def augment_data(
@@ -321,8 +324,31 @@ def compute_cv(cv_fold: int, estimator, X: np.ndarray, y: np.ndarray):
             }
 
     logger.info(f"{cv_scores=}")
-
     return cv_scores
+
+
+def learn_curve(
+    estimator, X: np.ndarray, y: np.ndarray, sizes: list[float] = None, n_jobs: int = -2
+):
+    logger.info("Learning curve")
+    train_sizes, train_scores, test_scores = learning_curve(
+        estimator,
+        X,
+        y,
+        train_sizes=np.linspace(*sizes),
+        cv=5,
+        scoring="r2",
+        n_jobs=n_jobs,
+    )
+
+    for train_size, cv_train_scores, cv_test_scores in zip(
+        train_sizes, train_scores, test_scores
+    ):
+        logger.info(f"{train_size} samples were used to train the model")
+        logger.info(f"The average train accuracy is {cv_train_scores.mean():.2f}")
+        logger.info(f"The average test accuracy is {cv_test_scores.mean():.2f}")
+
+    return train_sizes, train_scores, test_scores
 
 
 def compute(args: Args, X: np.ndarray, y: np.ndarray):
@@ -467,7 +493,17 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         else:
             estimator = models_dict[args.model](**args.parameters)
 
-    # estimator = Pipeline([("estimator", estimator)])
+    # Learning curve
+    learning_curve_results = None
+    if args.learning_curve_train_sizes is not None:
+        train_sizes, train_scores, test_scores = learn_curve(
+            estimator, X, y, sizes=args.learning_curve_train_sizes, n_jobs=n_jobs
+        )
+        learning_curve_results = {
+            "train_sizes": train_sizes.tolist(),
+            "train_scores": train_scores.tolist(),
+            "test_scores": test_scores.tolist(),
+        }
 
     # train model
     if not args.fine_tune_model:
@@ -518,6 +554,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             )
 
     results = {
+        "learning_curve": learning_curve_results,
         "data_shapes": {
             "X": X.shape,
             "y": y.shape,
@@ -568,8 +605,8 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     results["cross_validation"] = args.cross_validation
 
     if args.cross_validation and not args.fine_tune_model and test_size > 0:
-        results["cv_fold"] = args.cv_fold
-        cv_scores = compute_cv(args.cv_fold, estimator, X, y)
+        results["cv_fold"] = int(args.cv_fold)
+        cv_scores = compute_cv(int(args.cv_fold), estimator, X, y)
         results["cv_scores"] = cv_scores
 
     if args.fine_tune_model:
