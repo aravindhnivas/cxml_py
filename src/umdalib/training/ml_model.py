@@ -286,9 +286,11 @@ def compute_cv(cv_fold: int, estimator, X: np.ndarray, y: np.ndarray):
 
     logger.info("Cross-validating model")
 
-    cv_fold = KFold(n_splits=int(cv_fold), shuffle=True)
+    cv_fold = int(cv_fold)
+    Kfold = KFold(n_splits=cv_fold, shuffle=True)
+
     cv_results = cross_validate(
-        estimator, X, y, cv=cv_fold, scoring=scoring, return_train_score=True
+        estimator, X, y, cv=Kfold, scoring=scoring, return_train_score=True
     )
     logger.info(f"{cv_results=}")
 
@@ -326,6 +328,25 @@ def compute_cv(cv_fold: int, estimator, X: np.ndarray, y: np.ndarray):
             }
 
     logger.info(f"{cv_scores=}")
+
+    nfold_cv_scores = {f"{cv_fold}": cv_scores}
+
+    cv_scores_savefile = pre_trained_loc / f"{pre_trained_file.stem}.cv_scores.json"
+
+    if cv_scores_savefile.exists():
+        read_cv_scores = {}
+        with open(cv_scores_savefile, "r") as f:
+            read_cv_scores = json.load(f)
+            read_cv_scores.update(nfold_cv_scores)
+
+        nfold_cv_scores = read_cv_scores
+
+    # Save to JSON file
+    with open(cv_scores_savefile, "w") as f:
+        json.dump(nfold_cv_scores, f, indent=4)
+
+    logger.info(f"Data saved to {cv_scores_savefile}")
+
     return cv_scores
 
 
