@@ -40,6 +40,7 @@ cloudpickle==3.0.0
     # via dask
     # via dask-glm
     # via distributed
+    # via shap
 contourpy==1.3.0
     # via matplotlib
 cycler==0.12.1
@@ -147,6 +148,7 @@ networkx==3.3
     # via torch
 numba==0.60.0
     # via dask-ml
+    # via shap
     # via sparse
     # via umdalib
 numpy==1.26.4
@@ -167,6 +169,7 @@ numpy==1.26.4
     # via scikit-learn
     # via scipy
     # via seaborn
+    # via shap
     # via sparse
     # via tensorboard
     # via torchmetrics
@@ -182,6 +185,7 @@ packaging==24.1
     # via pyinstaller
     # via pyinstaller-hooks-contrib
     # via pytorch-lightning
+    # via shap
     # via tensorboard
     # via torchmetrics
 pandas==2.2.2
@@ -192,6 +196,7 @@ pandas==2.2.2
     # via dask-ml
     # via mol2vec
     # via seaborn
+    # via shap
     # via umdalib
 parso==0.8.4
     # via jedi
@@ -245,6 +250,7 @@ scikit-learn==1.5.1
     # via astrochem-embedding
     # via dask-glm
     # via dask-ml
+    # via shap
     # via umdalib
 scipy==1.13.1
     # via catboost
@@ -253,6 +259,7 @@ scipy==1.13.1
     # via gensim
     # via lightgbm
     # via scikit-learn
+    # via shap
     # via sparse
     # via umdalib
     # via xgboost
@@ -267,11 +274,15 @@ setuptools==74.1.1
     # via pyinstaller-hooks-contrib
     # via tensorboard
     # via torch
+shap==0.46.0
+    # via umdalib
 six==1.16.0
     # via asttokens
     # via catboost
     # via python-dateutil
     # via tensorboard
+slicer==0.0.8
+    # via shap
 smart-open==7.0.4
     # via gensim
 sortedcontainers==2.4.0
@@ -309,6 +320,7 @@ tornado==6.4.1
 tqdm==4.66.5
     # via mol2vec
     # via pytorch-lightning
+    # via shap
 traitlets==5.14.3
     # via ipython
     # via matplotlib-inline

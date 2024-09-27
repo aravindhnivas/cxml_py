@@ -30,6 +30,7 @@ dependencies = [
     "mol2vec @ git+https://github.com/aravindhnivas/mol2vec.git@gensim_v4",
     "astrochem_embedding @ git+https://github.com/aravindhnivas/astrochem_embedding.git@main",
     "rdkit>=2024.3.5",
+    "shap>=0.46.0",
 ]
 
 

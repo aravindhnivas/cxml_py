@@ -59,6 +59,7 @@ from umdalib.training.read_data import read_as_ddf
 from umdalib.utils import Paths
 
 from umdalib.training.utils import get_transformed_data, Yscalers
+import shap
 
 tqdm.pandas()
 
@@ -166,6 +167,7 @@ class Args:
     inverse_scaling: bool
     inverse_transform: bool
     learning_curve_train_sizes: list[float] | None
+    analyse_shapley_values: bool
 
 
 def augment_data(
@@ -328,7 +330,12 @@ def compute_cv(cv_fold: int, estimator, X: np.ndarray, y: np.ndarray):
 
 
 def learn_curve(
-    estimator, X: np.ndarray, y: np.ndarray, sizes: list[float] = None, n_jobs: int = -2
+    estimator,
+    X: np.ndarray,
+    y: np.ndarray,
+    sizes: list[float] = None,
+    n_jobs: int = -2,
+    cv=5,
 ):
     logger.info("Learning curve")
     train_sizes, train_scores, test_scores = learning_curve(
@@ -336,7 +343,7 @@ def learn_curve(
         X,
         y,
         train_sizes=np.linspace(*sizes),
-        cv=5,
+        cv=cv,
         scoring="r2",
         n_jobs=n_jobs,
     )
@@ -351,7 +358,47 @@ def learn_curve(
     return train_sizes, train_scores, test_scores
 
 
+def analyse_shap_values(estimator, X: np.ndarray):
+    logger.info("Analyzing SHAP values")
+
+    explainer = shap.Explainer(estimator, X)
+    shap_values = explainer(X)
+
+    # shap.summary_plot(shap_values, X, plot_type="bar")
+    # shap.summary_plot(shap_values, X)
+
+    # Convert SHAP values to a numpy array
+    shap_values_array = shap_values.values
+
+    # Calculate mean absolute SHAP values for each feature
+    mean_abs_shap = np.abs(shap_values_array).mean(axis=0)
+    feature_names = [f"Feature {i}" for i in range(X.shape[1])]
+    # Create a dictionary with all necessary data
+    data = {
+        "feature_names": explainer.feature_names or feature_names,
+        "shap_values": shap_values_array.tolist(),
+        # "feature_values": X.tolist(),
+        "mean_abs_shap": mean_abs_shap.tolist(),
+    }
+
+    # log data shapes
+    logger.info(f"{shap_values_array.shape=}, {mean_abs_shap.shape=}")
+
+    shapely_savefile = pre_trained_loc / f"{pre_trained_file.stem}.shapely.json"
+    # Save to JSON file
+    with open(shapely_savefile, "w") as f:
+        json.dump(data, f, indent=4)
+
+    logger.info(f"Data saved to {shapely_savefile}")
+
+
+pre_trained_file = None
+pre_trained_loc = None
+
+
 def compute(args: Args, X: np.ndarray, y: np.ndarray):
+    global pre_trained_file, pre_trained_loc
+
     start_time = perf_counter()
 
     estimator = None
@@ -497,7 +544,12 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     learning_curve_results = None
     if args.learning_curve_train_sizes is not None:
         train_sizes, train_scores, test_scores = learn_curve(
-            estimator, X, y, sizes=args.learning_curve_train_sizes, n_jobs=n_jobs
+            estimator,
+            X,
+            y,
+            sizes=args.learning_curve_train_sizes,
+            n_jobs=n_jobs,
+            cv=int(args.cv_fold),
         )
         learning_curve_results = {
             "train_sizes": train_sizes.tolist(),
@@ -505,7 +557,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             "test_scores": test_scores.tolist(),
         }
 
-    # train model
     if not args.fine_tune_model:
         logger.info("Training model")
         estimator.fit(X_train, y_train)
@@ -515,6 +566,9 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
     if args.save_pretrained_model:
         dump((estimator, yscaler), pre_trained_file)
+
+    if args.analyse_shapley_values:
+        analyse_shap_values(estimator, X)
 
     logger.info(f"Saving model to {pre_trained_file}")
     current_time = datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")
