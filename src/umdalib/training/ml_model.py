@@ -310,18 +310,18 @@ def compute_cv(cv_fold: int, estimator, X: np.ndarray, y: np.ndarray):
                 rmse_std = np.std(rmse_scores, ddof=1)
 
                 cv_scores[t]["rmse"] = {
-                    "mean": f"{rmse_avg:.4f}",
-                    "std": f"{rmse_std:.4f}",
-                    "ci_lower": f"{rmse_avg - 1.96 * rmse_std:.4f}",
-                    "ci_upper": f"{rmse_avg + 1.96 * rmse_std:.4f}",
+                    "mean": f"{rmse_avg}",
+                    "std": f"{rmse_std}",
+                    "ci_lower": f"{rmse_avg - 1.96 * rmse_std}",
+                    "ci_upper": f"{rmse_avg + 1.96 * rmse_std}",
                     "scores": rmse_scores.tolist(),
                 }
 
             cv_scores[t][k] = {
-                "mean": f"{avg:.4f}",
-                "std": f"{std:.4f}",
-                "ci_lower": f"{avg - 1.96 * std:.4f}",
-                "ci_upper": f"{avg + 1.96 * std:.4f}",
+                "mean": f"{avg}",
+                "std": f"{std}",
+                "ci_lower": f"{avg - 1.96 * std}",
+                "ci_upper": f"{avg + 1.96 * std}",
                 "scores": scores.tolist(),
             }
 
