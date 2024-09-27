@@ -569,11 +569,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             estimator = models_dict[args.model](**args.parameters)
 
     # Learning curve
-    if (
-        args.learning_curve_train_sizes is not None
-        and args.cross_validation
-        and not args.fine_tune_model
-    ):
+    if args.learning_curve_train_sizes is not None and args.cross_validation:
         learn_curve(
             estimator,
             X,
@@ -595,7 +591,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         dump((estimator, yscaler), pre_trained_file)
         logger.success("Trained model saved")
 
-    if args.analyse_shapley_values and not args.fine_tune_model:
+    if args.analyse_shapley_values:
         analyse_shap_values(estimator, X)
 
     logger.info(f"Saving model to {pre_trained_file}")
