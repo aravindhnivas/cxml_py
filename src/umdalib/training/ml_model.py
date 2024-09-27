@@ -348,7 +348,7 @@ def learn_curve(
         n_jobs=n_jobs,
     )
 
-    output = {}
+    learning_curve_data = {}
     for train_size, cv_train_scores, cv_test_scores in zip(
         train_sizes, train_scores, test_scores
     ):
@@ -357,7 +357,7 @@ def learn_curve(
         train_mean = np.mean(cv_train_scores)
         train_std = np.std(cv_train_scores, ddof=1)
 
-        output[f"{train_size}"] = {
+        learning_curve_data[f"{train_size}"] = {
             "test": {
                 "mean": f"{test_mean:.2f}",
                 "std": f"{test_std :.2f}",
@@ -374,7 +374,16 @@ def learn_curve(
         logger.info(f"The average train accuracy is {train_mean:.2f}")
         logger.info(f"The average test accuracy is {test_mean:.2f}")
 
-    return output
+    learning_curve_savefile = (
+        pre_trained_loc / f"{pre_trained_file.stem}.learning_curve.json"
+    )
+    # Save to JSON file
+    with open(learning_curve_savefile, "w") as f:
+        json.dump(learning_curve_data, f, indent=4)
+
+    logger.info(f"Data saved to {learning_curve_savefile}")
+
+    return
 
 
 def analyse_shap_values(estimator, X: np.ndarray):
@@ -409,6 +418,8 @@ def analyse_shap_values(estimator, X: np.ndarray):
         json.dump(data, f, indent=4)
 
     logger.info(f"Data saved to {shapely_savefile}")
+
+    return
 
 
 pre_trained_file = None
@@ -506,8 +517,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
         logger.info("Running grid search")
         # Grid-search
-        # cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True, random_state=rng)
-        # cv_fold = KFold(n_splits=int(args.cv_fold), shuffle=True)
         GridCV = grid_search_dict[args.grid_search_method]["function"]
         GridCV_parameters = {}
         for param in grid_search_dict[args.grid_search_method]["parameters"]:
@@ -560,9 +569,12 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             estimator = models_dict[args.model](**args.parameters)
 
     # Learning curve
-    learning_curve_results = None
-    if args.learning_curve_train_sizes is not None:
-        learning_curve_results = learn_curve(
+    if (
+        args.learning_curve_train_sizes is not None
+        and args.cross_validation
+        and not args.fine_tune_model
+    ):
+        learn_curve(
             estimator,
             X,
             y,
@@ -583,7 +595,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         dump((estimator, yscaler), pre_trained_file)
         logger.success("Trained model saved")
 
-    if args.analyse_shapley_values:
+    if args.analyse_shapley_values and not args.fine_tune_model:
         analyse_shap_values(estimator, X)
 
     logger.info(f"Saving model to {pre_trained_file}")
@@ -624,7 +636,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             )
 
     results = {
-        "learning_curve": learning_curve_results,
         "data_shapes": {
             "X": X.shape,
             "y": y.shape,
