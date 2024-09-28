@@ -204,8 +204,10 @@ def main(args: Args):
     )
 
     # Assuming your target property is named 'property'
-    property_column = args.property_column
-    df_y = df[property_column]
+    if not args.property_column:
+        raise ValueError("Please provide a valid property column name.")
+
+    df_y = df[args.property_column]
 
     y_data_distribution_file = save_loc / args.savefilename
     y_data_distribution_file = y_data_distribution_file.with_suffix(".json")
