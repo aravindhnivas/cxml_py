@@ -50,7 +50,7 @@ def get_skew_and_transformation(df_y: pd.Series):
     logger.info(f"{len(data)=}")
 
     transformed_data = {}
-    transformed_data["original"] = data
+    transformed_data["None"] = data
 
     # Apply transformations based on skewness
     if skewness > 0:
@@ -122,6 +122,11 @@ def main(args: Args):
     df_y = df[property_column]
     y_transformed = None
 
+    ytransformation = None
+    if not args.auto_transform_data:
+        ytransformation = args.ytransformation
+
+    best_skew_key = None
     if args.auto_transform_data:
         computed_skewness, best_skew_key, y_transformed = get_skew_and_transformation(
             df_y
@@ -129,15 +134,20 @@ def main(args: Args):
         logger.info(f"{best_skew_key=}\n{computed_skewness=}")
         if best_skew_key:
             df_y = pd.Series(y_transformed)
-    elif args.ytransformation:
-        if args.ytransformation == "boxcox":
+
+    elif ytransformation:
+        if ytransformation == "boxcox":
             y_transformed, boxcox_lambda_param = get_transformed_data(
-                df_y.values, args.ytransformation, get_other_params=True
+                df_y.values, ytransformation, get_other_params=True
             )
         else:
-            y_transformed = get_transformed_data(df_y.values, args.ytransformation)
+            y_transformed = get_transformed_data(df_y.values, ytransformation)
 
         df_y = pd.Series(y_transformed)
+
+    if best_skew_key and best_skew_key != "None":
+        logger.info(f"Best transformation from auto-transform: {best_skew_key}")
+        ytransformation = best_skew_key
 
     # logger.info(f"Skewness after transformation: {skewness:.2f}")
     if not isinstance(df_y, pd.Series):
@@ -208,13 +218,9 @@ def main(args: Args):
         "kde": kde_data,
     }
 
-    if args.auto_transform_data:
-        analysis_results["applied_transformation"] = best_skew_key
-        if boxcox_lambda_param:
-            analysis_results["boxcox_lambda"] = boxcox_lambda_param
-    elif args.ytransformation:
-        analysis_results["applied_transformation"] = args.ytransformation
-        if args.ytransformation == "boxcox":
+    if ytransformation:
+        analysis_results["applied_transformation"] = ytransformation
+        if ytransformation == "boxcox":
             analysis_results["boxcox_lambda"] = boxcox_lambda_param
     else:
         analysis_results["applied_transformation"] = None
@@ -225,18 +231,26 @@ def main(args: Args):
         save_loc.mkdir(parents=True)
 
     # Save the analysis results
-    savefile = save_loc / args.savefilename
+    savefilename = args.savefilename
+    if not savefilename.endswith(".json"):
+        savefilename += ".json"
+
+    if ytransformation:
+        savefilename = savefilename.replace(".json", "")
+        savefilename += f"_for_{ytransformation}_transformation.json"
+
+    savefile = save_loc / savefilename
     with open(savefile, "w") as f:
         json.dump(analysis_results, f, indent=2)
         logger.info(f"Analysis complete. Results saved to {savefile}.json")
 
     # save the transformed data
-    if args.ytransformation:
+    if ytransformation:
         logger.info(f"Saving transformed data to {save_loc}")
         y_transformed_data = {"data": y_transformed.tolist()}
-        if args.ytransformation == "boxcox":
+        if ytransformation == "boxcox":
             y_transformed_data["lambda"] = boxcox_lambda_param
-        savefile_y = save_loc / f"{args.ytransformation}_y_transformed_data.json"
+        savefile_y = save_loc / f"{ytransformation}_y_transformed_data.json"
 
         with open(savefile_y, "w") as f:
             json.dump(y_transformed_data, f, indent=2)
