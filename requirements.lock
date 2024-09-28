@@ -31,6 +31,8 @@ attrs==24.2.0
     # via aiohttp
 blinker==1.8.2
     # via flask
+bottle==0.13.1
+    # via optuna-dashboard
 catboost==1.2.5
     # via umdalib
 click==8.1.7
@@ -184,6 +186,9 @@ numpy==1.26.4
     # via umdalib
     # via xgboost
 optuna==4.0.0
+    # via optuna-dashboard
+    # via umdalib
+optuna-dashboard==0.16.2
     # via umdalib
 packaging==24.1
     # via dask
@@ -192,6 +197,7 @@ packaging==24.1
     # via lightning-utilities
     # via matplotlib
     # via optuna
+    # via optuna-dashboard
     # via plotly
     # via pyinstaller
     # via pyinstaller-hooks-contrib
@@ -262,6 +268,7 @@ scikit-learn==1.5.1
     # via astrochem-embedding
     # via dask-glm
     # via dask-ml
+    # via optuna-dashboard
     # via shap
     # via umdalib
 scipy==1.13.1

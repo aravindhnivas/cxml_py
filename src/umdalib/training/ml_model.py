@@ -167,6 +167,34 @@ def get_objective(
     return objective
 
 
+def optuna_optimize(
+    model_name: str,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+):
+    # Create a study object and optimize the objective function
+    study = optuna.create_study(direction="minimize")
+    objective = get_objective(model_name, X_train, y_train, X_test, y_test)
+    study.optimize(objective, n_trials=100)
+
+    logger.info("Number of finished trials:", len(study.trials))
+    logger.info("Best trial:")
+    trial = study.best_trial
+
+    logger.info("  Value: ", trial.value)
+    logger.info("  Params: ")
+    for key, value in trial.params.items():
+        logger.info("    {}: {}".format(key, value))
+
+    # Train the model with the best parameters
+    best_params = study.best_params
+    best_model = models_dict[model_name](**best_params)
+
+    return best_model
+
+
 class TrainingFile(TypedDict):
     filename: str
     filetype: str
@@ -479,34 +507,6 @@ def analyse_shap_values(estimator, X: np.ndarray):
     logger.info(f"Data saved to {shapely_savefile}")
 
     return
-
-
-def optuna_optimize(
-    model_name: str,
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-):
-    # Create a study object and optimize the objective function
-    study = optuna.create_study(direction="minimize")
-    objective = get_objective(model_name, X_train, y_train, X_test, y_test)
-    study.optimize(objective, n_trials=100)
-
-    logger.info("Number of finished trials:", len(study.trials))
-    logger.info("Best trial:")
-    trial = study.best_trial
-
-    logger.info("  Value: ", trial.value)
-    logger.info("  Params: ")
-    for key, value in trial.params.items():
-        logger.info("    {}: {}".format(key, value))
-
-    # Train the model with the best parameters
-    best_params = study.best_params
-    best_model = models_dict[model_name](**best_params)
-
-    return best_model
 
 
 pre_trained_file = None
