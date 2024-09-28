@@ -87,9 +87,6 @@ def get_skew_and_transformation(df_y: pd.Series):
     logger.info("Skewness after transformation:")
     computed_skewness = {}
     for method, transformed in transformed_data.items():
-        logger.info(f"Method: {method}")
-        logger.info(f"{type(transformed)=}")
-        logger.info(f"{transformed.shape=}")
         skew = stats.skew(transformed)
         logger.info(f"{method}: {skew:.2f}")
         computed_skewness[method] = skew
@@ -101,58 +98,18 @@ def get_skew_and_transformation(df_y: pd.Series):
     best_skew_key = None
     best_skew_key = min(computed_skewness, key=lambda k: abs(computed_skewness[k]))
     logger.info(f"Best transformation: {best_skew_key}")
+
+    savefile_skews = save_loc / "skewness_after_all_transformation.json"
+    with open(savefile_skews, "w") as f:
+        json.dump(
+            {"best_skew_key": best_skew_key, "skews": computed_skewness}, f, indent=2
+        )
+        logger.info(f"Skewness after all transformation saved to {savefile_skews}")
+
     return computed_skewness, best_skew_key, transformed_data[best_skew_key]
 
 
-def main(args: Args):
-    global boxcox_lambda_param
-    boxcox_lambda_param = None
-
-    save_loc = pt(args.save_loc)
-    df = read_as_ddf(
-        args.filetype,
-        args.filename,
-        args.key,
-        use_dask=args.use_dask,
-        computed=True,
-    )
-
-    # Assuming your target property is named 'property'
-    property_column = args.property_column
-    df_y = df[property_column]
-    y_transformed = None
-
-    ytransformation = None
-    if not args.auto_transform_data:
-        ytransformation = args.ytransformation
-
-    best_skew_key = None
-    if args.auto_transform_data:
-        computed_skewness, best_skew_key, y_transformed = get_skew_and_transformation(
-            df_y
-        )
-        logger.info(f"{best_skew_key=}\n{computed_skewness=}")
-        if best_skew_key:
-            df_y = pd.Series(y_transformed)
-
-    elif ytransformation:
-        if ytransformation == "boxcox":
-            y_transformed, boxcox_lambda_param = get_transformed_data(
-                df_y.values, ytransformation, get_other_params=True
-            )
-        else:
-            y_transformed = get_transformed_data(df_y.values, ytransformation)
-
-        df_y = pd.Series(y_transformed)
-
-    if best_skew_key and best_skew_key != "None":
-        logger.info(f"Best transformation from auto-transform: {best_skew_key}")
-        ytransformation = best_skew_key
-
-    # logger.info(f"Skewness after transformation: {skewness:.2f}")
-    if not isinstance(df_y, pd.Series):
-        df_y = pd.Series(df_y)
-
+def get_analysis_results(df_y: pd.Series):
     # 1. Descriptive Statistics
     desc_stats = df_y.describe().to_dict()
 
@@ -216,8 +173,83 @@ def main(args: Args):
         "skewness": skewness,
         "kurtosis": kurtosis,
         "kde": kde_data,
+        "applied_transformation": None,
+        "boxcox_lambda": None,
     }
 
+    return analysis_results
+
+
+save_loc = None
+
+
+def main(args: Args):
+    global boxcox_lambda_param, save_loc
+
+    boxcox_lambda_param = None
+
+    if not args.save_loc:
+        raise ValueError("Please provide a valid save location.")
+
+    save_loc = pt(args.save_loc)
+    if not save_loc.exists():
+        save_loc.mkdir(parents=True)
+
+    df = read_as_ddf(
+        args.filetype,
+        args.filename,
+        args.key,
+        use_dask=args.use_dask,
+        computed=True,
+    )
+
+    # Assuming your target property is named 'property'
+    property_column = args.property_column
+    df_y = df[property_column]
+
+    y_data_distribution_file = save_loc / args.savefilename
+    y_data_distribution_file = y_data_distribution_file.with_suffix(".json")
+
+    if not y_data_distribution_file.exists():
+        with open(y_data_distribution_file, "w") as f:
+            json.dump(get_analysis_results(df_y), f, indent=2)
+            logger.info(
+                f"Analysis complete. Results saved to {y_data_distribution_file}.json"
+            )
+
+    y_transformed = None
+    ytransformation = None
+
+    if not args.auto_transform_data:
+        ytransformation = args.ytransformation
+
+    best_skew_key = None
+    if args.auto_transform_data:
+        computed_skewness, best_skew_key, y_transformed = get_skew_and_transformation(
+            df_y
+        )
+        logger.info(f"{best_skew_key=}\n{computed_skewness=}")
+        if best_skew_key:
+            df_y = pd.Series(y_transformed)
+
+    elif ytransformation:
+        if ytransformation == "boxcox":
+            y_transformed, boxcox_lambda_param = get_transformed_data(
+                df_y.values, ytransformation, get_other_params=True
+            )
+        else:
+            y_transformed = get_transformed_data(df_y.values, ytransformation)
+
+        df_y = pd.Series(y_transformed)
+
+    if best_skew_key and best_skew_key != "None":
+        logger.info(f"Best transformation from auto-transform: {best_skew_key}")
+        ytransformation = best_skew_key
+
+    if not isinstance(df_y, pd.Series):
+        df_y = pd.Series(df_y)
+
+    analysis_results = get_analysis_results(df_y)
     if ytransformation:
         analysis_results["applied_transformation"] = ytransformation
         if ytransformation == "boxcox":
@@ -225,10 +257,6 @@ def main(args: Args):
     else:
         analysis_results["applied_transformation"] = None
         analysis_results["boxcox_lambda"] = None
-
-    # Save to JSON file
-    if not save_loc.exists():
-        save_loc.mkdir(parents=True)
 
     # Save the analysis results
     savefilename = args.savefilename
@@ -265,5 +293,5 @@ def main(args: Args):
 
     return {
         "savefile": str(savefile),
-        "stats": desc_stats,
+        "stats": analysis_results["descriptive_statistics"],
     }
