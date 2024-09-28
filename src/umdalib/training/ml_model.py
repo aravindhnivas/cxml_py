@@ -60,6 +60,12 @@ from umdalib.utils import Paths
 
 from umdalib.training.utils import get_transformed_data, Yscalers
 import shap
+import optuna
+from .ml_utils.optuna_grids import (
+    xgboost_param_grid,
+    catboost_param_grid,
+    lgbm_param_grid,
+)
 
 tqdm.pandas()
 
@@ -122,11 +128,43 @@ grid_search_dict = {
     },
 }
 
+optuna_grids_dict = {
+    "xgboost": xgboost_param_grid,
+    "catboost": catboost_param_grid,
+    "lgbm": lgbm_param_grid,
+}
+
 random_state_supported_models = ["rfr", "gbr", "gpr"]
 
 # seed = 2024
 # rng = np.random.RandomState(seed)
 rng = None
+
+
+def get_objective(
+    model_name: str,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+):
+    def objective(trial):
+        if model_name not in optuna_grids_dict:
+            raise ValueError(f"{model_name} not found in optuna_grids_dict")
+
+        if model_name not in models_dict:
+            raise ValueError(f"{model_name} not found in models_dict")
+
+        params = optuna_grids_dict[model_name](trial)
+        model = models_dict[model_name](**params)
+        model.fit(X_train, y_train)
+
+        y_pred = model.predict(X_test)
+        rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+
+        return rmse
+
+    return objective
 
 
 class TrainingFile(TypedDict):
@@ -443,6 +481,34 @@ def analyse_shap_values(estimator, X: np.ndarray):
     return
 
 
+def optuna_optimize(
+    model_name: str,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+):
+    # Create a study object and optimize the objective function
+    study = optuna.create_study(direction="minimize")
+    objective = get_objective(model_name, X_train, y_train, X_test, y_test)
+    study.optimize(objective, n_trials=100)
+
+    logger.info("Number of finished trials:", len(study.trials))
+    logger.info("Best trial:")
+    trial = study.best_trial
+
+    logger.info("  Value: ", trial.value)
+    logger.info("  Params: ")
+    for key, value in trial.params.items():
+        logger.info("    {}: {}".format(key, value))
+
+    # Train the model with the best parameters
+    best_params = study.best_params
+    best_model = models_dict[model_name](**best_params)
+
+    return best_model
+
+
 pre_trained_file = None
 pre_trained_loc = None
 
@@ -588,8 +654,8 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             estimator = models_dict[args.model](kernel, **args.parameters)
         else:
             estimator = models_dict[args.model](**args.parameters)
+            # estimator = optuna_optimize(args.model, X_train, y_train, X_test, y_test)
 
-    # Learning curve
     if args.learning_curve_train_sizes is not None and args.cross_validation:
         learn_curve(
             estimator,
@@ -603,6 +669,9 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     if not args.fine_tune_model:
         logger.info("Training model")
         estimator.fit(X_train, y_train)
+        # eval_set = [(X_train, y_train), (X_test, y_test)] # for xgboost
+        # eval_set=(X_test, y_test) # for catboost
+        # estimator.fit(X_train, y_train, eval_set=eval_set)
         logger.info("Training complete")
     else:
         logger.info("Using best estimator from grid search")

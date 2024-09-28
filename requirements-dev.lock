@@ -18,6 +18,8 @@ aiohttp==3.10.5
     # via fsspec
 aiosignal==1.3.1
     # via aiohttp
+alembic==1.13.3
+    # via optuna
 altgraph==0.17.4
     # via macholib
     # via pyinstaller
@@ -41,6 +43,8 @@ cloudpickle==3.0.0
     # via dask-glm
     # via distributed
     # via shap
+colorlog==6.8.2
+    # via optuna
 contourpy==1.3.0
     # via matplotlib
 cycler==0.12.1
@@ -121,10 +125,13 @@ loguru==0.7.2
     # via umdalib
 macholib==1.16.3
     # via pyinstaller
+mako==1.3.5
+    # via alembic
 markdown==3.7
     # via tensorboard
 markupsafe==2.1.5
     # via jinja2
+    # via mako
     # via werkzeug
 matplotlib==3.9.2
     # via catboost
@@ -163,6 +170,7 @@ numpy==1.26.4
     # via matplotlib
     # via mol2vec
     # via numba
+    # via optuna
     # via pandas
     # via pyarrow
     # via rdkit
@@ -175,12 +183,15 @@ numpy==1.26.4
     # via torchmetrics
     # via umdalib
     # via xgboost
+optuna==4.0.0
+    # via umdalib
 packaging==24.1
     # via dask
     # via dask-ml
     # via distributed
     # via lightning-utilities
     # via matplotlib
+    # via optuna
     # via plotly
     # via pyinstaller
     # via pyinstaller-hooks-contrib
@@ -239,6 +250,7 @@ pytz==2024.1
 pyyaml==6.0.2
     # via dask
     # via distributed
+    # via optuna
     # via pytorch-lightning
 rdkit==2024.3.5
     # via umdalib
@@ -289,6 +301,9 @@ sortedcontainers==2.4.0
     # via distributed
 sparse==0.15.4
     # via dask-glm
+sqlalchemy==2.0.35
+    # via alembic
+    # via optuna
 stack-data==0.6.3
     # via ipython
 sympy==1.13.2
@@ -319,14 +334,17 @@ tornado==6.4.1
     # via distributed
 tqdm==4.66.5
     # via mol2vec
+    # via optuna
     # via pytorch-lightning
     # via shap
 traitlets==5.14.3
     # via ipython
     # via matplotlib-inline
 typing-extensions==4.12.2
+    # via alembic
     # via lightning-utilities
     # via pytorch-lightning
+    # via sqlalchemy
     # via torch
 tzdata==2024.1
     # via pandas
