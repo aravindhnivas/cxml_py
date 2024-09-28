@@ -135,5 +135,4 @@ def main(args: Args):
 
     predicted_value = float(predicted_value[0])
     logger.info(f"Predicted value: {predicted_value}")
-
-    return {"predicted_value": f"{predicted_value:.2f}"}
+    return {"predicted_value": predicted_value}
