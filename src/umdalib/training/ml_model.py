@@ -61,11 +61,7 @@ from umdalib.utils import Paths
 from umdalib.training.utils import get_transformed_data, Yscalers
 import shap
 import optuna
-from .ml_utils.optuna_grids import (
-    xgboost_param_grid,
-    catboost_param_grid,
-    lgbm_param_grid,
-)
+from .ml_utils.optuna_grids import get_param_grid
 
 tqdm.pandas()
 
@@ -149,13 +145,10 @@ def get_objective(
     y_test: np.ndarray,
 ):
     def objective(trial):
-        if model_name not in optuna_grids_dict:
-            raise ValueError(f"{model_name} not found in optuna_grids_dict")
-
         if model_name not in models_dict:
             raise ValueError(f"{model_name} not found in models_dict")
 
-        params = optuna_grids_dict[model_name](trial)
+        params = get_param_grid[model_name](trial)
         model = models_dict[model_name](**params)
         model.fit(X_train, y_train)
 
