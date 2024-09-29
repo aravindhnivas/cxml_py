@@ -125,9 +125,6 @@ grid_search_dict = {
 }
 
 random_state_supported_models = ["rfr", "gbr", "gpr"]
-
-# seed = 2024
-# rng = np.random.RandomState(seed)
 rng = None
 
 
@@ -141,8 +138,8 @@ def get_objective(
     def objective(trial):
         if model_name not in models_dict:
             raise ValueError(f"{model_name} not found in models_dict")
-
-        params = get_param_grid[model_name](trial)
+        grid_fun = get_param_grid(model_name)
+        params = grid_fun(trial)
         model = models_dict[model_name](**params)
         model.fit(X_train, y_train)
 
@@ -161,8 +158,15 @@ def optuna_optimize(
     X_test: np.ndarray,
     y_test: np.ndarray,
 ):
-    # Create a study object and optimize the objective function
-    study = optuna.create_study(direction="minimize")
+    db_path = f"sqlite:///{model_name}_optuna.db"
+    logger.info(f"Using {db_path} for storage")
+
+    study = optuna.create_study(
+        direction="minimize",
+        study_name=model_name,
+        storage=db_path,
+        load_if_exists=True,
+    )
     objective = get_objective(model_name, X_train, y_train, X_test, y_test)
     study.optimize(objective, n_trials=100)
 
@@ -639,13 +643,15 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
     if args.fine_tune_model:
         if args.grid_search_method == "Optuna":
+            logger.info("Optimizing hyperparameters using Optuna")
             estimator, best_params = optuna_optimize(
                 args.model, X_train, y_train, X_test, y_test
             )
         else:
+            logger.info("Fine-tuning model using traditional grid search")
             estimator, best_params = fine_tune_estimator(args, X_train, y_train)
-
     else:
+        logger.info("Training model without fine-tuning")
         if args.parallel_computation and args.model in n_jobs_keyword_available_models:
             args.parameters["n_jobs"] = n_jobs
 
