@@ -157,6 +157,7 @@ def optuna_optimize(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    optuna_n_trials: int = 100,
 ):
     db_path = f"sqlite:///{model_name}_optuna.db"
     logger.info(f"Using {db_path} for storage")
@@ -168,7 +169,7 @@ def optuna_optimize(
         load_if_exists=True,
     )
     objective = get_objective(model_name, X_train, y_train, X_test, y_test)
-    study.optimize(objective, n_trials=100)
+    study.optimize(objective, n_trials=optuna_n_trials)
 
     logger.info("Number of finished trials:", len(study.trials))
     logger.info("Best trial:")
@@ -183,6 +184,7 @@ def optuna_optimize(
     best_model = models_dict[model_name](**best_params)
 
     best_model.fit(X_train, y_train)
+
     return best_model, best_params
 
 
@@ -225,6 +227,7 @@ class Args:
     inverse_transform: bool
     learning_curve_train_sizes: list[float] | None
     analyse_shapley_values: bool
+    optuna_n_trials: int
 
 
 def augment_data(
@@ -645,7 +648,12 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         if args.grid_search_method == "Optuna":
             logger.info("Optimizing hyperparameters using Optuna")
             estimator, best_params = optuna_optimize(
-                args.model, X_train, y_train, X_test, y_test
+                args.model,
+                X_train,
+                y_train,
+                X_test,
+                y_test,
+                optuna_n_trials=int(args.optuna_n_trials),
             )
         else:
             logger.info("Fine-tuning model using traditional grid search")
