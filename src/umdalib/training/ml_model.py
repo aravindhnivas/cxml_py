@@ -500,6 +500,67 @@ pre_trained_file = None
 pre_trained_loc = None
 
 
+def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
+    logger.info("Fine-tuning model")
+    opts = {
+        k: v
+        for k, v in args.parameters.items()
+        if k not in args.fine_tuned_values.keys()
+    }
+
+    if args.parallel_computation and args.model in n_jobs_keyword_available_models:
+        opts["n_jobs"] = n_jobs
+
+    initial_estimator = models_dict[args.model](**opts)
+
+    logger.info("Running grid search")
+    # Grid-search
+    GridCV = grid_search_dict[args.grid_search_method]["function"]
+    GridCV_parameters = {}
+    for param in grid_search_dict[args.grid_search_method]["parameters"]:
+        if param in args.grid_search_parameters:
+            GridCV_parameters[param] = args.grid_search_parameters[param]
+
+    if args.parallel_computation:
+        GridCV_parameters["n_jobs"] = n_jobs
+
+    logger.info(f"{GridCV=}, {GridCV_parameters=}")
+
+    grid_search = GridCV(
+        initial_estimator,
+        args.fine_tuned_values,
+        cv=int(args.cv_fold),
+        **GridCV_parameters,
+    )
+    logger.info("Fitting grid search")
+
+    # run grid search
+    grid_search.fit(X_train, y_train)
+    estimator = grid_search.best_estimator_
+
+    logger.info("Grid search complete")
+    logger.info(f"Best score: {grid_search.best_score_}")
+    logger.info(f"Best parameters: {grid_search.best_params_}")
+
+    # client.close()
+
+    # save grid search
+    # current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
+    if args.save_pretrained_model:
+        grid_savefile = pre_trained_file.with_name(
+            f"{pre_trained_file.stem}_grid_search"
+        ).with_suffix(".pkl")
+        dump(grid_search, grid_savefile)
+
+        df = pd.DataFrame(grid_search.cv_results_)
+        df = df.sort_values(by="rank_test_score")
+        df.to_csv(grid_savefile.with_suffix(".csv"))
+
+        logger.info(f"Grid search saved to {grid_savefile}")
+
+    return estimator, grid_search
+
+
 def compute(args: Args, X: np.ndarray, y: np.ndarray):
     global pre_trained_file, pre_trained_loc
 
@@ -577,62 +638,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     logger.info(f"{models_dict[args.model]=}")
 
     if args.fine_tune_model:
-        logger.info("Fine-tuning model")
-        opts = {
-            k: v
-            for k, v in args.parameters.items()
-            if k not in args.fine_tuned_values.keys()
-        }
-
-        if args.parallel_computation and args.model in n_jobs_keyword_available_models:
-            opts["n_jobs"] = n_jobs
-
-        initial_estimator = models_dict[args.model](**opts)
-
-        logger.info("Running grid search")
-        # Grid-search
-        GridCV = grid_search_dict[args.grid_search_method]["function"]
-        GridCV_parameters = {}
-        for param in grid_search_dict[args.grid_search_method]["parameters"]:
-            if param in args.grid_search_parameters:
-                GridCV_parameters[param] = args.grid_search_parameters[param]
-
-        if args.parallel_computation:
-            GridCV_parameters["n_jobs"] = n_jobs
-
-        logger.info(f"{GridCV=}, {GridCV_parameters=}")
-
-        grid_search = GridCV(
-            initial_estimator,
-            args.fine_tuned_values,
-            cv=int(args.cv_fold),
-            **GridCV_parameters,
-        )
-        logger.info("Fitting grid search")
-
-        # run grid search
-        grid_search.fit(X_train, y_train)
-        estimator = grid_search.best_estimator_
-
-        logger.info("Grid search complete")
-        logger.info(f"Best score: {grid_search.best_score_}")
-        logger.info(f"Best parameters: {grid_search.best_params_}")
-
-        # client.close()
-
-        # save grid search
-        # current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
-        if args.save_pretrained_model:
-            grid_savefile = pre_trained_file.with_name(
-                f"{pre_trained_file.stem}_grid_search"
-            ).with_suffix(".pkl")
-            dump(grid_search, grid_savefile)
-
-            df = pd.DataFrame(grid_search.cv_results_)
-            df = df.sort_values(by="rank_test_score")
-            df.to_csv(grid_savefile.with_suffix(".csv"))
-
-            logger.info(f"Grid search saved to {grid_savefile}")
+        estimator, grid_search = fine_tune_estimator(args, X_train, y_train)
     else:
         if args.parallel_computation and args.model in n_jobs_keyword_available_models:
             args.parameters["n_jobs"] = n_jobs
