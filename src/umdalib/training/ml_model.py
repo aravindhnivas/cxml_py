@@ -654,12 +654,10 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         logger.info("Training model without fine-tuning")
         if args.parallel_computation and args.model in n_jobs_keyword_available_models:
             args.parameters["n_jobs"] = n_jobs
-
         if args.model == "gpr" and kernel is not None:
             estimator = models_dict[args.model](kernel, **args.parameters)
         else:
             estimator = models_dict[args.model](**args.parameters)
-            estimator = optuna_optimize(args.model, X_train, y_train, X_test, y_test)
 
     if args.learning_curve_train_sizes is not None and args.cross_validation:
         learn_curve(
