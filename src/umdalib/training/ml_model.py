@@ -179,7 +179,7 @@ def optuna_optimize(
     best_params = study.best_params
     best_model = models_dict[model_name](**best_params)
 
-    return best_model
+    return best_model, best_params
 
 
 class TrainingFile(TypedDict):
@@ -536,7 +536,7 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
 
     # run grid search
     grid_search.fit(X_train, y_train)
-    estimator = grid_search.best_estimator_
+    best_model = grid_search.best_estimator_
 
     logger.info("Grid search complete")
     logger.info(f"Best score: {grid_search.best_score_}")
@@ -558,7 +558,7 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
 
         logger.info(f"Grid search saved to {grid_savefile}")
 
-    return estimator, grid_search
+    return best_model, grid_search.best_params_
 
 
 def compute(args: Args, X: np.ndarray, y: np.ndarray):
@@ -567,7 +567,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     start_time = perf_counter()
 
     estimator = None
-    grid_search = None
+    # grid_search = None
 
     pre_trained_file = pt(args.pre_trained_file.strip()).with_suffix(".pkl")
     pre_trained_loc = pre_trained_file.parent
@@ -638,7 +638,13 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     logger.info(f"{models_dict[args.model]=}")
 
     if args.fine_tune_model:
-        estimator, grid_search = fine_tune_estimator(args, X_train, y_train)
+        if args.grid_search_method == "Optuna":
+            estimator, best_params = optuna_optimize(
+                args.model, X_train, y_train, X_test, y_test
+            )
+        else:
+            estimator, best_params = fine_tune_estimator(args, X_train, y_train)
+
     else:
         if args.parallel_computation and args.model in n_jobs_keyword_available_models:
             args.parameters["n_jobs"] = n_jobs
@@ -647,7 +653,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             estimator = models_dict[args.model](kernel, **args.parameters)
         else:
             estimator = models_dict[args.model](**args.parameters)
-            # estimator = optuna_optimize(args.model, X_train, y_train, X_test, y_test)
+            estimator = optuna_optimize(args.model, X_train, y_train, X_test, y_test)
 
     if args.learning_curve_train_sizes is not None and args.cross_validation:
         learn_curve(
@@ -770,8 +776,9 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         results["cv_scores"] = cv_scores
 
     if args.fine_tune_model:
-        results["best_params"] = grid_search.best_params_
-        results["best_score"] = f"{grid_search.best_score_:.2f}"
+        results["best_params"] = best_params
+        # results["best_params"] = grid_search.best_params_
+        # results["best_score"] = f"{grid_search.best_score_:.2f}"
 
     results["timestamp"] = current_time
 
