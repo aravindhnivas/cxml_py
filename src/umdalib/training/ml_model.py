@@ -124,12 +124,6 @@ grid_search_dict = {
     },
 }
 
-optuna_grids_dict = {
-    "xgboost": xgboost_param_grid,
-    "catboost": catboost_param_grid,
-    "lgbm": lgbm_param_grid,
-}
-
 random_state_supported_models = ["rfr", "gbr", "gpr"]
 
 # seed = 2024
