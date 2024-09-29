@@ -122,35 +122,35 @@ def gbr_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
 
 def gpr_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
     params = {
-        "kernel": trial.suggest_categorical(
-            "kernel",
-            [
-                "rbf",
-                "matern",
-                "rational_quadratic",
-                "exponential",
-                "dot_product",
-                "white",
-            ],
-        ),
         "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
-        "optimizer": trial.suggest_categorical(
-            "optimizer",
-            [
-                "fmin_l_bfgs_b",
-                "fmin_ncg",
-                "simplex",
-                "cobyla",
-                "powell",
-                "bfgs",
-                "conjugate_gradient",
-                "newton_cg",
-                "trust_ncg",
-                "dogleg",
-                "trust_krylov",
-                "trust_region",
-            ],
-        ),
+        # "kernel": trial.suggest_categorical(
+        #     "kernel",
+        #     [
+        #         "rbf",
+        #         "matern",
+        #         "rational_quadratic",
+        #         "exponential",
+        #         "dot_product",
+        #         "white",
+        #     ],
+        # ),
+        # "optimizer": trial.suggest_categorical(
+        #     "optimizer",
+        #     [
+        #         "fmin_l_bfgs_b",
+        #         "fmin_ncg",
+        #         "simplex",
+        #         "cobyla",
+        #         "powell",
+        #         "bfgs",
+        #         "conjugate_gradient",
+        #         "newton_cg",
+        #         "trust_ncg",
+        #         "dogleg",
+        #         "trust_krylov",
+        #         "trust_region",
+        #     ],
+        # ),
     }
     return params
 
