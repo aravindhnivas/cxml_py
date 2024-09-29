@@ -5,14 +5,14 @@ from typing import Dict, Any
 def xgboost_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
     params = {
         "max_depth": trial.suggest_int("max_depth", 1, 9),
-        "learning_rate": trial.suggest_loguniform("learning_rate", 1e-3, 1.0),
+        "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
         "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
         "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
-        "subsample": trial.suggest_uniform("subsample", 0.5, 1.0),
-        "colsample_bytree": trial.suggest_uniform("colsample_bytree", 0.5, 1.0),
-        "gamma": trial.suggest_loguniform("gamma", 1e-8, 1.0),
-        "reg_alpha": trial.suggest_loguniform("reg_alpha", 1e-8, 1.0),
-        "reg_lambda": trial.suggest_loguniform("reg_lambda", 1e-8, 1.0),
+        "subsample": trial.suggest_float("subsample", 0.5, 1.0),
+        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
+        "gamma": trial.suggest_float("gamma", 1e-8, 1.0, log=True),
+        "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 1.0, log=True),
+        "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 1.0, log=True),
     }
     return params
 
@@ -20,14 +20,14 @@ def xgboost_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
 def catboost_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
     params = {
         "iterations": trial.suggest_int("iterations", 100, 1000),
-        "learning_rate": trial.suggest_loguniform("learning_rate", 1e-3, 1.0),
+        "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
         "depth": trial.suggest_int("depth", 1, 16),
-        "l2_leaf_reg": trial.suggest_loguniform("l2_leaf_reg", 1e-8, 1.0),
+        "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1e-8, 1.0, log=True),
         "border_count": trial.suggest_int("border_count", 1, 255),
-        "subsample": trial.suggest_uniform("subsample", 0.5, 1.0),
-        "colsample_bylevel": trial.suggest_uniform("colsample_bylevel", 0.5, 1.0),
-        "bagging_temperature": trial.suggest_loguniform(
-            "bagging_temperature", 1e-8, 1.0
+        "subsample": trial.suggest_float("subsample", 0.5, 1.0),
+        "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.5, 1.0),
+        "bagging_temperature": trial.suggest_float(
+            "bagging_temperature", 1e-8, 1.0, log=True
         ),
     }
     return params
@@ -37,13 +37,13 @@ def lgbm_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
     params = {
         "num_leaves": trial.suggest_int("num_leaves", 2, 256),
         "max_depth": trial.suggest_int("max_depth", 1, 9),
-        "learning_rate": trial.suggest_loguniform("learning_rate", 1e-3, 1.0),
+        "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
         "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
         "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
-        "subsample": trial.suggest_uniform("subsample", 0.5, 1.0),
-        "colsample_bytree": trial.suggest_uniform("colsample_bytree", 0.5, 1.0),
-        "reg_alpha": trial.suggest_loguniform("reg_alpha", 1e-8, 1.0),
-        "reg_lambda": trial.suggest_loguniform("reg_lambda", 1e-8, 1.0),
+        "subsample": trial.suggest_float("subsample", 0.5, 1.0),
+        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
+        "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 1.0, log=True),
+        "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 1.0, log=True),
     }
     return params
 
@@ -59,7 +59,7 @@ def linear_regression_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
 
 def ridge_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
     params = {
-        "alpha": trial.suggest_loguniform("alpha", 1e-8, 1.0),
+        "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
         "solver": trial.suggest_categorical(
             "solver", ["auto", "svd", "cholesky", "lsqr", "sparse_cg", "sag", "saga"]
         ),
@@ -69,7 +69,7 @@ def ridge_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
 
 def svr_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
     params = {
-        "C": trial.suggest_loguniform("C", 1e-8, 1.0),
+        "C": trial.suggest_float("C", 1e-8, 1.0, log=True),
         "kernel": trial.suggest_categorical(
             "kernel", ["linear", "poly", "rbf", "sigmoid"]
         ),
@@ -114,8 +114,8 @@ def gbr_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
         "max_features": trial.suggest_categorical(
             "max_features", ["auto", "sqrt", "log2"]
         ),
-        "subsample": trial.suggest_uniform("subsample", 0.5, 1.0),
-        "learning_rate": trial.suggest_loguniform("learning_rate", 1e-3, 1.0),
+        "subsample": trial.suggest_float("subsample", 0.5, 1.0),
+        "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
     }
     return params
 
@@ -133,7 +133,7 @@ def gpr_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
                 "white",
             ],
         ),
-        "alpha": trial.suggest_loguniform("alpha", 1e-8, 1.0),
+        "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
         "optimizer": trial.suggest_categorical(
             "optimizer",
             [
