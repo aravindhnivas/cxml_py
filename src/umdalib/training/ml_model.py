@@ -179,10 +179,10 @@ def optuna_optimize(
     for key, value in trial.params.items():
         logger.info("    {}: {}".format(key, value))
 
-    # Train the model with the best parameters
     best_params = study.best_params
     best_model = models_dict[model_name](**best_params)
 
+    best_model.fit(X_train, y_train)
     return best_model, best_params
 
 
@@ -672,9 +672,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     if not args.fine_tune_model:
         logger.info("Training model")
         estimator.fit(X_train, y_train)
-        # eval_set = [(X_train, y_train), (X_test, y_test)] # for xgboost
-        # eval_set=(X_test, y_test) # for catboost
-        # estimator.fit(X_train, y_train, eval_set=eval_set)
         logger.info("Training complete")
     else:
         logger.info("Using best estimator from grid search")
