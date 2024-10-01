@@ -328,15 +328,6 @@ def get_stats(estimator, X_true: np.ndarray, y_true: np.ndarray):
     return r2, mse, rmse, mae, y_true, y_pred, y_linear_fit
 
 
-def save_intermediate_results(
-    grid_search: GridSearchCV, filename: str = "intermediate_results.csv"
-) -> None:
-    """Saves intermediate cv_results_ to a CSV file."""
-    df = pd.DataFrame(grid_search.cv_results_)
-    df = df.sort_values(by="rank_test_score")
-    df.to_csv(filename, index=False)
-
-
 def compute_cv(cv_fold: int, estimator, X: np.ndarray, y: np.ndarray):
     scoring = {
         "r2": "r2",
@@ -892,7 +883,7 @@ def main(args: Args):
 
     y = y.values
 
-    invalid_embedding_indices = [i for i, arr in enumerate(X) if np.any(arr == 0)]
+    invalid_embedding_indices = [i for i, arr in enumerate(X) if np.all(arr == 0)]
 
     # Initially, mark all as valid
     valid_embedding_mask = np.ones(len(X), dtype=bool)
