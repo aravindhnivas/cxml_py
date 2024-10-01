@@ -11,118 +11,41 @@ from time import perf_counter
 from typing import Dict, Tuple, TypedDict, Union
 
 import numpy as np
+import optuna
 import pandas as pd
-from catboost import CatBoostRegressor
-from catboost import __version__ as catboost_version
+import shap
 from dask.diagnostics import ProgressBar
-from dask_ml.model_selection import (
-    RandomizedSearchCV as DaskRandomizedSearchCV,
-    GridSearchCV as DaskGridSearchCV,
-)
-from joblib import __version__ as joblib_version
 from joblib import dump, parallel_config
-from lightgbm import LGBMRegressor
-from lightgbm import __version__ as lightgbm_version
 from scipy.optimize import curve_fit
-from sklearn import __version__ as sklearn_version
 from sklearn import metrics
-from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
-
-# explicitly require this experimental feature
-from sklearn.experimental import enable_halving_search_cv  # noqa
-from sklearn.gaussian_process import GaussianProcessRegressor, kernels
-
-# models
-from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.gaussian_process import kernels
 from sklearn.model_selection import (
-    GridSearchCV,
-    HalvingGridSearchCV,
-    HalvingRandomSearchCV,
     KFold,
-    RandomizedSearchCV,
     cross_validate,
-    train_test_split,
     learning_curve,
+    train_test_split,
 )
-from sklearn.neighbors import KNeighborsRegressor
-
-# from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.svm import SVR
-
-# for saving models
 from sklearn.utils import resample
 from tqdm import tqdm
-from xgboost import XGBRegressor
-from xgboost import __version__ as xgboost_version
 
 from umdalib.training.read_data import read_as_ddf
+from umdalib.training.utils import Yscalers, get_transformed_data
 from umdalib.utils import Paths
 
-from umdalib.training.utils import get_transformed_data, Yscalers
-import shap
-import optuna
 from .ml_utils.optuna_grids import get_param_grid
+from .ml_utils.utils import (
+    grid_search_dict,
+    kernels_dict,
+    models_dict,
+    n_jobs_keyword_available_models,
+)
 
 tqdm.pandas()
-
-logger.info(f"xgboost version {xgboost_version}")
-logger.info(f"catboost version {catboost_version}")
-logger.info(f"lightgbm version {lightgbm_version}")
-
-logger.info(f"Using joblib version {joblib_version}")
-logger.info(f"Using scikit-learn version {sklearn_version}")
-
-# from dask.distributed import Client
-
-
-# Set up Dask client
-# client = Client()  # This will start a local cluster
 
 
 def linear(x, m, c):
     return m * x + c
 
-
-# models_dict
-models_dict = {
-    "linear_regression": LinearRegression,
-    "ridge": Ridge,
-    "svr": SVR,
-    "knn": KNeighborsRegressor,
-    "rfr": RandomForestRegressor,
-    "gbr": GradientBoostingRegressor,
-    "gpr": GaussianProcessRegressor,
-    "xgboost": XGBRegressor,
-    "catboost": CatBoostRegressor,
-    "lgbm": LGBMRegressor,
-}
-
-n_jobs_keyword_available_models = ["linear_regression", "knn", "rfr", "xgboost", "lgbm"]
-
-kernels_dict = {
-    "Constant": kernels.ConstantKernel,
-    "RBF": kernels.RBF,
-    "Matern": kernels.Matern,
-    "RationalQuadratic": kernels.RationalQuadratic,
-    "ExpSineSquared": kernels.ExpSineSquared,
-    "DotProduct": kernels.DotProduct,
-    "WhiteKernel": kernels.WhiteKernel,
-}
-
-grid_search_dict = {
-    "GridSearchCV": {"function": GridSearchCV, "parameters": []},
-    "HalvingGridSearchCV": {"function": HalvingGridSearchCV, "parameters": ["factor"]},
-    "RandomizedSearchCV": {"function": RandomizedSearchCV, "parameters": ["n_iter"]},
-    "HalvingRandomSearchCV": {
-        "function": HalvingRandomSearchCV,
-        "parameters": ["factor"],
-    },
-    "DaskGridSearchCV": {"function": DaskGridSearchCV, "parameters": ["factor"]},
-    "DaskRandomizedSearchCV": {
-        "function": DaskRandomizedSearchCV,
-        "parameters": ["n_iter"],
-    },
-}
 
 random_state_supported_models = ["rfr", "gbr", "gpr"]
 rng = None
@@ -833,6 +756,9 @@ inverse_transform = True
 
 
 def main(args: Args):
+    if args.model not in models_dict:
+        raise ValueError(f"{args.model} not implemented in yet!")
+
     global \
         n_jobs, \
         backend, \
