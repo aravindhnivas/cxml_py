@@ -730,16 +730,16 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             "y_train": y_train.shape,
         },
         "test_stats": {
-            "r2": f"{test_stats[0]:.2f}",
-            "mse": f"{test_stats[1]:.2f}",
-            "rmse": f"{test_stats[2]:.2f}",
-            "mae": f"{test_stats[3]:.2f}",
+            "r2": test_stats[0],
+            "mse": test_stats[1],
+            "rmse": test_stats[2],
+            "mae": test_stats[3],
         },
         "train_stats": {
-            "r2": f"{train_stats[0]:.2f}",
-            "mse": f"{train_stats[1]:.2f}",
-            "rmse": f"{train_stats[2]:.2f}",
-            "mae": f"{train_stats[3]:.2f}",
+            "r2": train_stats[0],
+            "mse": train_stats[1],
+            "rmse": train_stats[2],
+            "mae": train_stats[3],
         },
     }
 
@@ -777,8 +777,15 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
     if args.fine_tune_model:
         results["best_params"] = best_params
-        # results["best_params"] = grid_search.best_params_
-        # results["best_score"] = f"{grid_search.best_score_:.2f}"
+        best_params_savefile = pre_trained_file.with_suffix(
+            f".cv_{args.cv_fold}.best_params.json"
+        )
+        with open(
+            best_params_savefile,
+            "w",
+        ) as f:
+            json.dump(best_params, f, indent=4)
+            logger.info(f"Results saved to {best_params_savefile}")
 
     results["timestamp"] = current_time
 
@@ -791,7 +798,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         "w",
     ) as f:
         json.dump(results, f, indent=4)
-        logger.info(f"Results saved to {pre_trained_file.with_suffix('.json')}")
+        logger.info(f"Results saved to {pre_trained_file.with_suffix('.results.json')}")
 
     return results
 
@@ -852,6 +859,9 @@ def main(args: Args):
     logger.info(f"{args.training_file['filename']}")
 
     X = np.load(args.vectors_file, allow_pickle=True)
+    X = np.array(X, dtype=float)
+
+    logger.info(f"{X.shape=}, {X.dtype=}")
 
     # load training data from file
     ddf = read_as_ddf(
@@ -873,13 +883,14 @@ def main(args: Args):
     if not isinstance(y, pd.Series):
         y = pd.Series(y)
 
-    # Apply the conversion function to handle strings like '188.0 - 189.0'
+    logger.info("Apply the conversion function to handle strings like 188.0 - 189.0")
     y = y.apply(convert_to_float)
 
     # Keep track of valid indices
     valid_y_indices = y.notna()
     y = y[valid_y_indices]
     X = X[valid_y_indices]
+    logger.info(f"{X.shape=} after removing invalid y")
 
     y = y.values
 
@@ -894,6 +905,8 @@ def main(args: Args):
         valid_embedding_mask
     ]  # Keep only the rows that are marked as True in the valid_embedding_mask
     y = y[valid_embedding_mask]
+
+    logger.info(f"{X.shape=} after removing invalid X i.e., all zeros")
 
     y_transformer = None
 
