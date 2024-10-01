@@ -155,7 +155,7 @@ def gpr_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
     return params
 
 
-def get_param_grid(model_name: str) -> Dict[str, Any]:
+def get_param_grid(model_name: str):
     if model_name == "xgboost":
         return xgboost_param_grid
     elif model_name == "catboost":
