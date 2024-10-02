@@ -39,6 +39,12 @@ if __name__ == "__main__":
             logger.error(f"ValueError: {e}")
             sys.exit(1)
         # args = json.loads(sys.argv[2])
+
+    args_file = log_dir / f"{pyfile}.args.json"
+    with open(args_file, "w") as f:
+        json.dump(args, f, indent=4)
+        logger.success(f"Result saved to {args_file}")
+
     logger.info(f"{pyfile=}")
     logger.info(f"\n[Received arguments]\n{json.dumps(args, indent=4)}")
     logger.info(f"{pyfile=}\n")

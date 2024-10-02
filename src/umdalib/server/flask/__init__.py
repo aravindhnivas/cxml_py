@@ -9,9 +9,11 @@ from time import perf_counter
 import numpy as np
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+import json
 
-from umdalib.utils import logger
+from umdalib.utils import logger, Paths
 
+log_dir = Paths().app_log_dir
 app = Flask(__name__)
 CORS(app)
 
@@ -82,6 +84,11 @@ def compute():
         startTime = perf_counter()
         data = request.get_json()
         pyfile = data["pyfile"]
+
+        args_file = log_dir / f"{pyfile}.args.json"
+        with open(args_file, "w") as f:
+            json.dump(data["args"], f, indent=4)
+            logger.success(f"Result saved to {args_file}")
 
         args = MyClass(**data["args"])
 
