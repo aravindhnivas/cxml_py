@@ -86,15 +86,17 @@ def optuna_optimize(
     if not save_loc.exists():
         save_loc.mkdir(parents=True)
 
-    logfile = save_loc / f"{model_name}_optuna.db"
-    db_path = f"sqlite:///{str(logfile)}"
+    logfile = save_loc / "storage.db"
+    # if logfile.exists():
+    #     logfile.unlink()
+    storage = f"sqlite:///{str(logfile)}"
 
-    logger.info(f"Using {db_path} for storage")
+    logger.info(f"Using {storage} for storage")
 
     study = optuna.create_study(
         direction="minimize",
         study_name=model_name,
-        storage=db_path,
+        storage=storage,
         # load_if_exists=True,
     )
     objective = get_objective(model_name, X_train, y_train, X_test, y_test)
