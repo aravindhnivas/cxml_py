@@ -82,14 +82,20 @@ def optuna_optimize(
     y_test: np.ndarray,
     optuna_n_trials: int = 100,
 ):
-    db_path = f"sqlite:///{model_name}_optuna.db"
+    save_loc = Paths().app_log_dir / "optuna"
+    if not save_loc.exists():
+        save_loc.mkdir(parents=True)
+
+    logfile = save_loc / f"{model_name}_optuna.db"
+    db_path = f"sqlite:///{str(logfile)}"
+
     logger.info(f"Using {db_path} for storage")
 
     study = optuna.create_study(
         direction="minimize",
         study_name=model_name,
         storage=db_path,
-        load_if_exists=True,
+        # load_if_exists=True,
     )
     objective = get_objective(model_name, X_train, y_train, X_test, y_test)
     study.optimize(objective, n_trials=optuna_n_trials)
