@@ -3,6 +3,8 @@ from typing import Dict, Any
 import numpy as np
 from .utils import models_dict
 from sklearn import metrics
+from optuna.integration import CatBoostPruningCallback
+import optuna.integration.lightgbm as lgb
 
 
 def xgboost_optuna(
@@ -46,12 +48,12 @@ def xgboost_optuna(
         X_train,
         y_train,
         eval_set=[(X_test, y_test)],
-        early_stopping_rounds=100,
+        early_stopping_rounds=20,
         verbose=False,
     )
 
     y_pred = model.predict(X_test)
-    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+    rmse = metrics.root_mean_squared_error(y_test, y_pred)
 
     return rmse
 
@@ -76,6 +78,7 @@ def catboost_optuna(
         "bootstrap_type": trial.suggest_categorical(
             "bootstrap_type", ["Bayesian", "Bernoulli", "MVS"]
         ),
+        "eval_metric": "RMSE",
     }
 
     if param["bootstrap_type"] == "Bayesian":
@@ -83,6 +86,7 @@ def catboost_optuna(
     elif param["bootstrap_type"] == "Bernoulli":
         param["subsample"] = trial.suggest_float("subsample", 0.1, 1)
 
+    pruning_callback = CatBoostPruningCallback(trial, "RMSE")
     model = models_dict["catboost"](**param)
     model.fit(
         X_train,
@@ -90,10 +94,14 @@ def catboost_optuna(
         eval_set=[(X_test, y_test)],
         verbose=0,
         early_stopping_rounds=100,
+        callbacks=[pruning_callback],
     )
 
+    # evoke pruning manually.
+    pruning_callback.check_pruned()
+
     y_pred = model.predict(X_test)
-    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+    rmse = metrics.root_mean_squared_error(y_test, y_pred)
 
     return rmse
 
@@ -117,12 +125,15 @@ def lgbm_optuna(
         "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 1.0, log=True),
     }
 
+    lgb.train(
+        param, lgb.Dataset(X_train, y_train), valid_sets=lgb.Dataset(X_test, y_test)
+    )
+
     model = models_dict["lgbm"](**param)
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
-
+    rmse = metrics.root_mean_squared_error(y_test, y_pred)
     return rmse
 
 
@@ -153,7 +164,7 @@ def ridge_optuna(
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+    rmse = metrics.root_mean_squared_error(y_test, y_pred)
 
     return rmse
 
@@ -178,7 +189,7 @@ def svr_optuna(
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+    rmse = metrics.root_mean_squared_error(y_test, y_pred)
 
     return rmse
 
@@ -203,7 +214,7 @@ def knn_optuna(
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+    rmse = metrics.root_mean_squared_error(y_test, y_pred)
 
     return rmse
 
@@ -230,7 +241,7 @@ def rfr_optuna(
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+    rmse = metrics.root_mean_squared_error(y_test, y_pred)
 
     return rmse
 
@@ -258,7 +269,7 @@ def gbr_optuna(
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+    rmse = metrics.root_mean_squared_error(y_test, y_pred)
 
     return rmse
 
@@ -278,7 +289,7 @@ def gpr_optuna(
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+    rmse = metrics.root_mean_squared_error(y_test, y_pred)
 
     return rmse
 
