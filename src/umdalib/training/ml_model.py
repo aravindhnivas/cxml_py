@@ -32,7 +32,7 @@ from umdalib.training.read_data import read_as_ddf
 from umdalib.training.utils import Yscalers, get_transformed_data
 from umdalib.utils import Paths
 
-from .ml_utils.optuna_grids import get_param_grid
+from .ml_utils.optuna_grids import get_optuna_objective
 from .ml_utils.utils import (
     grid_search_dict,
     kernels_dict,
@@ -49,29 +49,6 @@ def linear(x, m, c):
 
 random_state_supported_models = ["rfr", "gbr", "gpr"]
 rng = None
-
-
-def get_objective(
-    model_name: str,
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-):
-    def objective(trial):
-        if model_name not in models_dict:
-            raise ValueError(f"{model_name} not found in models_dict")
-        grid_fun = get_param_grid(model_name)
-        params = grid_fun(trial)
-        model = models_dict[model_name](**params)
-        model.fit(X_train, y_train)
-
-        y_pred = model.predict(X_test)
-        rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
-
-        return rmse
-
-    return objective
 
 
 def optuna_optimize(
@@ -99,7 +76,8 @@ def optuna_optimize(
         storage=storage,
         # load_if_exists=True,
     )
-    objective = get_objective(model_name, X_train, y_train, X_test, y_test)
+
+    objective = get_optuna_objective(model_name, X_train, y_train, X_test, y_test)
     study.optimize(objective, n_trials=optuna_n_trials)
 
     logger.info("Number of finished trials:", len(study.trials))
@@ -425,8 +403,10 @@ def analyse_shap_values(estimator, X: np.ndarray):
     return
 
 
-pre_trained_file = None
-pre_trained_loc = None
+pre_trained_file: pt = None
+pre_trained_loc: pt = None
+current_model_name: str = None
+timeStamp: str = None
 
 
 def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
@@ -471,10 +451,7 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
     logger.info(f"Best score: {grid_search.best_score_}")
     logger.info(f"Best parameters: {grid_search.best_params_}")
 
-    # client.close()
-
     # save grid search
-    # current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
     if args.save_pretrained_model:
         grid_savefile = pre_trained_file.with_name(
             f"{pre_trained_file.stem}_grid_search"
@@ -490,8 +467,22 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
     return best_model, grid_search.best_params_
 
 
+def save_parameters(suffix: str, parameters: Dict[str, Union[str, int, float, None]]):
+    parameters_file = pre_trained_file.with_suffix(suffix)
+    with open(parameters_file, "w") as f:
+        parameters_dict = {
+            "values": parameters,
+            "model": current_model_name,
+            "timestamp": timeStamp,
+        }
+        json.dump(parameters_dict, f, indent=4)
+        logger.info(f"Model parameters saved to {parameters_file.name}")
+
+
 def compute(args: Args, X: np.ndarray, y: np.ndarray):
-    global pre_trained_file, pre_trained_loc
+    global pre_trained_file, pre_trained_loc, current_model_name, timeStamp
+
+    current_model_name = args.model
 
     start_time = perf_counter()
 
@@ -615,28 +606,16 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         analyse_shap_values(estimator, X)
 
     logger.info(f"Saving model to {pre_trained_file}")
-    current_time = datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")
+    timeStamp = datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")
 
     trained_params = estimator.get_params()
     if args.model == "catboost":
         logger.info(f"{estimator.get_all_params()=}")
         trained_params = trained_params | estimator.get_all_params()
 
-    user_specified_params = args.parameters
-    logger.info(
-        f"{args.model=}, {user_specified_params=}\n{trained_params=}\n{yscaler=}"
-    )
-
-    parameters_file = pre_trained_file.with_suffix(".parameters.json")
-    if args.save_pretrained_model:
-        with open(parameters_file, "w") as f:
-            parameters_dict = {
-                "values": user_specified_params | trained_params,
-                "model": args.model,
-                "timestamp": current_time,
-            }
-            json.dump(parameters_dict, f, indent=4)
-            logger.info(f"Model parameters saved to {parameters_file.name}")
+    # if args.save_pretrained_model:
+    save_parameters(".parameters.user.json", args.parameters)
+    save_parameters(".parameters.trained.json", trained_params)
 
     test_stats = get_stats(estimator, X_test, y_test)
     train_stats = get_stats(estimator, X_train, y_train)
@@ -718,7 +697,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             json.dump(best_params, f, indent=4)
             logger.info(f"Results saved to {best_params_savefile}")
 
-    results["timestamp"] = current_time
+    results["timestamp"] = timeStamp
 
     end_time = perf_counter()
     logger.info(f"Training completed in {(end_time - start_time):.2f} s")

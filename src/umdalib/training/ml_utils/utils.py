@@ -21,9 +21,24 @@ from sklearn.model_selection import (
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import SVR
 from xgboost import XGBRegressor
+from typing import Dict, Type, Literal
+
+# Define the literal types for model names
+ModelName = Literal[
+    "linear_regression",
+    "ridge",
+    "svr",
+    "knn",
+    "rfr",
+    "gbr",
+    "gpr",
+    "xgboost",
+    "catboost",
+    "lgbm",
+]
 
 # models_dict
-models_dict = {
+models_dict: Dict[ModelName, Type] = {
     "linear_regression": LinearRegression,
     "ridge": Ridge,
     "svr": SVR,

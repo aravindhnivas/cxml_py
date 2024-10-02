@@ -1,40 +1,111 @@
 import optuna
 from typing import Dict, Any
+import numpy as np
+from .utils import models_dict
+from sklearn import metrics
 
 
-def xgboost_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
-    params = {
-        "max_depth": trial.suggest_int("max_depth", 1, 9),
-        "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
-        "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
+def xgboost_optuna(
+    trial: optuna.Trial,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+) -> float:
+    param = {
+        # "eta": trial.suggest_float("eta", 1e-3, 1.0, log=True),
+        # "max_depth": trial.suggest_int("max_depth", 1, 9),
+        # "gamma": trial.suggest_float("gamma", 1e-8, 1.0, log=True),
         "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
-        "subsample": trial.suggest_float("subsample", 0.5, 1.0),
-        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
-        "gamma": trial.suggest_float("gamma", 1e-8, 1.0, log=True),
-        "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 1.0, log=True),
-        "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 1.0, log=True),
+        "subsample": trial.suggest_float("subsample", 0.1, 1.0),
+        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.1, 1.0),
+        "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
+        "lambda": trial.suggest_float("lambda", 1e-8, 1.0, log=True),
+        "booster": trial.suggest_categorical("booster", ["gbtree", "gblinear", "dart"]),
     }
-    return params
+
+    if param["booster"] == "gbtree" or param["booster"] == "dart":
+        param["max_depth"] = trial.suggest_int("max_depth", 1, 9)
+        param["eta"] = trial.suggest_float("eta", 1e-8, 1.0, log=True)
+        param["gamma"] = trial.suggest_float("gamma", 1e-8, 1.0, log=True)
+        param["grow_policy"] = trial.suggest_categorical(
+            "grow_policy", ["depthwise", "lossguide"]
+        )
+    if param["booster"] == "dart":
+        param["sample_type"] = trial.suggest_categorical(
+            "sample_type", ["uniform", "weighted"]
+        )
+        param["normalize_type"] = trial.suggest_categorical(
+            "normalize_type", ["tree", "forest"]
+        )
+        param["rate_drop"] = trial.suggest_float("rate_drop", 1e-8, 1.0, log=True)
+        param["skip_drop"] = trial.suggest_float("skip_drop", 1e-8, 1.0, log=True)
+
+    model = models_dict["xgboost"](**param)
+    model.fit(
+        X_train,
+        y_train,
+        eval_set=[(X_test, y_test)],
+        early_stopping_rounds=100,
+        verbose=False,
+    )
+
+    y_pred = model.predict(X_test)
+    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+
+    return rmse
 
 
-def catboost_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
-    params = {
+def catboost_optuna(
+    trial: optuna.Trial,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+) -> float:
+    param = {
         "iterations": trial.suggest_int("iterations", 100, 1000),
         "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
         "depth": trial.suggest_int("depth", 1, 16),
         "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1e-8, 1.0, log=True),
         "border_count": trial.suggest_int("border_count", 1, 255),
-        "subsample": trial.suggest_float("subsample", 0.5, 1.0),
         "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.5, 1.0),
-        "bagging_temperature": trial.suggest_float(
-            "bagging_temperature", 1e-8, 1.0, log=True
+        "boosting_type": trial.suggest_categorical(
+            "boosting_type", ["Ordered", "Plain"]
+        ),
+        "bootstrap_type": trial.suggest_categorical(
+            "bootstrap_type", ["Bayesian", "Bernoulli", "MVS"]
         ),
     }
-    return params
+
+    if param["bootstrap_type"] == "Bayesian":
+        param["bagging_temperature"] = trial.suggest_float("bagging_temperature", 0, 10)
+    elif param["bootstrap_type"] == "Bernoulli":
+        param["subsample"] = trial.suggest_float("subsample", 0.1, 1)
+
+    model = models_dict["catboost"](**param)
+    model.fit(
+        X_train,
+        y_train,
+        eval_set=[(X_test, y_test)],
+        verbose=0,
+        early_stopping_rounds=100,
+    )
+
+    y_pred = model.predict(X_test)
+    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+
+    return rmse
 
 
-def lgbm_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
-    params = {
+def lgbm_optuna(
+    trial: optuna.Trial,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+) -> float:
+    param = {
         "num_leaves": trial.suggest_int("num_leaves", 2, 256),
         "max_depth": trial.suggest_int("max_depth", 1, 9),
         "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
@@ -45,7 +116,14 @@ def lgbm_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
         "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 1.0, log=True),
         "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 1.0, log=True),
     }
-    return params
+
+    model = models_dict["lgbm"](**param)
+    model.fit(X_train, y_train)
+
+    y_pred = model.predict(X_test)
+    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+
+    return rmse
 
 
 # generate param grid for the sklearn models
@@ -53,22 +131,41 @@ def lgbm_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
 
 
 def linear_regression_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
-    params = {}
-    return params
+    param = {}
+    return param
 
 
-def ridge_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
-    params = {
+def ridge_optuna(
+    trial: optuna.Trial,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+) -> float:
+    param = {
         "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
         "solver": trial.suggest_categorical(
             "solver", ["auto", "svd", "cholesky", "lsqr", "sparse_cg", "sag", "saga"]
         ),
     }
-    return params
+
+    model = models_dict["ridge"](**param)
+    model.fit(X_train, y_train)
+
+    y_pred = model.predict(X_test)
+    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+
+    return rmse
 
 
-def svr_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
-    params = {
+def svr_optuna(
+    trial: optuna.Trial,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+) -> float:
+    param = {
         "C": trial.suggest_float("C", 1e-8, 1.0, log=True),
         "kernel": trial.suggest_categorical(
             "kernel", ["linear", "poly", "rbf", "sigmoid"]
@@ -76,11 +173,24 @@ def svr_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
         "degree": trial.suggest_int("degree", 1, 5),
         "gamma": trial.suggest_categorical("gamma", ["scale", "auto"]),
     }
-    return params
+
+    model = models_dict["svr"](**param)
+    model.fit(X_train, y_train)
+
+    y_pred = model.predict(X_test)
+    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+
+    return rmse
 
 
-def knn_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
-    params = {
+def knn_optuna(
+    trial: optuna.Trial,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+) -> float:
+    param = {
         "n_neighbors": trial.suggest_int("n_neighbors", 1, 100),
         "weights": trial.suggest_categorical("weights", ["uniform", "distance"]),
         "algorithm": trial.suggest_categorical(
@@ -88,11 +198,24 @@ def knn_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
         ),
         "leaf_size": trial.suggest_int("leaf_size", 1, 100),
     }
-    return params
+
+    model = models_dict["knn"](**param)
+    model.fit(X_train, y_train)
+
+    y_pred = model.predict(X_test)
+    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+
+    return rmse
 
 
-def rfr_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
-    params = {
+def rfr_optuna(
+    trial: optuna.Trial,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+) -> float:
+    param = {
         "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
         "max_depth": trial.suggest_int("max_depth", 1, 9),
         "min_samples_split": trial.suggest_int("min_samples_split", 2, 10),
@@ -102,11 +225,24 @@ def rfr_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
         ),
         "bootstrap": trial.suggest_categorical("bootstrap", [True, False]),
     }
-    return params
+
+    model = models_dict["rfr"](**param)
+    model.fit(X_train, y_train)
+
+    y_pred = model.predict(X_test)
+    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+
+    return rmse
 
 
-def gbr_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
-    params = {
+def gbr_optuna(
+    trial: optuna.Trial,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+) -> float:
+    param = {
         "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
         "max_depth": trial.suggest_int("max_depth", 1, 9),
         "min_samples_split": trial.suggest_int("min_samples_split", 2, 10),
@@ -117,64 +253,54 @@ def gbr_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
         "subsample": trial.suggest_float("subsample", 0.5, 1.0),
         "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
     }
-    return params
+
+    model = models_dict["gbr"](**param)
+    model.fit(X_train, y_train)
+
+    y_pred = model.predict(X_test)
+    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+
+    return rmse
 
 
-def gpr_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
-    params = {
+def gpr_optuna(
+    trial: optuna.Trial,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+) -> float:
+    param = {
         "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
-        # "kernel": trial.suggest_categorical(
-        #     "kernel",
-        #     [
-        #         "rbf",
-        #         "matern",
-        #         "rational_quadratic",
-        #         "exponential",
-        #         "dot_product",
-        #         "white",
-        #     ],
-        # ),
-        # "optimizer": trial.suggest_categorical(
-        #     "optimizer",
-        #     [
-        #         "fmin_l_bfgs_b",
-        #         "fmin_ncg",
-        #         "simplex",
-        #         "cobyla",
-        #         "powell",
-        #         "bfgs",
-        #         "conjugate_gradient",
-        #         "newton_cg",
-        #         "trust_ncg",
-        #         "dogleg",
-        #         "trust_krylov",
-        #         "trust_region",
-        #     ],
-        # ),
     }
-    return params
+
+    model = models_dict["gpr"](**param)
+    model.fit(X_train, y_train)
+
+    y_pred = model.predict(X_test)
+    rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+
+    return rmse
 
 
-def get_param_grid(model_name: str):
+def get_optuna_objective(model_name: str):
     if model_name == "xgboost":
-        return xgboost_param_grid
+        return xgboost_optuna
     elif model_name == "catboost":
-        return catboost_param_grid
+        return catboost_optuna
     elif model_name == "lgbm":
-        return lgbm_param_grid
-    elif model_name == "linear_regression":
-        return linear_regression_param_grid
+        return lgbm_optuna
     elif model_name == "ridge":
-        return ridge_param_grid
+        return ridge_optuna
     elif model_name == "svr":
-        return svr_param_grid
+        return svr_optuna
     elif model_name == "knn":
-        return knn_param_grid
+        return knn_optuna
     elif model_name == "rfr":
-        return rfr_param_grid
+        return rfr_optuna
     elif model_name == "gbr":
-        return gbr_param_grid
+        return gbr_optuna
     elif model_name == "gpr":
-        return gpr_param_grid
+        return gpr_optuna
     else:
         raise ValueError(f"Model {model_name} not supported")
