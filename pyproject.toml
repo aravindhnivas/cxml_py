@@ -33,6 +33,7 @@ dependencies = [
     "shap>=0.46.0",
     "optuna>=4.0.0",
     "optuna-dashboard>=0.16.2",
+    "optuna-integration>=4.0.0",
 ]
 
 

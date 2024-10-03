@@ -78,7 +78,11 @@ def optuna_optimize(
         # load_if_exists=True,
     )
 
-    objective = get_optuna_objective(model_name, X_train, y_train, X_test, y_test)
+    objective_func = get_optuna_objective(model_name)
+
+    def objective(trial: optuna.Trial):
+        return objective_func(trial, X_train, y_train, X_test, y_test)
+
     study.optimize(objective, n_trials=optuna_n_trials)
 
     logger.info("Number of finished trials:", len(study.trials))

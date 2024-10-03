@@ -73,6 +73,7 @@ numba==0.60.0
 numpy==1.26.4
 optuna==4.0.0
 optuna-dashboard==0.16.2
+optuna-integration==4.0.0
 packaging==24.1
 pandas==2.2.2
 parso==0.8.4
