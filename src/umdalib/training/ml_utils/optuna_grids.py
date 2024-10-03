@@ -2,9 +2,8 @@ import optuna
 from typing import Dict, Any
 import numpy as np
 from .utils import models_dict
-from sklearn import metrics
-from optuna.integration import CatBoostPruningCallback
-import optuna.integration.lightgbm as lgb
+import xgboost as xgb
+from sklearn.metrics import root_mean_squared_error
 
 
 def xgboost_optuna(
@@ -14,6 +13,9 @@ def xgboost_optuna(
     X_test: np.ndarray,
     y_test: np.ndarray,
 ) -> float:
+    dtrain = xgb.DMatrix(X_train, label=y_train)
+    dvalid = xgb.DMatrix(X_test, label=y_test)
+
     param = {
         # "eta": trial.suggest_float("eta", 1e-3, 1.0, log=True),
         # "max_depth": trial.suggest_int("max_depth", 1, 9),
@@ -43,17 +45,27 @@ def xgboost_optuna(
         param["rate_drop"] = trial.suggest_float("rate_drop", 1e-8, 1.0, log=True)
         param["skip_drop"] = trial.suggest_float("skip_drop", 1e-8, 1.0, log=True)
 
-    model = models_dict["xgboost"](**param)
-    model.fit(
-        X_train,
-        y_train,
-        eval_set=[(X_test, y_test)],
-        early_stopping_rounds=20,
-        verbose=False,
-    )
+    # model = models_dict["xgboost"](**param)
+    # model.fit(
+    #     X_train,
+    #     y_train,
+    #     eval_set=[(X_test, y_test)],
+    #     early_stopping_rounds=20,
+    #     verbose=False,
+    # )
 
-    y_pred = model.predict(X_test)
-    rmse = metrics.root_mean_squared_error(y_test, y_pred)
+    # y_pred = model.predict(X_test)
+    # rmse = root_mean_squared_error(y_test, y_pred)
+
+    # Add a callback for pruning.
+    pruning_callback = optuna.integration.XGBoostPruningCallback(
+        trial, "validation-rmse"
+    )
+    bst = xgb.train(
+        param, dtrain, evals=[(dvalid, "validation")], callbacks=[pruning_callback]
+    )
+    preds = bst.predict(dvalid)
+    rmse = root_mean_squared_error(y_test, preds)
 
     return rmse
 
@@ -86,7 +98,7 @@ def catboost_optuna(
     elif param["bootstrap_type"] == "Bernoulli":
         param["subsample"] = trial.suggest_float("subsample", 0.1, 1)
 
-    pruning_callback = CatBoostPruningCallback(trial, "RMSE")
+    pruning_callback = optuna.integration.CatBoostPruningCallback(trial, "RMSE")
     model = models_dict["catboost"](**param)
     model.fit(
         X_train,
@@ -101,7 +113,7 @@ def catboost_optuna(
     pruning_callback.check_pruned()
 
     y_pred = model.predict(X_test)
-    rmse = metrics.root_mean_squared_error(y_test, y_pred)
+    rmse = root_mean_squared_error(y_test, y_pred)
 
     return rmse
 
@@ -133,7 +145,7 @@ def lgbm_optuna(
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    rmse = metrics.root_mean_squared_error(y_test, y_pred)
+    rmse = root_mean_squared_error(y_test, y_pred)
     return rmse
 
 
@@ -164,7 +176,7 @@ def ridge_optuna(
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    rmse = metrics.root_mean_squared_error(y_test, y_pred)
+    rmse = root_mean_squared_error(y_test, y_pred)
 
     return rmse
 
@@ -189,7 +201,7 @@ def svr_optuna(
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    rmse = metrics.root_mean_squared_error(y_test, y_pred)
+    rmse = root_mean_squared_error(y_test, y_pred)
 
     return rmse
 
@@ -214,7 +226,7 @@ def knn_optuna(
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    rmse = metrics.root_mean_squared_error(y_test, y_pred)
+    rmse = root_mean_squared_error(y_test, y_pred)
 
     return rmse
 
@@ -241,7 +253,7 @@ def rfr_optuna(
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    rmse = metrics.root_mean_squared_error(y_test, y_pred)
+    rmse = root_mean_squared_error(y_test, y_pred)
 
     return rmse
 
@@ -269,7 +281,7 @@ def gbr_optuna(
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    rmse = metrics.root_mean_squared_error(y_test, y_pred)
+    rmse = root_mean_squared_error(y_test, y_pred)
 
     return rmse
 
@@ -289,7 +301,7 @@ def gpr_optuna(
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    rmse = metrics.root_mean_squared_error(y_test, y_pred)
+    rmse = root_mean_squared_error(y_test, y_pred)
 
     return rmse
 
