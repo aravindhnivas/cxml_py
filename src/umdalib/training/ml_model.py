@@ -71,6 +71,7 @@ def optuna_optimize(
     logger.info(f"Using {storage} for storage")
 
     study = optuna.create_study(
+        pruner=optuna.pruners.MedianPruner(n_warmup_steps=5),
         direction="minimize",
         study_name=model_name,
         storage=storage,
