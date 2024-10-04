@@ -693,13 +693,22 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     if args.fine_tune_model:
         results["best_params"] = best_params
         best_params_savefile = pre_trained_file.with_suffix(
-            f".cv_{args.cv_fold}.best_params.json"
+            f".{args.grid_search_method}.best_params.json"
         )
+
+        best_params_contents = {
+            "values": best_params,
+            "model": args.model,
+            "timestamp": timeStamp,
+            "cv_fold": args.cv_fold,
+            "grid_search_method": args.grid_search_method,
+        }
+
         with open(
             best_params_savefile,
             "w",
         ) as f:
-            json.dump(best_params, f, indent=4)
+            json.dump(best_params_contents, f, indent=4)
             logger.info(f"Results saved to {best_params_savefile}")
 
     results["timestamp"] = timeStamp
