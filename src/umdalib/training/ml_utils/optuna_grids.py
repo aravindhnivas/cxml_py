@@ -135,7 +135,6 @@ def lgbm_optuna(
         "num_leaves": trial.suggest_int("num_leaves", 2, 256),
         "max_depth": trial.suggest_int("max_depth", 1, 9),
         "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
-        # "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
         "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
         "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
         "subsample": trial.suggest_float("subsample", 0.5, 1.0),
@@ -144,9 +143,10 @@ def lgbm_optuna(
         "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
         "bagging_fraction": trial.suggest_float("bagging_fraction", 0.4, 1.0),
         "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
-        "boosting_type": trial.suggest_categorical(
-            "boosting_type", ["gbdt", "dart", "goss"]
-        ),
+        # "boosting_type": trial.suggest_categorical(
+        #     "boosting_type", ["gbdt", "dart", "goss"]
+        # ),
+        # "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
     }
 
     # model = models_dict["lgbm"](**param)
