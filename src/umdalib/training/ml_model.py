@@ -51,6 +51,22 @@ random_state_supported_models = ["rfr", "gbr", "gpr"]
 rng = None
 
 
+def get_unique_study_name(base_name: str, storage: str) -> str:
+    existing_studies = optuna.study.get_all_study_summaries(storage=storage)
+    existing_names = {study.study_name for study in existing_studies}
+
+    if base_name not in existing_names:
+        return base_name
+
+    index = 1
+    new_name = f"{base_name}_{index}"
+    while new_name in existing_names:
+        index += 1
+        new_name = f"{base_name}_{index}"
+
+    return new_name
+
+
 def optuna_optimize(
     model_name: str,
     X_train: np.ndarray,
@@ -69,13 +85,18 @@ def optuna_optimize(
     storage = f"sqlite:///{str(logfile)}"
 
     logger.info(f"Using {storage} for storage")
+    # Define the base study name
+    base_study_name = model_name
+
+    # Get a unique study name
+    unique_study_name = get_unique_study_name(base_study_name, storage)
 
     study = optuna.create_study(
         pruner=optuna.pruners.MedianPruner(n_warmup_steps=5),
         direction="minimize",
-        study_name=model_name,
+        study_name=unique_study_name,
         storage=storage,
-        # load_if_exists=True,
+        # load_if_exists=True,  # Load the study if it already exists
     )
 
     objective_func = get_optuna_objective(model_name)
