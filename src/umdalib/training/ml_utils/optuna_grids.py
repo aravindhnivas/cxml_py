@@ -135,7 +135,7 @@ def lgbm_optuna(
         "num_leaves": trial.suggest_int("num_leaves", 2, 256),
         "max_depth": trial.suggest_int("max_depth", 1, 9),
         "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
-        "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
+        # "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
         "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
         "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
         "subsample": trial.suggest_float("subsample", 0.5, 1.0),
