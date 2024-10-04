@@ -148,6 +148,21 @@ def lgbm_optuna(
 # "ridge", "svr", "knn", "rfr", "gbr", "gpr"
 
 
+def get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv=5, n_jobs=-1):
+    X = np.concatenate((X_train, X_test), axis=0)
+    y = np.concatenate((y_train, y_test), axis=0)
+    rmse = -cross_val_score(
+        model,
+        X,
+        y,
+        cv=cv,
+        scoring="neg_root_mean_squared_error",
+        n_jobs=n_jobs,
+    ).mean()
+
+    return rmse
+
+
 def ridge_optuna(
     trial: optuna.Trial,
     X_train: np.ndarray,
@@ -165,20 +180,7 @@ def ridge_optuna(
     }
 
     model = models_dict["ridge"](**param)
-    model.fit(X_train, y_train)
-
-    # y_pred = model.predict(X_test)
-    # rmse = root_mean_squared_error(y_test, y_pred)
-    X = np.concatenate((X_train, X_test), axis=0)
-    y = np.concatenate((y_train, y_test), axis=0)
-    rmse = -cross_val_score(
-        model,
-        X,
-        y,
-        cv=cv,
-        scoring="neg_root_mean_squared_error",
-        n_jobs=n_jobs,
-    ).mean()
+    rmse = get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv, n_jobs)
 
     return rmse
 
@@ -202,21 +204,7 @@ def svr_optuna(
     }
 
     model = models_dict["svr"](**param)
-    model.fit(X_train, y_train)
-
-    # y_pred = model.predict(X_test)
-    # rmse = root_mean_squared_error(y_test, y_pred)
-
-    X = np.concatenate((X_train, X_test), axis=0)
-    y = np.concatenate((y_train, y_test), axis=0)
-    rmse = -cross_val_score(
-        model,
-        X,
-        y,
-        cv=cv,
-        scoring="neg_root_mean_squared_error",
-        n_jobs=n_jobs,
-    ).mean()
+    rmse = get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv, n_jobs)
 
     return rmse
 
@@ -240,20 +228,7 @@ def knn_optuna(
     }
 
     model = models_dict["knn"](**param)
-    model.fit(X_train, y_train)
-
-    # y_pred = model.predict(X_test)
-    # rmse = root_mean_squared_error(y_test, y_pred)
-    X = np.concatenate((X_train, X_test), axis=0)
-    y = np.concatenate((y_train, y_test), axis=0)
-    rmse = -cross_val_score(
-        model,
-        X,
-        y,
-        cv=cv,
-        scoring="neg_root_mean_squared_error",
-        n_jobs=n_jobs,
-    ).mean()
+    rmse = get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv, n_jobs)
 
     return rmse
 
@@ -279,20 +254,7 @@ def rfr_optuna(
     }
 
     model = models_dict["rfr"](**param)
-    model.fit(X_train, y_train)
-
-    # y_pred = model.predict(X_test)
-    # rmse = root_mean_squared_error(y_test, y_pred)
-    X = np.concatenate((X_train, X_test), axis=0)
-    y = np.concatenate((y_train, y_test), axis=0)
-    rmse = -cross_val_score(
-        model,
-        X,
-        y,
-        cv=cv,
-        scoring="neg_root_mean_squared_error",
-        n_jobs=n_jobs,
-    ).mean()
+    rmse = get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv, n_jobs)
 
     return rmse
 
@@ -319,20 +281,7 @@ def gbr_optuna(
     }
 
     model = models_dict["gbr"](**param)
-    model.fit(X_train, y_train)
-
-    # y_pred = model.predict(X_test)
-    # rmse = root_mean_squared_error(y_test, y_pred)
-    X = np.concatenate((X_train, X_test), axis=0)
-    y = np.concatenate((y_train, y_test), axis=0)
-    rmse = -cross_val_score(
-        model,
-        X,
-        y,
-        cv=cv,
-        scoring="neg_root_mean_squared_error",
-        n_jobs=n_jobs,
-    ).mean()
+    rmse = get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv, n_jobs)
 
     return rmse
 
@@ -351,20 +300,7 @@ def gpr_optuna(
     }
 
     model = models_dict["gpr"](**param)
-    model.fit(X_train, y_train)
-
-    # y_pred = model.predict(X_test)
-    # rmse = root_mean_squared_error(y_test, y_pred)
-    X = np.concatenate((X_train, X_test), axis=0)
-    y = np.concatenate((y_train, y_test), axis=0)
-    rmse = -cross_val_score(
-        model,
-        X,
-        y,
-        cv=cv,
-        scoring="neg_root_mean_squared_error",
-        n_jobs=n_jobs,
-    ).mean()
+    rmse = get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv, n_jobs)
 
     return rmse
 
