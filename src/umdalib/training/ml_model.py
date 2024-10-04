@@ -109,7 +109,7 @@ def optuna_optimize(
     def objective(trial: optuna.Trial):
         return objective_func(trial, X_train, y_train, X_test, y_test)
 
-    study.optimize(objective, n_trials=optuna_n_trials, n_jobs=n_jobs)
+    study.optimize(objective, n_trials=optuna_n_trials)
 
     logger.info("Number of finished trials:", len(study.trials))
     logger.info("Best trial:")
