@@ -74,6 +74,7 @@ def optuna_optimize(
     X_test: np.ndarray,
     y_test: np.ndarray,
     optuna_n_trials: int = 100,
+    optuna_n_warmup_steps: int = 10,
 ):
     save_loc = Paths().app_log_dir / "optuna"
     if not save_loc.exists():
@@ -96,7 +97,7 @@ def optuna_optimize(
     logger.info(f"Using study name: {unique_study_name}")
 
     study = optuna.create_study(
-        pruner=optuna.pruners.MedianPruner(n_warmup_steps=10),
+        pruner=optuna.pruners.MedianPruner(n_warmup_steps=optuna_n_warmup_steps),
         direction="minimize",
         study_name=unique_study_name,
         storage=storage,
@@ -167,6 +168,7 @@ class Args:
     learning_curve_train_sizes: list[float] | None
     analyse_shapley_values: bool
     optuna_n_trials: int
+    optuna_n_warmup_steps: int
 
 
 def augment_data(
@@ -597,6 +599,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
                 X_test,
                 y_test,
                 optuna_n_trials=int(args.optuna_n_trials),
+                optuna_n_warmup_steps=int(args.optuna_n_warmup_steps),
             )
         else:
             logger.info("Fine-tuning model using traditional grid search")
