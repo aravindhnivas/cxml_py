@@ -267,7 +267,6 @@ def get_stats(estimator, X_true: np.ndarray, y_val: np.ndarray):
 
     y_pred, y_true = get_transformed_data_for_stats(y_pred, y_val)
 
-    logger.info("Evaluating model")
     r2 = metrics.r2_score(y_true, y_pred)
     mse = metrics.mean_squared_error(y_true, y_pred)
     rmse = np.sqrt(mse)
@@ -346,6 +345,8 @@ def custom_cross_validate(
 
             cv_scores["train"][metric]["scores"].append(train_score)
             cv_scores["test"][metric]["scores"].append(test_score)
+
+            logger.info(f"{metric=}, {train_score=}, {test_score=}")
 
     # Calculate mean, std, and confidence intervals after all folds
     for metric in scoring:
@@ -725,7 +726,9 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         save_parameters(".parameters.user.json", args.parameters)
         save_parameters(".parameters.trained.json", trained_params)
 
+    logger.info("Evaluating model for test data")
     test_stats = get_stats(estimator, X_test, y_test)
+    logger.info("Evaluating model for train data")
     train_stats = get_stats(estimator, X_train, y_train)
 
     results = {
