@@ -25,6 +25,7 @@ from sklearn.model_selection import (
     learning_curve,
     train_test_split,
 )
+from sklearn.base import clone
 from sklearn.utils import resample
 from tqdm import tqdm
 
@@ -227,8 +228,8 @@ def make_custom_kernels(kernel_dict: Dict[str, Dict[str, str]]) -> kernels.Kerne
     return kernel
 
 
-def get_stats(estimator, X_true: np.ndarray, y_true: np.ndarray):
-    y_pred: np.ndarray = estimator.predict(X_true)
+def get_transformed_data_for_stats(y_pred: np.ndarray, y_val: np.ndarray):
+    y_true = y_val
 
     if inverse_scaling and yscaler:
         logger.info("Inverse transforming Y-data")
@@ -258,6 +259,14 @@ def get_stats(estimator, X_true: np.ndarray, y_true: np.ndarray):
                 lambda_param=boxcox_lambda_param,
             )
 
+    return y_pred, y_true
+
+
+def get_stats(estimator, X_true: np.ndarray, y_val: np.ndarray):
+    y_pred: np.ndarray = estimator.predict(X_true)
+
+    y_pred, y_true = get_transformed_data_for_stats(y_pred, y_val)
+
     logger.info("Evaluating model")
     r2 = metrics.r2_score(y_true, y_pred)
     mse = metrics.mean_squared_error(y_true, y_pred)
@@ -273,7 +282,53 @@ def get_stats(estimator, X_true: np.ndarray, y_true: np.ndarray):
     return r2, mse, rmse, mae, y_true, y_pred, y_linear_fit
 
 
-def compute_cv(cv_fold: int, estimator, X: np.ndarray, y: np.ndarray):
+def simplified_cross_val_score(
+    estimator,
+    X,
+    y,
+    cv=5,
+    scoring=[
+        "r2",
+        "neg_mean_squared_error",
+        "neg_mean_absolute_error",
+        "neg_root_mean_squared_error",
+    ],
+):
+    kf = KFold(n_splits=cv)
+    scores = []
+
+    for train_index, test_index in kf.split(X):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        estimator_clone = clone(estimator)
+        # Fit the model on the training data for this fold
+        estimator_clone.fit(X_train, y_train)
+
+        # Evaluate the estimator_clone on the test data for this fold
+        y_pred = estimator_clone.predict(X_test)
+        y_pred, y_true = get_transformed_data_for_stats(y_pred, y_test)
+
+        score = []
+        if "r2" in scoring:
+            score.append(metrics.r2_score(y_true, y_pred))
+        if "neg_mean_squared_error" in scoring:
+            score.append(-metrics.mean_squared_error(y_true, y_pred))
+        if "neg_mean_absolute_error" in scoring:
+            score.append(-metrics.mean_absolute_error(y_true, y_pred))
+        if "neg_root_mean_squared_error" in scoring:
+            score.append(-np.sqrt(metrics.mean_squared_error(y_true, y_pred)))
+        scores.append(score)
+
+    return np.array(scores)
+
+
+def compute_cv(
+    estimator,
+    X: np.ndarray,
+    y: np.ndarray,
+    cv_fold: int,
+):
     scoring = {
         "r2": "r2",
         "mse": "neg_mean_squared_error",
@@ -511,7 +566,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     start_time = perf_counter()
 
     estimator = None
-    # grid_search = None
+    initial_estimator = None  # for CV
 
     pre_trained_file = pt(args.pre_trained_file.strip()).with_suffix(".pkl")
     pre_trained_loc = pre_trained_file.parent
@@ -603,8 +658,10 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             args.parameters["n_jobs"] = n_jobs
         if args.model == "gpr" and kernel is not None:
             estimator = models_dict[args.model](kernel, **args.parameters)
+            initial_estimator = models_dict[args.model](kernel, **args.parameters)
         else:
             estimator = models_dict[args.model](**args.parameters)
+            initial_estimator = models_dict[args.model](**args.parameters)
 
     if args.learning_curve_train_sizes is not None and args.cross_validation:
         learn_curve(
@@ -646,15 +703,15 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     test_stats = get_stats(estimator, X_test, y_test)
     train_stats = get_stats(estimator, X_train, y_train)
 
-    if inverse_scaling and yscaler:
-        y = yscaler.inverse_transform(y.reshape(-1, 1)).flatten()
-    if inverse_transform and ytransformation:
-        if y_transformer:
-            y = y_transformer.inverse_transform(y.reshape(-1, 1)).flatten()
-        else:
-            y = get_transformed_data(
-                y, ytransformation, inverse=True, lambda_param=boxcox_lambda_param
-            )
+    # if inverse_scaling and yscaler:
+    #     y = yscaler.inverse_transform(y.reshape(-1, 1)).flatten()
+    # if inverse_transform and ytransformation:
+    #     if y_transformer:
+    #         y = y_transformer.inverse_transform(y.reshape(-1, 1)).flatten()
+    #     else:
+    #         y = get_transformed_data(
+    #             y, ytransformation, inverse=True, lambda_param=boxcox_lambda_param
+    #         )
 
     results = {
         "data_shapes": {
@@ -708,7 +765,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
     if args.cross_validation and not args.fine_tune_model and test_size > 0:
         results["cv_fold"] = int(args.cv_fold)
-        cv_scores = compute_cv(int(args.cv_fold), estimator, X, y)
+        cv_scores = compute_cv(initial_estimator, X, y, int(args.cv_fold))
         results["cv_scores"] = cv_scores
 
     if args.fine_tune_model:
