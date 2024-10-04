@@ -96,7 +96,7 @@ def optuna_optimize(
     logger.info(f"Using study name: {unique_study_name}")
 
     study = optuna.create_study(
-        pruner=optuna.pruners.MedianPruner(n_warmup_steps=5),
+        pruner=optuna.pruners.MedianPruner(n_warmup_steps=10),
         direction="minimize",
         study_name=unique_study_name,
         storage=storage,
