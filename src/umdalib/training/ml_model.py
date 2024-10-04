@@ -305,7 +305,10 @@ def custom_cross_validate(
     scoring=[],
 ):
     kf = KFold(n_splits=cv)
-    cv_scores = {}
+    cv_scores = {"train": {}, "test": {}}
+
+    logger.info(f"Cross-validating model with {cv} folds")
+    logger.info(f"Scoring metrics: {scoring}")
 
     if len(scoring) < 1:
         raise ValueError("No scoring metrics provided")
@@ -329,9 +332,6 @@ def custom_cross_validate(
         train_scores = []
         test_scores = []
         for metric in scoring:
-            cv_scores["train"] = {}
-            cv_scores["test"] = {}
-
             train_scores.append(compute_metrics(metric, y_train, y_pred_train))
             test_scores.append(compute_metrics(metric, y_test, y_pred_test))
 
@@ -371,38 +371,6 @@ def compute_cv(
 
     cv_fold = int(cv_fold)
     cv_scores = custom_cross_validate(estimator, X, y, cv=cv_fold, scoring=scoring)
-    # Kfold = KFold(n_splits=cv_fold, shuffle=True)
-
-    # cv_results = cross_validate(
-    #     estimator, X, y, cv=Kfold, scoring=scoring, return_train_score=True
-    # )
-    # logger.info(f"{cv_results=}")
-
-    # scoring = {
-    #     "r2": "r2",
-    #     "mse": "neg_mean_squared_error",
-    #     "mae": "neg_mean_absolute_error",
-    #     "rmse": "neg_root_mean_squared_error",
-    # }
-    # cv_scores = {}
-    # for t in ["test", "train"]:
-    #     cv_scores[t] = {}
-    #     for k in scoring.keys():
-    #         scores = np.array(cv_results[f"{t}_{k}"])
-    #         if k != "r2":
-    #             # Negate because sklearn returns negative RMSE, MSE and MAE
-    #             scores = -scores
-
-    #         avg = np.mean(scores)
-    #         std = np.std(scores, ddof=1)  # Use ddof=1 for sample standard deviation
-
-    #         cv_scores[t][k] = {
-    #             "mean": avg,
-    #             "std": std,
-    #             "ci_lower": avg - 1.96 * std,
-    #             "ci_upper": avg + 1.96 * std,
-    #             "scores": scores.tolist(),
-    #         }
 
     logger.info(f"{cv_scores=}")
 
