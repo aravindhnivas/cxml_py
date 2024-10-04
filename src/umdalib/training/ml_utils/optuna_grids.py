@@ -145,12 +145,7 @@ def lgbm_optuna(
 
 
 # generate param grid for the sklearn models
-# "linear_regression", "ridge", "svr", "knn", "rfr", "gbr", "gpr"
-
-
-def linear_regression_param_grid(trial: optuna.Trial) -> Dict[str, Any]:
-    param = {}
-    return param
+# "ridge", "svr", "knn", "rfr", "gbr", "gpr"
 
 
 def ridge_optuna(
