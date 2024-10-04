@@ -85,11 +85,15 @@ def optuna_optimize(
     storage = f"sqlite:///{str(logfile)}"
 
     logger.info(f"Using {storage} for storage")
+
     # Define the base study name
-    base_study_name = model_name
+    base_study_name = (
+        f"{model_name}_{loaded_training_file.stem}_{pre_trained_file.stem}"
+    )
 
     # Get a unique study name
     unique_study_name = get_unique_study_name(base_study_name, storage)
+    logger.info(f"Using study name: {unique_study_name}")
 
     study = optuna.create_study(
         pruner=optuna.pruners.MedianPruner(n_warmup_steps=5),
@@ -775,6 +779,7 @@ boxcox_lambda_param = None
 
 inverse_scaling = True
 inverse_transform = True
+loaded_training_file: pt = None
 
 
 def main(args: Args):
@@ -791,12 +796,14 @@ def main(args: Args):
         boxcox_lambda_param, \
         inverse_scaling, \
         inverse_transform, \
-        y_transformer
+        y_transformer, \
+        loaded_training_file
 
     ytransformation = args.ytransformation
     yscaling = args.yscaling
     inverse_scaling = args.inverse_scaling
     inverse_transform = args.inverse_transform
+    loaded_training_file = pt(args.training_file["filename"])
 
     skip_invalid_y_values = args.skip_invalid_y_values
     if args.parallel_computation:
