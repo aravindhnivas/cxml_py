@@ -109,7 +109,7 @@ def optuna_optimize(
     def objective(trial: optuna.Trial):
         return objective_func(trial, X_train, y_train, X_test, y_test)
 
-    study.optimize(objective, n_trials=optuna_n_trials)
+    study.optimize(objective, n_trials=optuna_n_trials, n_jobs=n_jobs)
 
     logger.info("Number of finished trials:", len(study.trials))
     logger.info("Best trial:")
@@ -771,7 +771,7 @@ def convert_to_float(value: Union[str, float]) -> float:
         raise
 
 
-n_jobs = None
+n_jobs = 1
 backend = "threading"
 skip_invalid_y_values = False
 ytransformation: str = None
