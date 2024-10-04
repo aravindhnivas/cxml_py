@@ -290,7 +290,8 @@ def compute_metrics(
     elif method == "mse":
         return metrics.mean_squared_error(y_true, y_pred)
     elif method == "rmse":
-        return np.sqrt(metrics.mean_squared_error(y_true, y_pred))
+        # return np.sqrt(metrics.mean_squared_error(y_true, y_pred))
+        return metrics.root_mean_squared_error(y_true, y_pred)
     elif method == "mae":
         return metrics.mean_absolute_error(y_true, y_pred)
     else:
