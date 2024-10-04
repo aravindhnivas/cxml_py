@@ -3,6 +3,7 @@ from typing import Dict, Any
 import numpy as np
 from .utils import models_dict
 import xgboost as xgb
+import lightgbm as lgb
 from sklearn.metrics import root_mean_squared_error
 
 
@@ -17,7 +18,7 @@ def xgboost_optuna(
     dvalid = xgb.DMatrix(X_test, label=y_test)
 
     param = {
-        # "eta": trial.suggest_float("eta", 1e-3, 1.0, log=True),
+        # "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
         # "max_depth": trial.suggest_int("max_depth", 1, 9),
         # "gamma": trial.suggest_float("gamma", 1e-8, 1.0, log=True),
         "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
@@ -30,7 +31,9 @@ def xgboost_optuna(
 
     if param["booster"] == "gbtree" or param["booster"] == "dart":
         param["max_depth"] = trial.suggest_int("max_depth", 1, 9)
-        param["eta"] = trial.suggest_float("eta", 1e-8, 1.0, log=True)
+        param["learning_rate"] = trial.suggest_float(
+            "learning_rate", 1e-8, 1.0, log=True
+        )
         param["gamma"] = trial.suggest_float("gamma", 1e-8, 1.0, log=True)
         param["grow_policy"] = trial.suggest_categorical(
             "grow_policy", ["depthwise", "lossguide"]
@@ -126,22 +129,42 @@ def lgbm_optuna(
     y_test: np.ndarray,
 ) -> float:
     param = {
+        "verbosity": -1,  # suppress warnings and info
+        "objective": "regression",
+        "metric": "rmse",
         "num_leaves": trial.suggest_int("num_leaves", 2, 256),
         "max_depth": trial.suggest_int("max_depth", 1, 9),
         "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
         "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
         "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
+        "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
         "subsample": trial.suggest_float("subsample", 0.5, 1.0),
         "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
-        "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 1.0, log=True),
-        "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 1.0, log=True),
+        "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 10.0, log=True),
+        "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
+        "bagging_fraction": trial.suggest_float("bagging_fraction", 0.4, 1.0),
+        "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
+        "boosting_type": trial.suggest_categorical(
+            "boosting_type", ["gbdt", "dart", "goss"]
+        ),
     }
 
-    model = models_dict["lgbm"](**param)
-    model.fit(X_train, y_train)
+    # model = models_dict["lgbm"](**param)
+    # model.fit(X_train, y_train)
 
-    y_pred = model.predict(X_test)
-    rmse = root_mean_squared_error(y_test, y_pred)
+    # y_pred = model.predict(X_test)
+    # rmse = root_mean_squared_error(y_test, y_pred)
+
+    dtrain = lgb.Dataset(X_train, label=y_train)
+    dvalid = lgb.Dataset(X_test, label=y_test)
+
+    # Add a callback for pruning.
+    pruning_callback = optuna.integration.LightGBMPruningCallback(trial, "rmse")
+    gbm = lgb.train(param, dtrain, valid_sets=[dvalid], callbacks=[pruning_callback])
+
+    preds = gbm.predict(X_test)
+    rmse = root_mean_squared_error(y_test, preds)
+
     return rmse
 
 
