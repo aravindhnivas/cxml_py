@@ -137,10 +137,6 @@ def lgbm_optuna(
         "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 1.0, log=True),
     }
 
-    lgb.train(
-        param, lgb.Dataset(X_train, y_train), valid_sets=lgb.Dataset(X_test, y_test)
-    )
-
     model = models_dict["lgbm"](**param)
     model.fit(X_train, y_train)
 
