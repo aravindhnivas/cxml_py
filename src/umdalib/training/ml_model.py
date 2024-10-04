@@ -284,13 +284,12 @@ def get_stats(estimator, X_true: np.ndarray, y_val: np.ndarray):
 
 def compute_metrics(
     method: Literal["r2", "mse", "rmse", "mae"], y_true: np.ndarray, y_pred: np.ndarray
-):
+) -> float:
     if method == "r2":
         return metrics.r2_score(y_true, y_pred)
     elif method == "mse":
         return metrics.mean_squared_error(y_true, y_pred)
     elif method == "rmse":
-        # return np.sqrt(metrics.mean_squared_error(y_true, y_pred))
         return metrics.root_mean_squared_error(y_true, y_pred)
     elif method == "mae":
         return metrics.mean_absolute_error(y_true, y_pred)
@@ -314,7 +313,13 @@ def custom_cross_validate(
     if len(scoring) < 1:
         raise ValueError("No scoring metrics provided")
 
+    logger.info("Begin cross-validation")
+    counter = 1
+
     for train_index, test_index in kf.split(X):
+        logger.info(f"Fold {counter}")
+        counter += 1
+
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
@@ -329,34 +334,47 @@ def custom_cross_validate(
         y_pred_test = estimator_clone.predict(X_test)
         y_pred_test, y_test = get_transformed_data_for_stats(y_pred_test, y_test)
 
-        # train metrics
-        train_scores = []
-        test_scores = []
+        # Initialize metrics if not already done
         for metric in scoring:
-            train_scores.append(compute_metrics(metric, y_train, y_pred_train))
-            test_scores.append(compute_metrics(metric, y_test, y_pred_test))
+            if metric not in cv_scores["train"]:
+                cv_scores["train"][metric] = {"scores": []}
+                cv_scores["test"][metric] = {"scores": []}
 
-            train_mean = np.mean(train_scores)
-            train_std = np.std(train_scores, ddof=1)
+            # Compute and store the scores
+            train_score = compute_metrics(metric, y_train, y_pred_train)
+            test_score = compute_metrics(metric, y_test, y_pred_test)
 
-            test_mean = np.mean(test_scores)
-            test_std = np.std(test_scores, ddof=1)
+            cv_scores["train"][metric]["scores"].append(train_score)
+            cv_scores["test"][metric]["scores"].append(test_score)
 
-            cv_scores["train"][metric] = {
+    # Calculate mean, std, and confidence intervals after all folds
+    for metric in scoring:
+        train_scores = cv_scores["train"][metric]["scores"]
+        test_scores = cv_scores["test"][metric]["scores"]
+
+        train_mean = np.mean(train_scores)
+        train_std = np.std(train_scores, ddof=1)
+
+        test_mean = np.mean(test_scores)
+        test_std = np.std(test_scores, ddof=1)
+
+        cv_scores["train"][metric].update(
+            {
                 "mean": train_mean,
                 "std": train_std,
                 "ci_lower": train_mean - 1.96 * train_std,
                 "ci_upper": train_mean + 1.96 * train_std,
-                "scores": train_scores,
             }
+        )
 
-            cv_scores["test"][metric] = {
+        cv_scores["test"][metric].update(
+            {
                 "mean": test_mean,
                 "std": test_std,
                 "ci_lower": test_mean - 1.96 * test_std,
                 "ci_upper": test_mean + 1.96 * test_std,
-                "scores": test_scores,
             }
+        )
 
     return cv_scores
 
