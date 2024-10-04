@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path as pt
 from time import perf_counter
-from typing import Dict, Tuple, TypedDict, Union
+from typing import Dict, Literal, Tuple, TypedDict, Union
 
 import numpy as np
 import optuna
@@ -238,7 +238,7 @@ def get_transformed_data_for_stats(y_pred: np.ndarray, y_val: np.ndarray):
 
     if inverse_transform and ytransformation:
         logger.info("Inverse transforming Y-data")
-        if y_transformer:
+        if ytransformation == "yeo_johnson" and y_transformer:
             logger.info(
                 f"Using Yeo-Johnson inverse transformation using {y_transformer=}"
             )
@@ -282,20 +282,33 @@ def get_stats(estimator, X_true: np.ndarray, y_val: np.ndarray):
     return r2, mse, rmse, mae, y_true, y_pred, y_linear_fit
 
 
-def simplified_cross_val_score(
+def compute_metrics(
+    method: Literal["r2", "mse", "rmse", "mae"], y_true: np.ndarray, y_pred: np.ndarray
+):
+    if method == "r2":
+        return metrics.r2_score(y_true, y_pred)
+    elif method == "mse":
+        return metrics.mean_squared_error(y_true, y_pred)
+    elif method == "rmse":
+        return np.sqrt(metrics.mean_squared_error(y_true, y_pred))
+    elif method == "mae":
+        return metrics.mean_absolute_error(y_true, y_pred)
+    else:
+        raise ValueError(f"Invalid method: {method}")
+
+
+def custom_cross_validate(
     estimator,
     X,
     y,
     cv=5,
-    scoring=[
-        "r2",
-        "neg_mean_squared_error",
-        "neg_mean_absolute_error",
-        "neg_root_mean_squared_error",
-    ],
+    scoring=[],
 ):
     kf = KFold(n_splits=cv)
-    scores = []
+    cv_scores = {}
+
+    if len(scoring) < 1:
+        raise ValueError("No scoring metrics provided")
 
     for train_index, test_index in kf.split(X):
         X_train, X_test = X[train_index], X[test_index]
@@ -306,21 +319,45 @@ def simplified_cross_val_score(
         estimator_clone.fit(X_train, y_train)
 
         # Evaluate the estimator_clone on the test data for this fold
-        y_pred = estimator_clone.predict(X_test)
-        y_pred, y_true = get_transformed_data_for_stats(y_pred, y_test)
+        y_pred_train = estimator_clone.predict(X_train)
+        y_pred_train, y_train = get_transformed_data_for_stats(y_pred_train, y_train)
 
-        score = []
-        if "r2" in scoring:
-            score.append(metrics.r2_score(y_true, y_pred))
-        if "neg_mean_squared_error" in scoring:
-            score.append(-metrics.mean_squared_error(y_true, y_pred))
-        if "neg_mean_absolute_error" in scoring:
-            score.append(-metrics.mean_absolute_error(y_true, y_pred))
-        if "neg_root_mean_squared_error" in scoring:
-            score.append(-np.sqrt(metrics.mean_squared_error(y_true, y_pred)))
-        scores.append(score)
+        y_pred_test = estimator_clone.predict(X_test)
+        y_pred_test, y_test = get_transformed_data_for_stats(y_pred_test, y_test)
 
-    return np.array(scores)
+        # train metrics
+        train_scores = []
+        test_scores = []
+        for metric in scoring:
+            cv_scores["train"] = {}
+            cv_scores["test"] = {}
+
+            train_scores.append(compute_metrics(metric, y_train, y_pred_train))
+            test_scores.append(compute_metrics(metric, y_test, y_pred_test))
+
+            train_mean = np.mean(train_scores)
+            train_std = np.std(train_scores, ddof=1)
+
+            test_mean = np.mean(test_scores)
+            test_std = np.std(test_scores, ddof=1)
+
+            cv_scores["train"][metric] = {
+                "mean": train_mean,
+                "std": train_std,
+                "ci_lower": train_mean - 1.96 * train_std,
+                "ci_upper": train_mean + 1.96 * train_std,
+                "scores": train_scores,
+            }
+
+            cv_scores["test"][metric] = {
+                "mean": test_mean,
+                "std": test_std,
+                "ci_lower": test_mean - 1.96 * test_std,
+                "ci_upper": test_mean + 1.96 * test_std,
+                "scores": test_scores,
+            }
+
+    return cv_scores
 
 
 def compute_cv(
@@ -329,42 +366,43 @@ def compute_cv(
     y: np.ndarray,
     cv_fold: int,
 ):
-    scoring = {
-        "r2": "r2",
-        "mse": "neg_mean_squared_error",
-        "mae": "neg_mean_absolute_error",
-        "rmse": "neg_root_mean_squared_error",
-    }
-
+    scoring = ["r2", "mse", "mae", "rmse"]
     logger.info("Cross-validating model")
 
     cv_fold = int(cv_fold)
-    Kfold = KFold(n_splits=cv_fold, shuffle=True)
+    cv_scores = custom_cross_validate(estimator, X, y, cv=cv_fold, scoring=scoring)
+    # Kfold = KFold(n_splits=cv_fold, shuffle=True)
 
-    cv_results = cross_validate(
-        estimator, X, y, cv=Kfold, scoring=scoring, return_train_score=True
-    )
-    logger.info(f"{cv_results=}")
+    # cv_results = cross_validate(
+    #     estimator, X, y, cv=Kfold, scoring=scoring, return_train_score=True
+    # )
+    # logger.info(f"{cv_results=}")
 
-    cv_scores = {}
-    for t in ["test", "train"]:
-        cv_scores[t] = {}
-        for k in scoring.keys():
-            scores = np.array(cv_results[f"{t}_{k}"])
-            if k != "r2":
-                # Negate because sklearn returns negative RMSE, MSE and MAE
-                scores = -scores
+    # scoring = {
+    #     "r2": "r2",
+    #     "mse": "neg_mean_squared_error",
+    #     "mae": "neg_mean_absolute_error",
+    #     "rmse": "neg_root_mean_squared_error",
+    # }
+    # cv_scores = {}
+    # for t in ["test", "train"]:
+    #     cv_scores[t] = {}
+    #     for k in scoring.keys():
+    #         scores = np.array(cv_results[f"{t}_{k}"])
+    #         if k != "r2":
+    #             # Negate because sklearn returns negative RMSE, MSE and MAE
+    #             scores = -scores
 
-            avg = np.mean(scores)
-            std = np.std(scores, ddof=1)  # Use ddof=1 for sample standard deviation
+    #         avg = np.mean(scores)
+    #         std = np.std(scores, ddof=1)  # Use ddof=1 for sample standard deviation
 
-            cv_scores[t][k] = {
-                "mean": avg,
-                "std": std,
-                "ci_lower": avg - 1.96 * std,
-                "ci_upper": avg + 1.96 * std,
-                "scores": scores.tolist(),
-            }
+    #         cv_scores[t][k] = {
+    #             "mean": avg,
+    #             "std": std,
+    #             "ci_lower": avg - 1.96 * std,
+    #             "ci_upper": avg + 1.96 * std,
+    #             "scores": scores.tolist(),
+    #         }
 
     logger.info(f"{cv_scores=}")
 
@@ -665,7 +703,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
     if args.learning_curve_train_sizes is not None and args.cross_validation:
         learn_curve(
-            estimator,
+            initial_estimator,
             X,
             y,
             sizes=args.learning_curve_train_sizes,
@@ -696,22 +734,12 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         logger.info(f"{estimator.get_all_params()=}")
         trained_params = trained_params | estimator.get_all_params()
 
-    # if args.save_pretrained_model:
-    save_parameters(".parameters.user.json", args.parameters)
-    save_parameters(".parameters.trained.json", trained_params)
+    if args.save_pretrained_model:
+        save_parameters(".parameters.user.json", args.parameters)
+        save_parameters(".parameters.trained.json", trained_params)
 
     test_stats = get_stats(estimator, X_test, y_test)
     train_stats = get_stats(estimator, X_train, y_train)
-
-    # if inverse_scaling and yscaler:
-    #     y = yscaler.inverse_transform(y.reshape(-1, 1)).flatten()
-    # if inverse_transform and ytransformation:
-    #     if y_transformer:
-    #         y = y_transformer.inverse_transform(y.reshape(-1, 1)).flatten()
-    #     else:
-    #         y = get_transformed_data(
-    #             y, ytransformation, inverse=True, lambda_param=boxcox_lambda_param
-    #         )
 
     results = {
         "data_shapes": {
@@ -741,24 +769,24 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         results["bootstrap_nsamples"] = args.bootstrap_nsamples
         results["noise_percentage"] = args.noise_percentage
 
-    # if args.save_pretrained_model:
-    with open(f"{pre_trained_file.with_suffix('.dat.json')}", "w") as f:
-        json.dump(
-            {
-                "test": {
-                    "y_true": test_stats[4].tolist(),
-                    "y_pred": test_stats[5].tolist(),
-                    "y_linear_fit": test_stats[6].tolist(),
+    if args.save_pretrained_model:
+        with open(f"{pre_trained_file.with_suffix('.dat.json')}", "w") as f:
+            json.dump(
+                {
+                    "test": {
+                        "y_true": test_stats[4].tolist(),
+                        "y_pred": test_stats[5].tolist(),
+                        "y_linear_fit": test_stats[6].tolist(),
+                    },
+                    "train": {
+                        "y_true": train_stats[4].tolist(),
+                        "y_pred": train_stats[5].tolist(),
+                        "y_linear_fit": train_stats[6].tolist(),
+                    },
                 },
-                "train": {
-                    "y_true": train_stats[4].tolist(),
-                    "y_pred": train_stats[5].tolist(),
-                    "y_linear_fit": train_stats[6].tolist(),
-                },
-            },
-            f,
-            indent=4,
-        )
+                f,
+                indent=4,
+            )
 
     # Additional validation step
     results["cross_validation"] = args.cross_validation
