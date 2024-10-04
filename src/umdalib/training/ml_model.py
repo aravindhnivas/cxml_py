@@ -274,6 +274,7 @@ def compute_cv(cv_fold: int, estimator, X: np.ndarray, y: np.ndarray):
         "r2": "r2",
         "mse": "neg_mean_squared_error",
         "mae": "neg_mean_absolute_error",
+        "rmse": "neg_root_mean_squared_error",
     }
 
     logger.info("Cross-validating model")
@@ -289,27 +290,14 @@ def compute_cv(cv_fold: int, estimator, X: np.ndarray, y: np.ndarray):
     cv_scores = {}
     for t in ["test", "train"]:
         cv_scores[t] = {}
-        for k in ["r2", "mse", "mae"]:
+        for k in scoring.keys():
             scores = np.array(cv_results[f"{t}_{k}"])
-            if k in ["mse", "mae"]:
-                # Negate because sklearn returns negative MSE and MAE
+            if k != "r2":
+                # Negate because sklearn returns negative RMSE, MSE and MAE
                 scores = -scores
 
             avg = np.mean(scores)
             std = np.std(scores, ddof=1)  # Use ddof=1 for sample standard deviation
-
-            if k == "mse":
-                rmse_scores = np.sqrt(scores)
-                rmse_avg = np.mean(rmse_scores)
-                rmse_std = np.std(rmse_scores, ddof=1)
-
-                cv_scores[t]["rmse"] = {
-                    "mean": rmse_avg,
-                    "std": rmse_std,
-                    "ci_lower": rmse_avg - 1.96 * rmse_std,
-                    "ci_upper": rmse_avg + 1.96 * rmse_std,
-                    "scores": rmse_scores.tolist(),
-                }
 
             cv_scores[t][k] = {
                 "mean": avg,
