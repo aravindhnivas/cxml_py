@@ -75,6 +75,7 @@ def optuna_optimize(
     y_test: np.ndarray,
     optuna_n_trials: int = 100,
     optuna_n_warmup_steps: int = 10,
+    cv=5,
 ):
     save_loc = Paths().app_log_dir / "optuna"
     if not save_loc.exists():
@@ -88,9 +89,7 @@ def optuna_optimize(
     logger.info(f"Using {storage} for storage")
 
     # Define the base study name
-    base_study_name = (
-        f"{model_name}_{loaded_training_file.stem}_{pre_trained_file.stem}"
-    )
+    base_study_name = f"{loaded_training_file.stem}_{pre_trained_file.stem}"
 
     # Get a unique study name
     unique_study_name = get_unique_study_name(base_study_name, storage)
@@ -105,8 +104,13 @@ def optuna_optimize(
     )
 
     objective_func = get_optuna_objective(model_name)
+    sklearn_models = ["ridge", "svr", "rfr", "knn", "gbr", "gpr"]
 
     def objective(trial: optuna.Trial):
+        if model_name in sklearn_models:
+            return objective_func(
+                trial, X_train, y_train, X_test, y_test, cv, n_jobs=n_jobs
+            )
         return objective_func(trial, X_train, y_train, X_test, y_test)
 
     study.optimize(objective, n_trials=optuna_n_trials)
@@ -588,6 +592,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
                 y_test,
                 optuna_n_trials=int(args.optuna_n_trials),
                 optuna_n_warmup_steps=int(args.optuna_n_warmup_steps),
+                cv=int(args.cv_fold),
             )
         else:
             logger.info("Fine-tuning model using traditional grid search")

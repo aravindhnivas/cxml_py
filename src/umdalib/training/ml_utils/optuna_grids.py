@@ -5,6 +5,7 @@ from .utils import models_dict
 import xgboost as xgb
 import lightgbm as lgb
 from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import cross_val_score
 
 
 def xgboost_optuna(
@@ -18,9 +19,6 @@ def xgboost_optuna(
     dvalid = xgb.DMatrix(X_test, label=y_test)
 
     param = {
-        # "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
-        # "max_depth": trial.suggest_int("max_depth", 1, 9),
-        # "gamma": trial.suggest_float("gamma", 1e-8, 1.0, log=True),
         "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
         "subsample": trial.suggest_float("subsample", 0.1, 1.0),
         "colsample_bytree": trial.suggest_float("colsample_bytree", 0.1, 1.0),
@@ -47,18 +45,6 @@ def xgboost_optuna(
         )
         param["rate_drop"] = trial.suggest_float("rate_drop", 1e-8, 1.0, log=True)
         param["skip_drop"] = trial.suggest_float("skip_drop", 1e-8, 1.0, log=True)
-
-    # model = models_dict["xgboost"](**param)
-    # model.fit(
-    #     X_train,
-    #     y_train,
-    #     eval_set=[(X_test, y_test)],
-    #     early_stopping_rounds=20,
-    #     verbose=False,
-    # )
-
-    # y_pred = model.predict(X_test)
-    # rmse = root_mean_squared_error(y_test, y_pred)
 
     # Add a callback for pruning.
     pruning_callback = optuna.integration.XGBoostPruningCallback(
@@ -143,17 +129,7 @@ def lgbm_optuna(
         "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
         "bagging_fraction": trial.suggest_float("bagging_fraction", 0.4, 1.0),
         "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
-        # "boosting_type": trial.suggest_categorical(
-        #     "boosting_type", ["gbdt", "dart", "goss"]
-        # ),
-        # "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
     }
-
-    # model = models_dict["lgbm"](**param)
-    # model.fit(X_train, y_train)
-
-    # y_pred = model.predict(X_test)
-    # rmse = root_mean_squared_error(y_test, y_pred)
 
     dtrain = lgb.Dataset(X_train, label=y_train)
     dvalid = lgb.Dataset(X_test, label=y_test)
@@ -183,6 +159,8 @@ def ridge_optuna(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    cv: int = 5,
+    n_jobs: int = -1,
 ) -> float:
     param = {
         "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
@@ -194,8 +172,18 @@ def ridge_optuna(
     model = models_dict["ridge"](**param)
     model.fit(X_train, y_train)
 
-    y_pred = model.predict(X_test)
-    rmse = root_mean_squared_error(y_test, y_pred)
+    # y_pred = model.predict(X_test)
+    # rmse = root_mean_squared_error(y_test, y_pred)
+    X = np.concatenate((X_train, X_test), axis=0)
+    y = np.concatenate((y_train, y_test), axis=0)
+    rmse = -cross_val_score(
+        model,
+        X,
+        y,
+        cv=cv,
+        scoring="neg_root_mean_squared_error",
+        n_jobs=n_jobs,
+    ).mean()
 
     return rmse
 
@@ -206,21 +194,34 @@ def svr_optuna(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    cv: int = 5,
+    n_jobs: int = -1,
 ) -> float:
     param = {
         "C": trial.suggest_float("C", 1e-8, 1.0, log=True),
-        "kernel": trial.suggest_categorical(
-            "kernel", ["linear", "poly", "rbf", "sigmoid"]
-        ),
         "degree": trial.suggest_int("degree", 1, 5),
+        "kernel": trial.suggest_categorical(
+            "kernel", ["linear", "poly", "rbf", "sigmoid", "precomputed"]
+        ),
         "gamma": trial.suggest_categorical("gamma", ["scale", "auto"]),
     }
 
     model = models_dict["svr"](**param)
     model.fit(X_train, y_train)
 
-    y_pred = model.predict(X_test)
-    rmse = root_mean_squared_error(y_test, y_pred)
+    # y_pred = model.predict(X_test)
+    # rmse = root_mean_squared_error(y_test, y_pred)
+
+    X = np.concatenate((X_train, X_test), axis=0)
+    y = np.concatenate((y_train, y_test), axis=0)
+    rmse = -cross_val_score(
+        model,
+        X,
+        y,
+        cv=cv,
+        scoring="neg_root_mean_squared_error",
+        n_jobs=n_jobs,
+    ).mean()
 
     return rmse
 
@@ -231,6 +232,8 @@ def knn_optuna(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    cv: int = 5,
+    n_jobs: int = -1,
 ) -> float:
     param = {
         "n_neighbors": trial.suggest_int("n_neighbors", 1, 100),
@@ -244,8 +247,18 @@ def knn_optuna(
     model = models_dict["knn"](**param)
     model.fit(X_train, y_train)
 
-    y_pred = model.predict(X_test)
-    rmse = root_mean_squared_error(y_test, y_pred)
+    # y_pred = model.predict(X_test)
+    # rmse = root_mean_squared_error(y_test, y_pred)
+    X = np.concatenate((X_train, X_test), axis=0)
+    y = np.concatenate((y_train, y_test), axis=0)
+    rmse = -cross_val_score(
+        model,
+        X,
+        y,
+        cv=cv,
+        scoring="neg_root_mean_squared_error",
+        n_jobs=n_jobs,
+    ).mean()
 
     return rmse
 
@@ -256,6 +269,8 @@ def rfr_optuna(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    cv: int = 5,
+    n_jobs: int = -1,
 ) -> float:
     param = {
         "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
@@ -271,8 +286,18 @@ def rfr_optuna(
     model = models_dict["rfr"](**param)
     model.fit(X_train, y_train)
 
-    y_pred = model.predict(X_test)
-    rmse = root_mean_squared_error(y_test, y_pred)
+    # y_pred = model.predict(X_test)
+    # rmse = root_mean_squared_error(y_test, y_pred)
+    X = np.concatenate((X_train, X_test), axis=0)
+    y = np.concatenate((y_train, y_test), axis=0)
+    rmse = -cross_val_score(
+        model,
+        X,
+        y,
+        cv=cv,
+        scoring="neg_root_mean_squared_error",
+        n_jobs=n_jobs,
+    ).mean()
 
     return rmse
 
@@ -283,6 +308,8 @@ def gbr_optuna(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    cv: int = 5,
+    n_jobs: int = -1,
 ) -> float:
     param = {
         "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
@@ -299,8 +326,18 @@ def gbr_optuna(
     model = models_dict["gbr"](**param)
     model.fit(X_train, y_train)
 
-    y_pred = model.predict(X_test)
-    rmse = root_mean_squared_error(y_test, y_pred)
+    # y_pred = model.predict(X_test)
+    # rmse = root_mean_squared_error(y_test, y_pred)
+    X = np.concatenate((X_train, X_test), axis=0)
+    y = np.concatenate((y_train, y_test), axis=0)
+    rmse = -cross_val_score(
+        model,
+        X,
+        y,
+        cv=cv,
+        scoring="neg_root_mean_squared_error",
+        n_jobs=n_jobs,
+    ).mean()
 
     return rmse
 
@@ -311,6 +348,8 @@ def gpr_optuna(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    cv: int = 5,
+    n_jobs: int = -1,
 ) -> float:
     param = {
         "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
@@ -319,8 +358,18 @@ def gpr_optuna(
     model = models_dict["gpr"](**param)
     model.fit(X_train, y_train)
 
-    y_pred = model.predict(X_test)
-    rmse = root_mean_squared_error(y_test, y_pred)
+    # y_pred = model.predict(X_test)
+    # rmse = root_mean_squared_error(y_test, y_pred)
+    X = np.concatenate((X_train, X_test), axis=0)
+    y = np.concatenate((y_train, y_test), axis=0)
+    rmse = -cross_val_score(
+        model,
+        X,
+        y,
+        cv=cv,
+        scoring="neg_root_mean_squared_error",
+        n_jobs=n_jobs,
+    ).mean()
 
     return rmse
 
