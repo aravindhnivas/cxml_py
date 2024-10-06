@@ -1,5 +1,4 @@
 import optuna
-from typing import Dict, Any
 import numpy as np
 from .utils import models_dict
 import xgboost as xgb
