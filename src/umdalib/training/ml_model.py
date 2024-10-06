@@ -21,7 +21,6 @@ from sklearn import metrics
 from sklearn.gaussian_process import kernels
 from sklearn.model_selection import (
     KFold,
-    cross_validate,
     learning_curve,
     train_test_split,
 )
