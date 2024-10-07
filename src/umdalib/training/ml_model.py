@@ -43,95 +43,6 @@ from .ml_utils.utils import (
 tqdm.pandas()
 
 
-def linear(x, m, c):
-    return m * x + c
-
-
-random_state_supported_models = ["rfr", "gbr", "gpr"]
-rng = None
-
-
-def get_unique_study_name(base_name: str, storage: str) -> str:
-    existing_studies = optuna.study.get_all_study_summaries(storage=storage)
-    existing_names = {study.study_name for study in existing_studies}
-
-    if base_name not in existing_names:
-        return base_name
-
-    index = 1
-    new_name = f"{base_name}_{index}"
-    while new_name in existing_names:
-        index += 1
-        new_name = f"{base_name}_{index}"
-
-    return new_name
-
-
-def optuna_optimize(
-    model_name: str,
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-    optuna_n_trials: int = 100,
-    optuna_n_warmup_steps: int = 10,
-    cv=5,
-):
-    save_loc = Paths().app_log_dir / "optuna"
-    if not save_loc.exists():
-        save_loc.mkdir(parents=True)
-
-    logfile = save_loc / "storage.db"
-    # if logfile.exists():
-    #     logfile.unlink()
-    storage = f"sqlite:///{str(logfile)}"
-
-    logger.info(f"Using {storage} for storage")
-
-    # Define the base study name
-    base_study_name = f"{loaded_training_file.stem}_{pre_trained_file.stem}"
-
-    # Get a unique study name
-    unique_study_name = get_unique_study_name(base_study_name, storage)
-    logger.info(f"Using study name: {unique_study_name}")
-
-    study = optuna.create_study(
-        pruner=optuna.pruners.MedianPruner(n_warmup_steps=optuna_n_warmup_steps),
-        direction="minimize",
-        study_name=unique_study_name,
-        storage=storage,
-        # load_if_exists=True,  # Load the study if it already exists
-    )
-
-    objective_func = get_optuna_objective(model_name)
-    sklearn_models = ["ridge", "svr", "rfr", "knn", "gbr", "gpr"]
-
-    def objective(trial: optuna.Trial):
-        if model_name in sklearn_models:
-            return objective_func(
-                trial, X_train, y_train, X_test, y_test, cv, n_jobs=n_jobs
-            )
-        return objective_func(trial, X_train, y_train, X_test, y_test)
-
-    study.optimize(objective, n_trials=optuna_n_trials)
-
-    logger.info("Number of finished trials:", len(study.trials))
-    logger.info("Best trial:")
-    trial = study.best_trial
-
-    logger.info("  Value: ", trial.value)
-    logger.info("  Params: ")
-    for key, value in trial.params.items():
-        logger.info("    {}: {}".format(key, value))
-
-    best_params = study.best_params
-    best_model = models_dict[model_name](**best_params)
-
-    best_model.fit(X_train, y_train)
-
-    return best_model, best_params
-
-
 class TrainingFile(TypedDict):
     filename: str
     filetype: str
@@ -139,9 +50,9 @@ class TrainingFile(TypedDict):
 
 
 class FineTunedValues(TypedDict):
-    value: list[str | int | float]
-    type: Literal["string", "integer", "float"]
-    scale: Literal["linear", "log"]
+    value: list[str | int | float | bool]
+    type: Literal["string", "integer", "float", "bool"]
+    scale: Literal["linear", "log", None]
 
 
 @dataclass
@@ -179,6 +90,104 @@ class Args:
     analyse_shapley_values: bool
     optuna_n_trials: int
     optuna_n_warmup_steps: int
+
+
+def linear(x, m, c):
+    return m * x + c
+
+
+random_state_supported_models = ["rfr", "gbr", "gpr"]
+rng = None
+
+
+def get_unique_study_name(base_name: str, storage: str) -> str:
+    existing_studies = optuna.study.get_all_study_summaries(storage=storage)
+    existing_names = {study.study_name for study in existing_studies}
+
+    if base_name not in existing_names:
+        return base_name
+
+    index = 1
+    new_name = f"{base_name}_{index}"
+    while new_name in existing_names:
+        index += 1
+        new_name = f"{base_name}_{index}"
+
+    return new_name
+
+
+def optuna_optimize(
+    fine_tuned_values: FineTunedValues,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    optuna_n_trials: int = 100,
+    optuna_n_warmup_steps: int = 10,
+    cv=5,
+):
+    save_loc = Paths().app_log_dir / "optuna"
+    if not save_loc.exists():
+        save_loc.mkdir(parents=True)
+
+    logfile = save_loc / "storage.db"
+    # if logfile.exists():
+    #     logfile.unlink()
+    storage = f"sqlite:///{str(logfile)}"
+
+    logger.info(f"Using {storage} for storage")
+
+    # Define the base study name
+    base_study_name = f"{loaded_training_file.stem}_{pre_trained_file.stem}"
+
+    # Get a unique study name
+    unique_study_name = get_unique_study_name(base_study_name, storage)
+    logger.info(f"Using study name: {unique_study_name}")
+
+    study = optuna.create_study(
+        pruner=optuna.pruners.MedianPruner(n_warmup_steps=optuna_n_warmup_steps),
+        direction="minimize",
+        study_name=unique_study_name,
+        storage=storage,
+        # load_if_exists=True,  # Load the study if it already exists
+    )
+
+    objective_func = get_optuna_objective(current_model_name)
+    sklearn_models = ["ridge", "svr", "rfr", "knn", "gbr", "gpr"]
+
+    def objective(trial: optuna.Trial):
+        if current_model_name in sklearn_models:
+            return objective_func(
+                trial,
+                X_train,
+                y_train,
+                X_test,
+                y_test,
+                fine_tuned_values,
+                cv,
+                n_jobs=n_jobs,
+            )
+        return objective_func(
+            trial, X_train, y_train, X_test, y_test, fine_tuned_values
+        )
+
+    study.optimize(objective, n_trials=optuna_n_trials)
+
+    logger.info("Number of finished trials:", len(study.trials))
+    logger.info("Best trial:")
+    trial = study.best_trial
+
+    logger.info("  Value: ", trial.value)
+    logger.info("  Params: ")
+    for key, value in trial.params.items():
+        logger.info("    {}: {}".format(key, value))
+
+    best_params = study.best_params
+    best_model = models_dict[current_model_name](**best_params)
+
+    best_model.fit(X_train, y_train)
+
+    return best_model, best_params
 
 
 def augment_data(
@@ -546,9 +555,8 @@ def get_param_grid(fine_tuned_values: FineTunedValues) -> Dict[str, list]:
     for key, value in fine_tuned_values.items():
         if value["type"] == "string":
             param_grid[key] = value["value"]
-        elif value["type"] == "boolean":
+        elif value["type"] == "bool":
             param_grid[key] = [True, False]
-
         elif value["type"] == "integer":
             num = 5
             start = int(value["value"][0])
@@ -577,14 +585,14 @@ def get_param_grid(fine_tuned_values: FineTunedValues) -> Dict[str, list]:
             param_grid[key] = param_grid[key].tolist()
 
         param_grid[key] = sorted(set(param_grid[key]))
-    logger.info(f"{param_grid=}")
 
+    logger.info(f"{param_grid=}")
     return param_grid
 
 
 def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
     logger.info("Fine-tuning model")
-
+    logger.info(f"{args.fine_tuned_values=}")
     param_grid = get_param_grid(args.fine_tuned_values)
     save_parameters(
         f".{args.grid_search_method}.fine_tuned_parameters.json",
@@ -594,7 +602,6 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
             "grid_search_method": args.grid_search_method,
             "cv_fold": args.cv_fold,
             "param_grid": param_grid,
-            "n_jobs": n_jobs,
         },
     )
     raise NotImplementedError("Fine-tuning not implemented yet")
@@ -757,7 +764,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         if args.grid_search_method == "Optuna":
             logger.info("Optimizing hyperparameters using Optuna")
             estimator, best_params = optuna_optimize(
-                args.model,
+                args.fine_tuned_values,
                 X_train,
                 y_train,
                 X_test,
