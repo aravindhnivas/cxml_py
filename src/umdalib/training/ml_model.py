@@ -571,7 +571,7 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
             param_grid[key] = custom_nspace(
                 start, stop, num=num, log=value["scale"] == "log"
             )
-            param_grid[key] = np.asarray(param_grid[key], dtype=int)
+            param_grid[key] = np.asarray(param_grid[key], dtype=float)
 
         param_grid[key] = list(set(param_grid[key]))
 
