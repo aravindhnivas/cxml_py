@@ -1,3 +1,4 @@
+from typing import Literal, TypedDict
 import optuna
 import numpy as np
 from .utils import models_dict
@@ -7,43 +8,98 @@ from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import cross_val_score
 
 
+class FineTunedValues(TypedDict):
+    value: list[str | int | float | bool]
+    type: Literal["string", "integer", "float", "bool"]
+    scale: Literal["linear", "log", None]
+
+
+def get_suggest(
+    trial: optuna.Trial,
+    name: str,
+    value: list[str],
+    number_type: Literal["int", "float"],
+    log=False,
+) -> float | int:
+    step_size = None
+    if not log and len(value) > 2:
+        total_steps = value[2]
+        step_size = (value[1] - value[0]) / total_steps
+
+    if number_type == "int":
+        low = int(value[0])
+        high = int(value[1])
+        if not step_size:
+            return trial.suggest_int(name, low, high, log=log)
+        return trial.suggest_int(name, low, high, step=int(step_size))
+
+    elif number_type == "float":
+        low = float(value[0])
+        high = float(value[1])
+        if not step_size:
+            return trial.suggest_float(name, low, high, log=log)
+        return trial.suggest_float(name, low, high, step=float(step_size))
+
+    return
+
+
+def get_parm_grid_optuna(trial: optuna.Trial, fine_tuned_values: FineTunedValues):
+    param = {}
+
+    for key, value in fine_tuned_values.items():
+        if value["type"] == "string":
+            param[key] = trial.suggest_categorical(key, value["value"])
+        elif value["type"] == "bool":
+            param[key] = trial.suggest_categorical(key, [True, False])
+        elif value["type"] == "integer" or value["type"] == "float":
+            param[key] = get_suggest(
+                trial, key, value["value"], value["type"], value["scale"] == "log"
+            )
+
+    return param
+
+
 def xgboost_optuna(
     trial: optuna.Trial,
     X_train: np.ndarray,
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    fine_tuned_values: FineTunedValues,
 ) -> float:
     dtrain = xgb.DMatrix(X_train, label=y_train)
     dvalid = xgb.DMatrix(X_test, label=y_test)
 
-    param = {
-        "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
-        "subsample": trial.suggest_float("subsample", 0.1, 1.0),
-        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.1, 1.0),
-        "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
-        "lambda": trial.suggest_float("lambda", 1e-8, 1.0, log=True),
-        "booster": trial.suggest_categorical("booster", ["gbtree", "gblinear", "dart"]),
-    }
+    # param = {
+    #     "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
+    #     "subsample": trial.suggest_float("subsample", 0.1, 1.0),
+    #     "colsample_bytree": trial.suggest_float("colsample_bytree", 0.1, 1.0),
+    #     "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
+    #     "lambda": trial.suggest_float("lambda", 1e-8, 1.0, log=True),
+    #     "booster": trial.suggest_categorical("booster", ["gbtree", "gblinear", "dart"]),
+    # }
 
-    if param["booster"] == "gbtree" or param["booster"] == "dart":
-        param["max_depth"] = trial.suggest_int("max_depth", 1, 9)
-        param["learning_rate"] = trial.suggest_float(
-            "learning_rate", 1e-8, 1.0, log=True
-        )
-        param["gamma"] = trial.suggest_float("gamma", 1e-8, 1.0, log=True)
-        param["grow_policy"] = trial.suggest_categorical(
-            "grow_policy", ["depthwise", "lossguide"]
-        )
-    if param["booster"] == "dart":
-        param["sample_type"] = trial.suggest_categorical(
-            "sample_type", ["uniform", "weighted"]
-        )
-        param["normalize_type"] = trial.suggest_categorical(
-            "normalize_type", ["tree", "forest"]
-        )
-        param["rate_drop"] = trial.suggest_float("rate_drop", 1e-8, 1.0, log=True)
-        param["skip_drop"] = trial.suggest_float("skip_drop", 1e-8, 1.0, log=True)
+    param = get_parm_grid_optuna(trial, fine_tuned_values)
+
+    if "booster" in param:
+        if param["booster"] == "gbtree" or param["booster"] == "dart":
+            param["max_depth"] = trial.suggest_int("max_depth", 1, 9)
+            param["learning_rate"] = trial.suggest_float(
+                "learning_rate", 1e-8, 1.0, log=True
+            )
+            param["gamma"] = trial.suggest_float("gamma", 1e-8, 1.0, log=True)
+            param["grow_policy"] = trial.suggest_categorical(
+                "grow_policy", ["depthwise", "lossguide"]
+            )
+        if param["booster"] == "dart":
+            param["sample_type"] = trial.suggest_categorical(
+                "sample_type", ["uniform", "weighted"]
+            )
+            param["normalize_type"] = trial.suggest_categorical(
+                "normalize_type", ["tree", "forest"]
+            )
+            param["rate_drop"] = trial.suggest_float("rate_drop", 1e-8, 1.0, log=True)
+            param["skip_drop"] = trial.suggest_float("skip_drop", 1e-8, 1.0, log=True)
 
     # Add a callback for pruning.
     pruning_callback = optuna.integration.XGBoostPruningCallback(
@@ -64,22 +120,25 @@ def catboost_optuna(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    fine_tuned_values: FineTunedValues,
 ) -> float:
-    param = {
-        "iterations": trial.suggest_int("iterations", 100, 1000),
-        "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
-        "depth": trial.suggest_int("depth", 1, 16),
-        "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1e-8, 1.0, log=True),
-        "border_count": trial.suggest_int("border_count", 1, 255),
-        "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.5, 1.0),
-        "boosting_type": trial.suggest_categorical(
-            "boosting_type", ["Ordered", "Plain"]
-        ),
-        "bootstrap_type": trial.suggest_categorical(
-            "bootstrap_type", ["Bayesian", "Bernoulli", "MVS"]
-        ),
-        "eval_metric": "RMSE",
-    }
+    # param = {
+    #     "iterations": trial.suggest_int("iterations", 100, 1000),
+    #     "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
+    #     "depth": trial.suggest_int("depth", 1, 16),
+    #     "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1e-8, 1.0, log=True),
+    #     "border_count": trial.suggest_int("border_count", 1, 255),
+    #     "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.5, 1.0),
+    #     "boosting_type": trial.suggest_categorical(
+    #         "boosting_type", ["Ordered", "Plain"]
+    #     ),
+    #     "bootstrap_type": trial.suggest_categorical(
+    #         "bootstrap_type", ["Bayesian", "Bernoulli", "MVS"]
+    #     ),
+    #     "eval_metric": "RMSE",
+    # }
+
+    param = get_parm_grid_optuna(trial, fine_tuned_values)
 
     if param["bootstrap_type"] == "Bayesian":
         param["bagging_temperature"] = trial.suggest_float("bagging_temperature", 0, 10)
@@ -112,23 +171,30 @@ def lgbm_optuna(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    fine_tuned_values: FineTunedValues,
 ) -> float:
-    param = {
-        "verbosity": -1,  # suppress warnings and info
-        "objective": "regression",
-        "metric": "rmse",
-        "num_leaves": trial.suggest_int("num_leaves", 2, 256),
-        "max_depth": trial.suggest_int("max_depth", 1, 9),
-        "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
-        "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
-        "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
-        "subsample": trial.suggest_float("subsample", 0.5, 1.0),
-        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
-        "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 10.0, log=True),
-        "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
-        "bagging_fraction": trial.suggest_float("bagging_fraction", 0.4, 1.0),
-        "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
-    }
+    # param = {
+    #     "verbosity": -1,  # suppress warnings and info
+    #     "objective": "regression",
+    #     "metric": "rmse",
+    #     "num_leaves": trial.suggest_int("num_leaves", 2, 256),
+    #     "max_depth": trial.suggest_int("max_depth", 1, 9),
+    #     "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
+    #     "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
+    #     "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
+    #     "subsample": trial.suggest_float("subsample", 0.5, 1.0),
+    #     "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
+    #     "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 10.0, log=True),
+    #     "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
+    #     "bagging_fraction": trial.suggest_float("bagging_fraction", 0.4, 1.0),
+    #     "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
+    # }
+
+    param = get_parm_grid_optuna(trial, fine_tuned_values)
+
+    param["objective"] = "regression"
+    param["metric"] = "rmse"
+    param["verbosity"] = -1
 
     dtrain = lgb.Dataset(X_train, label=y_train)
     dvalid = lgb.Dataset(X_test, label=y_test)
@@ -168,15 +234,17 @@ def ridge_optuna(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    fine_tuned_values: FineTunedValues,
     cv: int = 5,
     n_jobs: int = -1,
 ) -> float:
-    param = {
-        "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
-        "solver": trial.suggest_categorical(
-            "solver", ["auto", "svd", "cholesky", "lsqr", "sparse_cg", "sag", "saga"]
-        ),
-    }
+    # param = {
+    #     "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
+    #     "solver": trial.suggest_categorical(
+    #         "solver", ["auto", "svd", "cholesky", "lsqr", "sparse_cg", "sag", "saga"]
+    #     ),
+    # }
+    param = get_parm_grid_optuna(trial, fine_tuned_values)
 
     model = models_dict["ridge"](**param)
     rmse = get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv, n_jobs)
@@ -190,18 +258,19 @@ def svr_optuna(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    fine_tuned_values: FineTunedValues,
     cv: int = 5,
     n_jobs: int = -1,
 ) -> float:
-    param = {
-        "C": trial.suggest_float("C", 1e-8, 1.0, log=True),
-        "degree": trial.suggest_int("degree", 1, 5),
-        "kernel": trial.suggest_categorical(
-            "kernel", ["linear", "poly", "rbf", "sigmoid", "precomputed"]
-        ),
-        "gamma": trial.suggest_categorical("gamma", ["scale", "auto"]),
-    }
-
+    # param = {
+    #     "C": trial.suggest_float("C", 1e-8, 1.0, log=True),
+    #     "degree": trial.suggest_int("degree", 1, 5),
+    #     "kernel": trial.suggest_categorical(
+    #         "kernel", ["linear", "poly", "rbf", "sigmoid", "precomputed"]
+    #     ),
+    #     "gamma": trial.suggest_categorical("gamma", ["scale", "auto"]),
+    # }
+    param = get_parm_grid_optuna(trial, fine_tuned_values)
     model = models_dict["svr"](**param)
     rmse = get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv, n_jobs)
 
@@ -214,18 +283,19 @@ def knn_optuna(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    fine_tuned_values: FineTunedValues,
     cv: int = 5,
     n_jobs: int = -1,
 ) -> float:
-    param = {
-        "n_neighbors": trial.suggest_int("n_neighbors", 1, 100),
-        "weights": trial.suggest_categorical("weights", ["uniform", "distance"]),
-        "algorithm": trial.suggest_categorical(
-            "algorithm", ["auto", "ball_tree", "kd_tree", "brute"]
-        ),
-        "leaf_size": trial.suggest_int("leaf_size", 1, 100),
-    }
-
+    # param = {
+    #     "n_neighbors": trial.suggest_int("n_neighbors", 1, 100),
+    #     "weights": trial.suggest_categorical("weights", ["uniform", "distance"]),
+    #     "algorithm": trial.suggest_categorical(
+    #         "algorithm", ["auto", "ball_tree", "kd_tree", "brute"]
+    #     ),
+    #     "leaf_size": trial.suggest_int("leaf_size", 1, 100),
+    # }
+    param = get_parm_grid_optuna(trial, fine_tuned_values)
     model = models_dict["knn"](**param)
     rmse = get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv, n_jobs)
 
@@ -238,20 +308,21 @@ def rfr_optuna(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    fine_tuned_values: FineTunedValues,
     cv: int = 5,
     n_jobs: int = -1,
 ) -> float:
-    param = {
-        "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
-        "max_depth": trial.suggest_int("max_depth", 1, 9),
-        "min_samples_split": trial.suggest_int("min_samples_split", 2, 10),
-        "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 10),
-        "max_features": trial.suggest_categorical(
-            "max_features", ["auto", "sqrt", "log2"]
-        ),
-        "bootstrap": trial.suggest_categorical("bootstrap", [True, False]),
-    }
-
+    # param = {
+    #     "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
+    #     "max_depth": trial.suggest_int("max_depth", 1, 9),
+    #     "min_samples_split": trial.suggest_int("min_samples_split", 2, 10),
+    #     "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 10),
+    #     "max_features": trial.suggest_categorical(
+    #         "max_features", ["auto", "sqrt", "log2"]
+    #     ),
+    #     "bootstrap": trial.suggest_categorical("bootstrap", [True, False]),
+    # }
+    param = get_parm_grid_optuna(trial, fine_tuned_values)
     model = models_dict["rfr"](**param)
     rmse = get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv, n_jobs)
 
@@ -264,21 +335,22 @@ def gbr_optuna(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    fine_tuned_values: FineTunedValues,
     cv: int = 5,
     n_jobs: int = -1,
 ) -> float:
-    param = {
-        "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
-        "max_depth": trial.suggest_int("max_depth", 1, 9),
-        "min_samples_split": trial.suggest_int("min_samples_split", 2, 10),
-        "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 10),
-        "max_features": trial.suggest_categorical(
-            "max_features", ["auto", "sqrt", "log2"]
-        ),
-        "subsample": trial.suggest_float("subsample", 0.5, 1.0),
-        "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
-    }
-
+    # param = {
+    #     "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
+    #     "max_depth": trial.suggest_int("max_depth", 1, 9),
+    #     "min_samples_split": trial.suggest_int("min_samples_split", 2, 10),
+    #     "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 10),
+    #     "max_features": trial.suggest_categorical(
+    #         "max_features", ["auto", "sqrt", "log2"]
+    #     ),
+    #     "subsample": trial.suggest_float("subsample", 0.5, 1.0),
+    #     "learning_rate": trial.suggest_float("learning_rate", 1e-3, 1.0, log=True),
+    # }
+    param = get_parm_grid_optuna(trial, fine_tuned_values)
     model = models_dict["gbr"](**param)
     rmse = get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv, n_jobs)
 
@@ -291,13 +363,15 @@ def gpr_optuna(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    fine_tuned_values: FineTunedValues,
     cv: int = 5,
     n_jobs: int = -1,
 ) -> float:
-    param = {
-        "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
-    }
+    # param = {
+    #     "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
+    # }
 
+    param = get_parm_grid_optuna(trial, fine_tuned_values)
     model = models_dict["gpr"](**param)
     rmse = get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv, n_jobs)
 
