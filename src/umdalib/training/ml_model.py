@@ -597,7 +597,7 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
             "n_jobs": n_jobs,
         },
     )
-    # raise NotImplementedError("Fine-tuning not implemented yet")
+    raise NotImplementedError("Fine-tuning not implemented yet")
     opts = {k: v for k, v in args.parameters.items() if k not in param_grid.keys()}
 
     if args.parallel_computation and args.model in n_jobs_keyword_available_models:
@@ -879,6 +879,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         cv_scores = compute_cv(initial_estimator, X, y, int(args.cv_fold))
         results["cv_scores"] = cv_scores
 
+    timestamp = None
     if args.fine_tune_model:
         results["best_params"] = best_params
         misc = {
@@ -888,6 +889,9 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         timestamp = save_parameters(
             f".{args.grid_search_method}.best_params.json", best_params, misc=misc
         )
+
+    if timestamp is None:
+        timestamp = datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")
 
     results["timestamp"] = timestamp
 
