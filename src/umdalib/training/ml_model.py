@@ -594,6 +594,7 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
             "grid_search_method": args.grid_search_method,
             "cv_fold": args.cv_fold,
             "param_grid": param_grid,
+            "n_jobs": n_jobs,
         },
     )
     # raise NotImplementedError("Fine-tuning not implemented yet")
