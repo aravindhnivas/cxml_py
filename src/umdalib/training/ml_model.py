@@ -549,11 +549,14 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
     for key, value in args.fine_tuned_values.items():
         if value["type"] == "string":
             param_grid[key] = value["value"]
+        elif value["type"] == "boolean":
+            param_grid[key] = [True, False]
+
         elif value["type"] == "integer":
             num = 5
             start = int(value["value"][0])
             stop = int(value["value"][1])
-            if len(value["value"]) == 3:
+            if len(value["value"]) > 2:
                 num = int(value["value"][2])
 
             param_grid[key] = custom_nspace(
@@ -565,7 +568,7 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
             num = 5
             start = float(value["value"][0])
             stop = float(value["value"][1])
-            if len(value["value"]) == 3:
+            if len(value["value"]) > 2:
                 num = int(value["value"][2])
 
             param_grid[key] = custom_nspace(
