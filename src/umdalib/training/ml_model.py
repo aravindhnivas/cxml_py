@@ -138,6 +138,12 @@ class TrainingFile(TypedDict):
     key: str
 
 
+class FineTunedValues(TypedDict):
+    value: list[str | int | float]
+    type: Literal["string", "integer", "float"]
+    scale: Literal["linear", "log"]
+
+
 @dataclass
 class Args:
     model: str
@@ -145,7 +151,7 @@ class Args:
     bootstrap: bool
     bootstrap_nsamples: int
     parameters: Dict[str, Union[str, int, None]]
-    fine_tuned_values: Dict[str, Union[str, int, float, None]]
+    fine_tuned_values: FineTunedValues
     pre_trained_file: str
     cv_fold: int
     cross_validation: bool
@@ -513,13 +519,63 @@ current_model_name: str = None
 timeStamp: str = None
 
 
+def custom_nspace(start: float, stop: float, num: int, log=True) -> np.ndarray:
+    if start > stop:
+        raise ValueError("Start value cannot be greater than stop value")
+    if num < 1:
+        raise ValueError("Number of samples must be greater than 1")
+
+    if not log:
+        return np.linspace(start, stop, num=num)
+    if start == 0:
+        raise ValueError("Cannot use log scale with 0")
+    if stop == 0:
+        raise ValueError("Cannot use log scale with 0")
+    if start < 0:
+        raise ValueError("Cannot use log scale with negative values")
+    if stop < 0:
+        raise ValueError("Cannot use log scale with negative values")
+
+    start = np.log10(start)
+    stop = np.log10(stop)
+    return 10 ** np.linspace(start, stop, num=num, dtype=int)
+
+
 def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
     logger.info("Fine-tuning model")
-    opts = {
-        k: v
-        for k, v in args.parameters.items()
-        if k not in args.fine_tuned_values.keys()
-    }
+
+    param_grid = {}
+
+    for key, value in args.fine_tuned_values.items():
+        if value["type"] == "string":
+            param_grid[key] = value["value"]
+        elif value["type"] == "integer":
+            num = 5
+            start = int(value["value"][0])
+            stop = int(value["value"][1])
+            if len(value["value"]) == 3:
+                num = int(value["value"][2])
+
+            param_grid[key] = custom_nspace(
+                start, stop, num=num, log=value["scale"] == "log"
+            )
+            param_grid[key] = np.asarray(param_grid[key], dtype=int)
+
+        elif value["type"] == "float":
+            num = 5
+            start = float(value["value"][0])
+            stop = float(value["value"][1])
+            if len(value["value"]) == 3:
+                num = int(value["value"][2])
+
+            param_grid[key] = custom_nspace(
+                start, stop, num=num, log=value["scale"] == "log"
+            )
+            param_grid[key] = np.asarray(param_grid[key], dtype=int)
+
+        param_grid[key] = list(set(param_grid[key]))
+
+    opts = {k: v for k, v in args.parameters.items() if k not in param_grid.keys()}
 
     if args.parallel_computation and args.model in n_jobs_keyword_available_models:
         opts["n_jobs"] = n_jobs
@@ -538,10 +594,10 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
         GridCV_parameters["n_jobs"] = n_jobs
 
     logger.info(f"{GridCV=}, {GridCV_parameters=}")
-
+    logger.info(f"{param_grid=}")
     grid_search = GridCV(
         initial_estimator,
-        args.fine_tuned_values,
+        param_grid,
         cv=int(args.cv_fold),
         **GridCV_parameters,
     )
@@ -675,7 +731,10 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
                 cv=int(args.cv_fold),
             )
         else:
-            logger.info("Fine-tuning model using traditional grid search")
+            logger.info(
+                "Fine-tuning model using traditional grid search method: ",
+                args.grid_search_method,
+            )
             estimator, best_params = fine_tune_estimator(args, X_train, y_train)
     else:
         logger.info("Training model without fine-tuning")
