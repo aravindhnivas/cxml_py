@@ -83,23 +83,37 @@ def xgboost_optuna(
 
     if "booster" in param:
         if param["booster"] == "gbtree" or param["booster"] == "dart":
-            param["max_depth"] = trial.suggest_int("max_depth", 1, 9)
-            param["learning_rate"] = trial.suggest_float(
-                "learning_rate", 1e-8, 1.0, log=True
-            )
-            param["gamma"] = trial.suggest_float("gamma", 1e-8, 1.0, log=True)
-            param["grow_policy"] = trial.suggest_categorical(
-                "grow_policy", ["depthwise", "lossguide"]
-            )
+            if "max_depth" not in param:
+                param["max_depth"] = trial.suggest_int("max_depth", 1, 9)
+            if "learning_rate" not in param:
+                param["learning_rate"] = trial.suggest_float(
+                    "learning_rate", 1e-8, 1.0, log=True
+                )
+            if "gamma" not in param:
+                param["gamma"] = trial.suggest_float("gamma", 1e-8, 1.0, log=True)
+
+            if "grow_policy" not in param:
+                param["grow_policy"] = trial.suggest_categorical(
+                    "grow_policy", ["depthwise", "lossguide"]
+                )
+
         if param["booster"] == "dart":
-            param["sample_type"] = trial.suggest_categorical(
-                "sample_type", ["uniform", "weighted"]
-            )
-            param["normalize_type"] = trial.suggest_categorical(
-                "normalize_type", ["tree", "forest"]
-            )
-            param["rate_drop"] = trial.suggest_float("rate_drop", 1e-8, 1.0, log=True)
-            param["skip_drop"] = trial.suggest_float("skip_drop", 1e-8, 1.0, log=True)
+            if "sample_type" not in param:
+                param["sample_type"] = trial.suggest_categorical(
+                    "sample_type", ["uniform", "weighted"]
+                )
+            if "normalize_type" not in param:
+                param["normalize_type"] = trial.suggest_categorical(
+                    "normalize_type", ["tree", "forest"]
+                )
+            if "rate_drop" not in param:
+                param["rate_drop"] = trial.suggest_float(
+                    "rate_drop", 1e-8, 1.0, log=True
+                )
+            if "skip_drop" not in param:
+                param["skip_drop"] = trial.suggest_float(
+                    "skip_drop", 1e-8, 1.0, log=True
+                )
 
     # Add a callback for pruning.
     pruning_callback = optuna.integration.XGBoostPruningCallback(
@@ -140,10 +154,15 @@ def catboost_optuna(
 
     param = get_parm_grid_optuna(trial, fine_tuned_values)
 
-    if param["bootstrap_type"] == "Bayesian":
-        param["bagging_temperature"] = trial.suggest_float("bagging_temperature", 0, 10)
-    elif param["bootstrap_type"] == "Bernoulli":
-        param["subsample"] = trial.suggest_float("subsample", 0.1, 1)
+    if "bootstrap_type" in param:
+        if param["bootstrap_type"] == "Bayesian":
+            if "bagging_temperature" not in param:
+                param["bagging_temperature"] = trial.suggest_float(
+                    "bagging_temperature", 0, 10
+                )
+        elif param["bootstrap_type"] == "Bernoulli":
+            if "subsample" not in param:
+                param["subsample"] = trial.suggest_float("subsample", 0.1, 1)
 
     pruning_callback = optuna.integration.CatBoostPruningCallback(trial, "RMSE")
     model = models_dict["catboost"](**param)
