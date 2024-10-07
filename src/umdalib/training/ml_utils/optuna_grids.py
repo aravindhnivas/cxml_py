@@ -66,11 +66,13 @@ def xgboost_optuna(
     X_test: np.ndarray,
     y_test: np.ndarray,
     fine_tuned_values: FineTunedValues,
+    static_params: dict[str, str] = {},
 ) -> float:
     dtrain = xgb.DMatrix(X_train, label=y_train)
     dvalid = xgb.DMatrix(X_test, label=y_test)
 
     param = get_parm_grid_optuna(trial, fine_tuned_values)
+    param.update(static_params)
 
     if "booster" in param:
         if param["booster"] == "gbtree" or param["booster"] == "dart":
@@ -126,8 +128,10 @@ def catboost_optuna(
     X_test: np.ndarray,
     y_test: np.ndarray,
     fine_tuned_values: FineTunedValues,
+    static_params: dict[str, str] = {},
 ) -> float:
     param = get_parm_grid_optuna(trial, fine_tuned_values)
+    param.update(static_params)
     param["eval_metric"] = "RMSE"
 
     if "bootstrap_type" in param:
@@ -167,9 +171,10 @@ def lgbm_optuna(
     X_test: np.ndarray,
     y_test: np.ndarray,
     fine_tuned_values: FineTunedValues,
+    static_params: dict[str, str] = {},
 ) -> float:
     param = get_parm_grid_optuna(trial, fine_tuned_values)
-
+    param.update(static_params)
     param["objective"] = "regression"
     param["metric"] = "rmse"
     param["verbosity"] = -1
@@ -214,10 +219,13 @@ def sklearn_models(model_name: str):
         X_test: np.ndarray,
         y_test: np.ndarray,
         fine_tuned_values: FineTunedValues,
+        static_params: dict[str, str] = {},
         cv: int = 5,
         n_jobs: int = -1,
     ) -> float:
         param = get_parm_grid_optuna(trial, fine_tuned_values)
+        param.update(static_params)
+
         model = models_dict[model_name](**param)
         rmse = get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv, n_jobs)
 

@@ -118,6 +118,7 @@ def get_unique_study_name(base_name: str, storage: str) -> str:
 
 def optuna_optimize(
     fine_tuned_values: FineTunedValues,
+    parameters: Dict[str, Union[str, int, float, None]],
     X_train: np.ndarray,
     y_train: np.ndarray,
     X_test: np.ndarray,
@@ -165,6 +166,11 @@ def optuna_optimize(
     objective_func = get_optuna_objective(current_model_name)
     sklearn_models = ["ridge", "svr", "rfr", "knn", "gbr", "gpr"]
 
+    static_params = {}
+    for key, value in parameters.items():
+        if key not in fine_tuned_values:
+            static_params[key] = value
+
     def objective(trial: optuna.Trial):
         if current_model_name in sklearn_models:
             return objective_func(
@@ -174,11 +180,18 @@ def optuna_optimize(
                 X_test,
                 y_test,
                 fine_tuned_values,
-                cv,
+                static_params=static_params,
+                cv=cv,
                 n_jobs=n_jobs,
             )
         return objective_func(
-            trial, X_train, y_train, X_test, y_test, fine_tuned_values
+            trial,
+            X_train,
+            y_train,
+            X_test,
+            y_test,
+            fine_tuned_values,
+            static_params=static_params,
         )
 
     study.optimize(objective, n_trials=optuna_n_trials)
@@ -785,6 +798,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             logger.info("Optimizing hyperparameters using Optuna")
             estimator, best_params = optuna_optimize(
                 args.fine_tuned_values,
+                args.parameters,
                 X_train,
                 y_train,
                 X_test,
