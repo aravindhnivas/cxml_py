@@ -541,7 +541,7 @@ def custom_nspace(start: float, stop: float, num: int, log=True) -> np.ndarray:
 
 
 def get_param_grid(fine_tuned_values: FineTunedValues) -> Dict[str, list]:
-    param_grid = {}
+    param_grid: Dict[str, list[str] | np.ndarray] = {}
 
     for key, value in fine_tuned_values.items():
         if value["type"] == "string":
@@ -573,7 +573,10 @@ def get_param_grid(fine_tuned_values: FineTunedValues) -> Dict[str, list]:
             )
             param_grid[key] = np.asarray(param_grid[key], dtype=float)
 
-        param_grid[key] = list(set(param_grid[key]))
+        if isinstance(param_grid[key], np.ndarray):
+            param_grid[key] = param_grid[key].tolist()
+
+        param_grid[key] = sorted(set(param_grid[key]))
     logger.info(f"{param_grid=}")
 
     return param_grid
@@ -593,6 +596,7 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
             "param_grid": param_grid,
         },
     )
+    # raise NotImplementedError("Fine-tuning not implemented yet")
     opts = {k: v for k, v in args.parameters.items() if k not in param_grid.keys()}
 
     if args.parallel_computation and args.model in n_jobs_keyword_available_models:
