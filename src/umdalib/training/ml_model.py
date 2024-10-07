@@ -593,7 +593,9 @@ def get_param_grid(fine_tuned_values: FineTunedValues) -> Dict[str, list]:
 def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
     logger.info("Fine-tuning model")
     logger.info(f"{args.fine_tuned_values=}")
+
     param_grid = get_param_grid(args.fine_tuned_values)
+
     save_parameters(
         f".{args.grid_search_method}.fine_tuned_parameters.json",
         args.fine_tuned_values,
@@ -604,6 +606,7 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
             "param_grid": param_grid,
         },
     )
+
     raise NotImplementedError("Fine-tuning not implemented yet")
     opts = {k: v for k, v in args.parameters.items() if k not in param_grid.keys()}
 
