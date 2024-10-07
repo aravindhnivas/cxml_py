@@ -516,7 +516,6 @@ def analyse_shap_values(estimator, X: np.ndarray):
 pre_trained_file: pt = None
 pre_trained_loc: pt = None
 current_model_name: str = None
-timeStamp: str = None
 
 
 def custom_nspace(start: float, stop: float, num: int, log=True) -> np.ndarray:
@@ -541,12 +540,10 @@ def custom_nspace(start: float, stop: float, num: int, log=True) -> np.ndarray:
     return 10 ** np.linspace(start, stop, num=num)
 
 
-def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
-    logger.info("Fine-tuning model")
-
+def get_param_grid(fine_tuned_values: FineTunedValues) -> Dict[str, list]:
     param_grid = {}
 
-    for key, value in args.fine_tuned_values.items():
+    for key, value in fine_tuned_values.items():
         if value["type"] == "string":
             param_grid[key] = value["value"]
         elif value["type"] == "boolean":
@@ -577,7 +574,25 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
             param_grid[key] = np.asarray(param_grid[key], dtype=float)
 
         param_grid[key] = list(set(param_grid[key]))
+    logger.info(f"{param_grid=}")
 
+    return param_grid
+
+
+def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
+    logger.info("Fine-tuning model")
+
+    param_grid = get_param_grid(args.fine_tuned_values)
+    save_parameters(
+        f".{args.grid_search_method}.fine_tuned_parameters.json",
+        args.fine_tuned_values,
+        mode="fine_tuned",
+        misc={
+            "grid_search_method": args.grid_search_method,
+            "cv_fold": args.cv_fold,
+            "param_grid": param_grid,
+        },
+    )
     opts = {k: v for k, v in args.parameters.items() if k not in param_grid.keys()}
 
     if args.parallel_computation and args.model in n_jobs_keyword_available_models:
@@ -630,20 +645,33 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
     return best_model, grid_search.best_params_
 
 
-def save_parameters(suffix: str, parameters: Dict[str, Union[str, int, float, None]]):
+def save_parameters(
+    suffix: str,
+    parameters: Dict[str, Union[str, int, float, None]],
+    mode: Literal["fine_tuned", "normal"] = "normal",
+    misc: Dict[str, Union[str, int, float, None]] = None,
+):
     parameters_file = pre_trained_file.with_suffix(suffix)
+    timestamp = datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")
+
     with open(parameters_file, "w") as f:
         parameters_dict = {
             "values": parameters,
             "model": current_model_name,
-            "timestamp": timeStamp,
+            "timestamp": timestamp,
+            "mode": mode,
         }
+        if misc:
+            parameters_dict.update(misc)
+
         json.dump(parameters_dict, f, indent=4)
         logger.info(f"Model parameters saved to {parameters_file.name}")
 
+    return timestamp
+
 
 def compute(args: Args, X: np.ndarray, y: np.ndarray):
-    global pre_trained_file, pre_trained_loc, current_model_name, timeStamp
+    global pre_trained_file, pre_trained_loc, current_model_name
 
     current_model_name = args.model
 
@@ -776,7 +804,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         analyse_shap_values(estimator, X)
 
     logger.info(f"Saving model to {pre_trained_file}")
-    timeStamp = datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")
 
     trained_params = estimator.get_params()
     if args.model == "catboost":
@@ -784,8 +811,8 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         trained_params = trained_params | estimator.get_all_params()
 
     if args.save_pretrained_model:
-        save_parameters(".parameters.user.json", args.parameters)
-        save_parameters(".parameters.trained.json", trained_params)
+        save_parameters(".parameters.normal.user.json", args.parameters)
+        save_parameters(".parameters.normal.trained.json", trained_params)
 
     logger.info("Evaluating model for test data")
     test_stats = get_stats(estimator, X_test, y_test)
@@ -849,26 +876,15 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
     if args.fine_tune_model:
         results["best_params"] = best_params
-        best_params_savefile = pre_trained_file.with_suffix(
-            f".{args.grid_search_method}.best_params.json"
-        )
-
-        best_params_contents = {
-            "values": best_params,
-            "model": args.model,
-            "timestamp": timeStamp,
+        misc = {
             "cv_fold": args.cv_fold,
             "grid_search_method": args.grid_search_method,
         }
+        timestamp = save_parameters(
+            f".{args.grid_search_method}.best_params.json", best_params, misc=misc
+        )
 
-        with open(
-            best_params_savefile,
-            "w",
-        ) as f:
-            json.dump(best_params_contents, f, indent=4)
-            logger.info(f"Results saved to {best_params_savefile}")
-
-    results["timestamp"] = timeStamp
+    results["timestamp"] = timestamp
 
     end_time = perf_counter()
     logger.info(f"Training completed in {(end_time - start_time):.2f} s")
