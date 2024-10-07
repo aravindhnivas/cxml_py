@@ -39,6 +39,7 @@ from .ml_utils.utils import (
     models_dict,
     n_jobs_keyword_available_models,
 )
+from multiprocessing import cpu_count
 
 tqdm.pandas()
 
@@ -1006,6 +1007,9 @@ def main(args: Args):
     skip_invalid_y_values = args.skip_invalid_y_values
     if args.parallel_computation:
         n_jobs = int(args.n_jobs)
+        if n_jobs < 1:
+            n_jobs = cpu_count() + n_jobs
+
         backend = args.parallel_computation_backend
 
     logger.info(f"Training {args.model} model")
