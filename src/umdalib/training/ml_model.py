@@ -131,9 +131,19 @@ def optuna_optimize(
         save_loc.mkdir(parents=True)
 
     logfile = save_loc / "storage.db"
-    # if logfile.exists():
-    #     logfile.unlink()
     storage = f"sqlite:///{str(logfile)}"
+
+    save_parameters(
+        ".Optuna.fine_tuned_parameters.json",
+        fine_tuned_values,
+        mode="fine_tuned",
+        misc={
+            "optuna_n_trials": optuna_n_trials,
+            "optuna_n_warmup_steps": optuna_n_warmup_steps,
+            "cv_fold": cv,
+            "storage": storage,
+        },
+    )
 
     logger.info(f"Using {storage} for storage")
 
