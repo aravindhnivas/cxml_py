@@ -613,7 +613,8 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
         misc=misc,
     )
 
-    raise NotImplementedError("Fine-tuning not implemented yet")
+    # raise NotImplementedError("Fine-tuning not implemented yet")
+
     opts = {k: v for k, v in args.parameters.items() if k not in param_grid.keys()}
 
     if args.parallel_computation and args.model in n_jobs_keyword_available_models:
