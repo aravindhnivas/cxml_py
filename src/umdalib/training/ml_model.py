@@ -595,16 +595,22 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
     logger.info(f"{args.fine_tuned_values=}")
 
     param_grid = get_param_grid(args.fine_tuned_values)
-
+    misc = {
+        "grid_search_method": args.grid_search_method,
+        "cv_fold": args.cv_fold,
+    }
     save_parameters(
         f".{args.grid_search_method}.fine_tuned_parameters.json",
         args.fine_tuned_values,
         mode="fine_tuned",
-        misc={
-            "grid_search_method": args.grid_search_method,
-            "cv_fold": args.cv_fold,
-            "param_grid": param_grid,
-        },
+        misc=misc,
+    )
+
+    save_parameters(
+        f".{args.grid_search_method}.param_grid.json",
+        param_grid,
+        mode="grid",
+        misc=misc,
     )
 
     raise NotImplementedError("Fine-tuning not implemented yet")
@@ -663,7 +669,7 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
 def save_parameters(
     suffix: str,
     parameters: Dict[str, Union[str, int, float, None]],
-    mode: Literal["fine_tuned", "normal"] = "normal",
+    mode: Literal["fine_tuned", "normal", "grid"] = "normal",
     misc: Dict[str, Union[str, int, float, None]] = None,
 ):
     parameters_file = pre_trained_file.with_suffix(suffix)
