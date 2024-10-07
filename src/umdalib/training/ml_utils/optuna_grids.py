@@ -18,7 +18,7 @@ def get_suggest(
     trial: optuna.Trial,
     name: str,
     value: list[str],
-    number_type: Literal["int", "float"],
+    number_type: Literal["integer", "float"],
     log=False,
 ) -> float | int:
     step_size = None
@@ -26,7 +26,7 @@ def get_suggest(
         total_steps = value[2]
         step_size = (value[1] - value[0]) / total_steps
 
-    if number_type == "int":
+    if number_type == "integer":
         low = int(value[0])
         high = int(value[1])
         if not step_size:
