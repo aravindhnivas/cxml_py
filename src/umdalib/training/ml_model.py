@@ -538,7 +538,7 @@ def custom_nspace(start: float, stop: float, num: int, log=True) -> np.ndarray:
 
     start = np.log10(start)
     stop = np.log10(stop)
-    return 10 ** np.linspace(start, stop, num=num, dtype=int)
+    return 10 ** np.linspace(start, stop, num=num)
 
 
 def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
