@@ -6,6 +6,7 @@ except ImportError:
 import json
 from dataclasses import dataclass
 from datetime import datetime
+from multiprocessing import cpu_count
 from pathlib import Path as pt
 from time import perf_counter
 from typing import Dict, Literal, Tuple, TypedDict, Union
@@ -18,13 +19,13 @@ from dask.diagnostics import ProgressBar
 from joblib import dump, parallel_config
 from scipy.optimize import curve_fit
 from sklearn import metrics
+from sklearn.base import clone
 from sklearn.gaussian_process import kernels
 from sklearn.model_selection import (
     KFold,
     learning_curve,
     train_test_split,
 )
-from sklearn.base import clone
 from sklearn.utils import resample
 from tqdm import tqdm
 
@@ -39,7 +40,6 @@ from .ml_utils.utils import (
     models_dict,
     n_jobs_keyword_available_models,
 )
-from multiprocessing import cpu_count
 
 tqdm.pandas()
 
