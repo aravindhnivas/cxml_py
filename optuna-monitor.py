@@ -24,8 +24,8 @@ def main(args: Args):
     storage = RDBStorage(db_url)
     app = wsgi(storage)
 
-    print("Optuna dashboard is running on http://localhost:8080")
-    serve(app, port=8080, url_scheme="http")
+    print(f"Optuna dashboard is running on http://localhost:{args.port}")
+    serve(app, port=args.port, url_scheme="http")
 
 
 if __name__ == "__main__":
