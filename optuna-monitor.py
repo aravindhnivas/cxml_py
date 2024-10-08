@@ -1,10 +1,19 @@
+from dataclasses import dataclass
 from waitress import serve
 from optuna.storages import RDBStorage
 from optuna_dashboard import wsgi
 from umdalib.utils import Paths
 
 
-def main():
+@dataclass
+class Args:
+    port: int = 8080
+
+
+def main(args: Args):
+    print("Starting Optuna dashboard...")
+    print(f"Using port: {args.port}")
+
     filename = Paths().app_log_dir / "optuna/storage.db"
     if not filename.exists():
         raise FileNotFoundError(f"Database file not found: {filename}")
@@ -15,10 +24,9 @@ def main():
     storage = RDBStorage(db_url)
     app = wsgi(storage)
 
-    return app
+    print("Optuna dashboard is running on http://localhost:8080")
+    serve(app, port=8080, url_scheme="http")
 
 
 if __name__ == "__main__":
-    print("Optuna dashboard is running on http://localhost:8080")
-    app = main()
-    serve(app, port=8080, url_scheme="http")
+    main(Args())
