@@ -1,6 +1,13 @@
-import optuna
 from typing import Literal, TypedDict
+
 import numpy as np
+from optuna.distributions import (
+    CategoricalDistribution,
+    FloatDistribution,
+    IntDistribution,
+)
+from optuna.integration import OptunaSearchCV
+
 from .utils import models_dict
 
 
@@ -25,10 +32,8 @@ def get_suggest(
             total_steps = int(value[2])
             step_size = (high - low) / total_steps
         if not step_size:
-            return optuna.distributions.IntDistribution(name, low, high, log=log)
-        return optuna.distributions.IntDistribution(
-            name, low, high, step=int(step_size)
-        )
+            return IntDistribution(name, low, high, log=log)
+        return IntDistribution(name, low, high, step=int(step_size))
 
     elif number_type == "float":
         low = float(value[0])
@@ -37,10 +42,8 @@ def get_suggest(
             total_steps = float(value[2])
             step_size = (high - low) / total_steps
         if not step_size:
-            return optuna.distributions.FloatDistribution(name, low, high, log=log)
-        return optuna.distributions.FloatDistribution(
-            name, low, high, step=float(step_size)
-        )
+            return FloatDistribution(name, low, high, log=log)
+        return FloatDistribution(name, low, high, step=float(step_size))
 
     return
 
@@ -50,13 +53,9 @@ def get_parm_distribution_optunaSearchCV(fine_tuned_values: FineTunedValues):
 
     for key, value in fine_tuned_values.items():
         if value["type"] == "string":
-            param[key] = optuna.distributions.CategoricalDistribution(
-                key, value["value"]
-            )
+            param[key] = CategoricalDistribution(key, value["value"])
         elif value["type"] == "bool":
-            param[key] = optuna.distributions.CategoricalDistribution(
-                key, [True, False]
-            )
+            param[key] = CategoricalDistribution(key, [True, False])
         elif value["type"] == "integer" or value["type"] == "float":
             param[key] = get_suggest(
                 key, value["value"], value["type"], value["scale"] == "log"
@@ -75,9 +74,7 @@ def optuna_search_cv(
 ) -> float:
     model = models_dict[model_name](**static_params)
     param_distributions = get_parm_distribution_optunaSearchCV(fine_tuned_values)
-    optuna_search = optuna.integration.OptunaSearchCV(
-        model, param_distributions, n_trials=n_trials
-    )
+    optuna_search = OptunaSearchCV(model, param_distributions, n_trials=n_trials)
 
     optuna_search.fit(X, y)
     return optuna_search
