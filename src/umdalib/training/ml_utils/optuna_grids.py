@@ -237,29 +237,10 @@ def sklearn_models(model_name: str):
         param.update(static_params)
 
         model = models_dict[model_name](**param)
-
-        # Perform cross-validation
-
-        cv_scores = []
-        for i in range(optuna_n_warmup_steps):
-            _cv = cv if cv else 3
-            mean_rmse = get_rmse_for_sklearn_models(
-                model, X_train, y_train, X_test, y_test, _cv, n_jobs
-            )
-            cv_scores.append(mean_rmse)
-
-            # Report intermediate value
-            trial.report(mean_rmse, i)
-
-            # Handle pruning based on the intermediate value
-            if trial.should_prune():
-                raise optuna.TrialPruned()
-
-        # rmse = get_rmse_for_sklearn_models(
-        #     model, X_train, y_train, X_test, y_test, cv, n_jobs
-        # )
-        # return rmse
-        return np.mean(cv_scores)
+        rmse = get_rmse_for_sklearn_models(
+            model, X_train, y_train, X_test, y_test, cv, n_jobs
+        )
+        return rmse
 
     return optuna_func
 
