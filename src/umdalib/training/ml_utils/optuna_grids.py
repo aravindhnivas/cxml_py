@@ -198,7 +198,9 @@ def lgbm_optuna(
 # "ridge", "svr", "knn", "rfr", "gbr", "gpr"
 
 
-def get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv=5, n_jobs=-1):
+def get_rmse_for_sklearn_models(
+    model, X_train, y_train, X_test, y_test, cv=None, n_jobs=None
+):
     X = np.concatenate((X_train, X_test), axis=0)
     y = np.concatenate((y_train, y_test), axis=0)
     rmse = -cross_val_score(
@@ -208,8 +210,10 @@ def get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv=5, n_jobs=-1):
         cv=cv,
         scoring="neg_root_mean_squared_error",
         n_jobs=n_jobs,
-    ).mean()
+    )
 
+    if cv:
+        return rmse.mean()
     return rmse
 
 
@@ -229,7 +233,22 @@ def sklearn_models(model_name: str):
         param.update(static_params)
 
         model = models_dict[model_name](**param)
-        rmse = get_rmse_by_CV(model, X_train, y_train, X_test, y_test, cv, n_jobs)
+        for step in range(100):
+            model.partial_fit(X_train, y_train)
+
+            # Report intermediate objective value.
+            intermediate_value = get_rmse_for_sklearn_models(
+                model, X_train, y_train, X_test, y_test
+            )
+            trial.report(intermediate_value, step)
+
+            # Handle pruning based on the intermediate value.
+            if trial.should_prune():
+                raise optuna.TrialPruned()
+
+        rmse = get_rmse_for_sklearn_models(
+            model, X_train, y_train, X_test, y_test, cv, n_jobs
+        )
 
         return rmse
 
