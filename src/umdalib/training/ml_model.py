@@ -182,7 +182,9 @@ def optuna_optimize(
         "static_params": static_params,
     }
     if current_model_name in sklearn_models_names:
-        extra_kwargs.update({"cv": cv, "n_jobs": n_jobs})
+        extra_kwargs.update(
+            {"cv": cv, "n_jobs": n_jobs, "optuna_n_warmup_steps": optuna_n_warmup_steps}
+        )
 
     objective_func = get_optuna_objective(current_model_name)
 
