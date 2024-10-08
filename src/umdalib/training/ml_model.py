@@ -211,6 +211,7 @@ def optuna_optimize(
         },
     )
     logger.info("Optimizing hyperparameters using Optuna")
+    # study.optimize(objective, n_trials=optuna_n_trials)
     study.optimize(objective, n_trials=optuna_n_trials, n_jobs=n_jobs)
     logger.info("Optuna - optimization complete")
 
