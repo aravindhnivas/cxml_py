@@ -234,17 +234,17 @@ def sklearn_models(model_name: str):
     return optuna_func
 
 
-sklearn_models_name = ["ridge", "svr", "knn", "rfr", "gbr", "gpr"]
+sklearn_models_names = ["ridge", "svr", "knn", "rfr", "gbr", "gpr"]
 
 
-def get_optuna_objective(model_name: str):
+def get_optuna_objective(model_name: str) -> callable:
     if model_name == "xgboost":
         return xgboost_optuna
     elif model_name == "catboost":
         return catboost_optuna
     elif model_name == "lgbm":
         return lgbm_optuna
-    elif model_name in sklearn_models_name:
+    elif model_name in sklearn_models_names:
         return sklearn_models(model_name)
     else:
         raise ValueError(f"Model {model_name} not supported")
