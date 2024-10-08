@@ -1,11 +1,13 @@
 from typing import Literal, TypedDict
-import optuna
-import numpy as np
-from .utils import models_dict
-import xgboost as xgb
+
 import lightgbm as lgb
+import numpy as np
+import optuna
+import xgboost as xgb
 from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import cross_val_score
+
+from .utils import models_dict
 
 
 class FineTunedValues(TypedDict):
