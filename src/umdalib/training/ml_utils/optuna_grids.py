@@ -24,13 +24,13 @@ def get_suggest(
     log=False,
 ) -> float | int:
     step_size = None
-    if not log and len(value) > 2:
-        total_steps = value[2]
-        step_size = (value[1] - value[0]) / total_steps
 
     if number_type == "integer":
         low = int(value[0])
         high = int(value[1])
+        if not log and len(value) > 2:
+            total_steps = int(value[2])
+            step_size = (high - low) / total_steps
         if not step_size:
             return trial.suggest_int(name, low, high, log=log)
         return trial.suggest_int(name, low, high, step=int(step_size))
@@ -38,6 +38,9 @@ def get_suggest(
     elif number_type == "float":
         low = float(value[0])
         high = float(value[1])
+        if not log and len(value) > 2:
+            total_steps = float(value[2])
+            step_size = (high - low) / total_steps
         if not step_size:
             return trial.suggest_float(name, low, high, log=log)
         return trial.suggest_float(name, low, high, step=float(step_size))
@@ -226,31 +229,37 @@ def sklearn_models(model_name: str):
         y_test: np.ndarray,
         fine_tuned_values: FineTunedValues,
         static_params: dict[str, str] = {},
-        cv: int = 5,
-        n_jobs: int = -1,
+        cv: int = None,
+        n_jobs: int = 1,
+        optuna_n_warmup_steps: int = 10,
     ) -> float:
         param = get_parm_grid_optuna(trial, fine_tuned_values)
         param.update(static_params)
 
         model = models_dict[model_name](**param)
-        for step in range(100):
-            model.partial_fit(X_train, y_train)
 
-            # Report intermediate objective value.
-            intermediate_value = get_rmse_for_sklearn_models(
-                model, X_train, y_train, X_test, y_test
+        # Perform cross-validation
+
+        cv_scores = []
+        for i in range(optuna_n_warmup_steps):
+            _cv = cv if cv else 3
+            mean_rmse = get_rmse_for_sklearn_models(
+                model, X_train, y_train, X_test, y_test, _cv, n_jobs
             )
-            trial.report(intermediate_value, step)
+            cv_scores.append(mean_rmse)
 
-            # Handle pruning based on the intermediate value.
+            # Report intermediate value
+            trial.report(mean_rmse, i)
+
+            # Handle pruning based on the intermediate value
             if trial.should_prune():
                 raise optuna.TrialPruned()
 
-        rmse = get_rmse_for_sklearn_models(
-            model, X_train, y_train, X_test, y_test, cv, n_jobs
-        )
-
-        return rmse
+        # rmse = get_rmse_for_sklearn_models(
+        #     model, X_train, y_train, X_test, y_test, cv, n_jobs
+        # )
+        # return rmse
+        return np.mean(cv_scores)
 
     return optuna_func
 
