@@ -197,7 +197,7 @@ def optuna_optimize(
         )
 
     save_parameters(
-        ".Optuna.fine_tuned_parameters.json",
+        f".{args.grid_search_method}.fine_tuned_parameters.json",
         args.fine_tuned_values,
         mode="fine_tuned",
         misc={
