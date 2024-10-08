@@ -33,7 +33,7 @@ from umdalib.training.read_data import read_as_ddf
 from umdalib.training.utils import Yscalers, get_transformed_data
 from umdalib.utils import Paths
 
-from .ml_utils.optuna_grids import get_optuna_objective
+from .ml_utils.optuna_grids import get_optuna_objective, sklearn_models_names
 from .ml_utils.utils import (
     grid_search_dict,
     kernels_dict,
@@ -172,35 +172,28 @@ def optuna_optimize(
         load_if_exists=args.optuna_resume_study["resume"],
     )
 
-    objective_func = get_optuna_objective(current_model_name)
-    sklearn_models = ["ridge", "svr", "rfr", "knn", "gbr", "gpr"]
-
     static_params = {}
     for key, value in args.parameters.items():
         if key not in args.fine_tuned_values:
             static_params[key] = value
 
+    extra_kwargs = {
+        "fine_tuned_values": args.fine_tuned_values,
+        "static_params": static_params,
+    }
+    if current_model_name in sklearn_models_names:
+        extra_kwargs.update({"cv": cv, "n_jobs": n_jobs})
+
+    objective_func = get_optuna_objective(current_model_name)
+
     def objective(trial: optuna.Trial):
-        if current_model_name in sklearn_models:
-            return objective_func(
-                trial,
-                X_train,
-                y_train,
-                X_test,
-                y_test,
-                args.fine_tuned_values,
-                static_params=static_params,
-                cv=cv,
-                n_jobs=n_jobs,
-            )
         return objective_func(
             trial,
             X_train,
             y_train,
             X_test,
             y_test,
-            args.fine_tuned_values,
-            static_params=static_params,
+            **extra_kwargs,
         )
 
     save_parameters(
@@ -216,7 +209,7 @@ def optuna_optimize(
         },
     )
 
-    study.optimize(objective, n_trials=optuna_n_trials)
+    study.optimize(objective, n_trials=optuna_n_trials, n_jobs=n_jobs)
 
     logger.info("Number of finished trials:", len(study.trials))
     logger.info("Best trial:")
