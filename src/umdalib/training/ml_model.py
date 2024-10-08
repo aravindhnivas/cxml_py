@@ -208,8 +208,9 @@ def optuna_optimize(
             "storage": storage,
         },
     )
-
+    logger.info("Optimizing hyperparameters using Optuna")
     study.optimize(objective, n_trials=optuna_n_trials, n_jobs=n_jobs)
+    logger.info("Optuna - optimization complete")
 
     logger.info("Number of finished trials:", len(study.trials))
     logger.info("Best trial:")
@@ -223,7 +224,11 @@ def optuna_optimize(
     best_params = study.best_params
     best_model = models_dict[current_model_name](**best_params)
 
+    logger.info(
+        f"Best parameters: {best_params}\nBest score: {study.best_value}.\nFitting best model"
+    )
     best_model.fit(X_train, y_train)
+    logger.info("Fitting complete for best model from Optuna")
 
     return best_model, best_params
 
