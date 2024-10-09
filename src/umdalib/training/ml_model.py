@@ -19,6 +19,7 @@ from sklearn.base import clone
 from sklearn.gaussian_process import kernels
 from sklearn.model_selection import (
     KFold,
+    cross_validate,
     learning_curve,
     train_test_split,
 )
@@ -431,6 +432,7 @@ def custom_cross_validate(
                 "std": train_std,
                 "ci_lower": train_mean - 1.96 * train_std,
                 "ci_upper": train_mean + 1.96 * train_std,
+                "scores": train_scores,
             }
         )
 
@@ -440,8 +442,41 @@ def custom_cross_validate(
                 "std": test_std,
                 "ci_lower": test_mean - 1.96 * test_std,
                 "ci_upper": test_mean + 1.96 * test_std,
+                "scores": test_scores,
             }
         )
+
+    return cv_scores
+
+
+def parse_cv_scores(cross_validated_scores: dict) -> dict:
+    metrics = {
+        "r2": "r2",
+        "mse": "neg_mean_squared_error",
+        "rmse": "neg_root_mean_squared_error",
+        "mae": "neg_mean_absolute_error",
+    }
+    sets = ["train", "test"]
+
+    cv_scores = {set_: {} for set_ in sets}
+    for set_ in sets:
+        for metric_key, metric in metrics.items():
+            scores = cross_validated_scores[f"{set_}_{metric}"]
+            if metric.startswith("neg"):
+                scores = -scores
+
+            mean = np.mean(scores)
+            std = np.std(scores, ddof=1)
+            ci_lower = mean - 1.96 * std
+            ci_upper = mean + 1.96 * std
+
+            cv_scores[set_][metric_key] = {
+                "mean": mean,
+                "std": std,
+                "ci_lower": ci_lower,
+                "ci_upper": ci_upper,
+                "scores": scores.tolist(),
+            }
 
     return cv_scores
 
@@ -452,14 +487,39 @@ def compute_cv(
     y: np.ndarray,
     cv_fold: int,
 ):
-    scoring = ["r2", "mse", "mae", "rmse"]
     logger.info("Cross-validating model")
-
     cv_fold = int(cv_fold)
-    cv_scores = custom_cross_validate(estimator, X, y, cv=cv_fold, scoring=scoring)
+    # cv_scores = custom_cross_validate(estimator, X, y, cv=cv_fold, scoring=scoring)
+
+    if yscaler or yscaling:
+        logger.warning(
+            "Using custom cross-validation with y-scaling and y-transformation"
+        )
+        scoring = ["r2", "mse", "rmse", "mae"]
+        logger.info(f"{scoring=}")
+        cv_scores = custom_cross_validate(estimator, X, y, cv=cv_fold, scoring=scoring)
+    else:
+        logger.info("Using built-in cross-validation")
+        scoring = [
+            "r2",
+            "neg_mean_squared_error",
+            "neg_root_mean_squared_error",
+            "neg_mean_absolute_error",
+        ]
+        logger.info(f"{scoring=}")
+        cross_validated_scores = cross_validate(
+            estimator,
+            X,
+            y,
+            cv=cv_fold,
+            scoring=scoring,
+            n_jobs=n_jobs,
+            return_train_score=True,
+        )
+        cv_scores = parse_cv_scores(cross_validated_scores)
 
     logger.info(f"{cv_scores=}")
-
+    # raise NotImplementedError("Cross-validation not implemented yet")
     nfold_cv_scores = {f"{cv_fold}": cv_scores}
 
     cv_scores_savefile = pre_trained_loc / f"{pre_trained_file.stem}.cv_scores.json"
@@ -999,8 +1059,8 @@ n_jobs = 1
 backend = "threading"
 skip_invalid_y_values = False
 ytransformation: str = None
-y_transformer = None
-yscaling: str = "StandardScaler"
+y_transformer: str = None
+yscaling: str = None
 yscaler = None
 boxcox_lambda_param = None
 
