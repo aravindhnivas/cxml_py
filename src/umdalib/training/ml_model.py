@@ -946,8 +946,9 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         trained_params = trained_params | estimator.get_all_params()
 
     if args.save_pretrained_model:
-        save_parameters(".parameters.normal.user.json", args.parameters)
-        save_parameters(".parameters.normal.trained.json", trained_params)
+        pname = args.grid_search_method if args.fine_tune_model else "normal"
+        save_parameters(f".parameters.{pname}.user.json", args.parameters)
+        save_parameters(f".parameters.{pname}.trained.json", trained_params)
 
     logger.info("Evaluating model for test data")
     test_stats = get_stats(estimator, X_test, y_test)
