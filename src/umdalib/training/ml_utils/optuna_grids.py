@@ -244,8 +244,8 @@ class SklearnModelsObjective(object):
         y: np.ndarray,
         fine_tuned_values: FineTunedValues,
         static_params: dict[str, str | int | float | bool] = {},
-        cv: int = None,
-        n_jobs: int = None,
+        cv: int = 5,
+        n_jobs: int = 1,
     ):
         if model_name not in sklearn_models_names:
             raise ValueError(f"Model {model_name} not supported")
@@ -255,8 +255,6 @@ class SklearnModelsObjective(object):
 
         if cv and cv < 2:
             raise ValueError("cv must be greater than 1")
-        if cv is None:
-            cv = 5
 
         if n_jobs:
             if n_jobs == 0:
