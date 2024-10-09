@@ -183,6 +183,7 @@ def optuna_optimize(
     for key, value in args.parameters.items():
         if key not in args.fine_tuned_values:
             static_params[key] = value
+    logger.info(f"{static_params=}")
 
     objective: Union[SklearnModelsObjective, ExtremeBoostingModelsObjective] = None
 
@@ -268,6 +269,7 @@ def augment_data(
 
 
 def make_custom_kernels(kernel_dict: Dict[str, Dict[str, str]]) -> kernels.Kernel:
+    logger.info("Creating custom kernel from dictionary")
     constants_kernels = None
     other_kernels = None
 
@@ -292,6 +294,7 @@ def make_custom_kernels(kernel_dict: Dict[str, Dict[str, str]]) -> kernels.Kerne
                 other_kernels += kernels_dict[kernel_key](**kernel_params)
 
     kernel = constants_kernels * other_kernels
+    logger.info(f"{kernel=}")
     return kernel
 
 
@@ -812,10 +815,11 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     kernel = None
     if args.model == "gpr":
         logger.info("Using Gaussian Process Regressor with custom kernel")
-
+        logger.warning("checking kernal in parameters: " + "kernel" in args.parameters)
         if "kernel" in args.parameters and args.parameters["kernel"]:
             kernel = make_custom_kernels(args.parameters["kernel"])
-            args.parameters.pop("kernel", None)
+            args.parameters["kernel"] = kernel
+            logger.info(f"{args.parameters['kernel']=}")
 
     if args.model == "catboost":
         args.parameters["train_dir"] = str(Paths().app_log_dir / "catboost_info")
@@ -839,12 +843,8 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         logger.info("Training model without fine-tuning")
         if args.parallel_computation and args.model in n_jobs_keyword_available_models:
             args.parameters["n_jobs"] = n_jobs
-        if args.model == "gpr" and kernel is not None:
-            estimator = models_dict[args.model](kernel, **args.parameters)
-            initial_estimator = models_dict[args.model](kernel, **args.parameters)
-        else:
-            estimator = models_dict[args.model](**args.parameters)
-            initial_estimator = models_dict[args.model](**args.parameters)
+        estimator = models_dict[args.model](**args.parameters)
+        initial_estimator = models_dict[args.model](**args.parameters)
 
     if args.learning_curve_train_sizes is not None and args.cross_validation:
         learn_curve(
