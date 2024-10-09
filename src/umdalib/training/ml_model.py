@@ -136,7 +136,6 @@ def optuna_optimize(
 ):
     optuna_n_trials = int(args.optuna_n_trials)
     optuna_n_warmup_steps = int(args.optuna_n_warmup_steps)
-    cv = int(args.cv_fold)
 
     save_loc = Paths().app_log_dir / "optuna"
     if not save_loc.exists():
@@ -186,7 +185,13 @@ def optuna_optimize(
 
     if current_model_name in sklearn_models_names:
         objective = SklearnModelsObjective(
-            current_model_name, X, y, args.fine_tuned_values, static_params, cv, n_jobs
+            current_model_name,
+            X,
+            y,
+            args.fine_tuned_values,
+            static_params,
+            args.cv_fold,
+            n_jobs,
         )
     elif current_model_name in ["xgboost", "catboost", "lgbm"]:
         objective = ExtremeBoostingModelsObjective(
@@ -212,7 +217,7 @@ def optuna_optimize(
             "params": static_params,
             "optuna_n_trials": optuna_n_trials,
             "optuna_n_warmup_steps": optuna_n_warmup_steps,
-            "cv_fold": int(args.cv_fold),
+            "cv_fold": args.cv_fold,
             "storage": storage,
         },
     )
@@ -751,7 +756,7 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
     grid_search = GridCV(
         initial_estimator,
         param_grid,
-        cv=int(args.cv_fold),
+        cv=args.cv_fold,
         **GridCV_parameters,
     )
     logger.info("Fitting grid search")
@@ -817,7 +822,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     global pre_trained_file, pre_trained_loc, current_model_name
 
     current_model_name = args.model
-
+    args.cv_fold = int(args.cv_fold)
     start_time = perf_counter()
 
     estimator = None
@@ -920,7 +925,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             y,
             sizes=args.learning_curve_train_sizes,
             n_jobs=n_jobs,
-            cv=int(args.cv_fold),
+            cv=args.cv_fold,
         )
 
     if not args.fine_tune_model:
@@ -1007,9 +1012,9 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     # Additional validation step
     results["cross_validation"] = args.cross_validation
 
-    if args.cross_validation and not args.fine_tune_model and test_size > 0:
-        results["cv_fold"] = int(args.cv_fold)
-        cv_scores = compute_cv(initial_estimator, X, y, int(args.cv_fold))
+    if args.cross_validation and test_size > 0:
+        results["cv_fold"] = args.cv_fold
+        cv_scores = compute_cv(initial_estimator, X, y, args.cv_fold)
         results["cv_scores"] = cv_scores
 
     timestamp = None
