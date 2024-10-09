@@ -89,4 +89,4 @@ if __name__ == "__main__":
         #     json.dump(result, f, indent=4)
         #     logger.success(f"Result saved to {result_file}")
 
-    logger.info("Finished main.py")
+    logger.info(f"Finished main.py execution for {pyfile} in {computed_time}")
