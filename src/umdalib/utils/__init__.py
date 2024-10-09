@@ -124,13 +124,17 @@ def safe_json_dump(
     if filename.exists():
         if overwrite:
             filename.unlink()
+            logger.warning(f"Deleted existing file: {filename} to overwrite")
         else:
+            logger.error(f"File already exists: {filename}")
             raise FileExistsError(f"File already exists: {filename}")
 
     if not filename.parent.exists() and create_dir:
+        logger.warning(f"Creating directory: {filename.parent}")
         filename.parent.mkdir(parents=True)
 
     try:
+        logger.info(f"Saving to {filename}")
         with open(filename, "w") as f:
             json.dump(convert_to_json_compatible(obj), f, indent=4)
             logger.success(f"{filename.name} saved successfully to {filename.parent}")
