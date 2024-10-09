@@ -6,7 +6,7 @@ import optuna
 import xgboost as xgb
 from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import cross_val_score
-
+from multiprocessing import cpu_count
 from .utils import models_dict
 
 
@@ -204,7 +204,6 @@ class ExtremeBoostingModelsObjective(object):
         fine_tuned_values: FineTunedValues,
         static_params: dict[str, str | int | float | bool] = {},
     ):
-        self.model_name = model_name
         self.X_train = X_train
         self.y_train = y_train
         self.X_test = X_test
@@ -213,14 +212,14 @@ class ExtremeBoostingModelsObjective(object):
         self.static_params = static_params
 
         self.model = None
-        if self.model_name == "xgboost":
+        if model_name == "xgboost":
             self.model = xgboost_optuna
-        elif self.model_name == "catboost":
+        elif model_name == "catboost":
             self.model = catboost_optuna
-        elif self.model_name == "lgbm":
+        elif model_name == "lgbm":
             self.model = lgbm_optuna
         else:
-            raise ValueError(f"Model {self.model_name} not supported")
+            raise ValueError(f"Model {model_name} not supported")
 
     def __call__(self, trial):
         return self.model(
@@ -248,7 +247,24 @@ class SklearnModelsObjective(object):
         cv: int = None,
         n_jobs: int = None,
     ):
-        self.model_name = model_name
+        if model_name not in sklearn_models_names:
+            raise ValueError(f"Model {model_name} not supported")
+
+        if model_name not in models_dict:
+            raise ValueError(f"Model {model_name} not supported")
+
+        if cv and cv < 2:
+            raise ValueError("cv must be greater than 1")
+        if cv is None:
+            cv = 5
+
+        if n_jobs:
+            if n_jobs == 0:
+                n_jobs = 1
+            elif n_jobs < 0:
+                n_jobs = cpu_count() + n_jobs
+
+        self.model = models_dict[model_name]
         self.fine_tuned_values = fine_tuned_values
         self.static_params = static_params
 
@@ -262,7 +278,7 @@ class SklearnModelsObjective(object):
         param = get_parm_grid_optuna(trial, self.fine_tuned_values)
         param.update(self.static_params)
 
-        model = models_dict[self.model_name](**param)
+        model = self.model(**param)
         rmse = self.get_rmse(model)
         return rmse
 
