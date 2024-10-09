@@ -50,7 +50,6 @@ def get_suggest(
 
 def get_parm_grid_optuna(trial: optuna.Trial, fine_tuned_values: FineTunedValues):
     param = {}
-
     for key, value in fine_tuned_values.items():
         if value["type"] == "string":
             param[key] = trial.suggest_categorical(key, value["value"])
@@ -60,7 +59,6 @@ def get_parm_grid_optuna(trial: optuna.Trial, fine_tuned_values: FineTunedValues
             param[key] = get_suggest(
                 trial, key, value["value"], value["type"], value["scale"] == "log"
             )
-
     return param
 
 
@@ -159,10 +157,8 @@ def catboost_optuna(
         early_stopping_rounds=100,
         callbacks=[pruning_callback],
     )
-
     # evoke pruning manually.
     pruning_callback.check_pruned()
-
     y_pred = model.predict(X_test)
     rmse = root_mean_squared_error(y_test, y_pred)
 
@@ -197,65 +193,90 @@ def lgbm_optuna(
     return rmse
 
 
-# generate param grid for the sklearn models
-# "ridge", "svr", "knn", "rfr", "gbr", "gpr"
-
-
-def get_rmse_for_sklearn_models(
-    model, X_train, y_train, X_test, y_test, cv=None, n_jobs=None
-):
-    X = np.concatenate((X_train, X_test), axis=0)
-    y = np.concatenate((y_train, y_test), axis=0)
-    rmse = -cross_val_score(
-        model,
-        X,
-        y,
-        cv=cv,
-        scoring="neg_root_mean_squared_error",
-        n_jobs=n_jobs,
-    )
-
-    if cv:
-        return rmse.mean()
-    return rmse
-
-
-def sklearn_models(model_name: str):
-    def optuna_func(
-        trial: optuna.Trial,
+class ExtremeBoostingModelsObjective(object):
+    def __init__(
+        self,
+        model_name: str,
         X_train: np.ndarray,
         y_train: np.ndarray,
         X_test: np.ndarray,
         y_test: np.ndarray,
         fine_tuned_values: FineTunedValues,
-        static_params: dict[str, str] = {},
-        cv: int = None,
-        n_jobs: int = 1,
-        optuna_n_warmup_steps: int = 10,
-    ) -> float:
-        param = get_parm_grid_optuna(trial, fine_tuned_values)
-        param.update(static_params)
+        static_params: dict[str, str | int | float | bool] = {},
+    ):
+        self.model_name = model_name
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
+        self.fine_tuned_values = fine_tuned_values
+        self.static_params = static_params
 
-        model = models_dict[model_name](**param)
-        rmse = get_rmse_for_sklearn_models(
-            model, X_train, y_train, X_test, y_test, cv, n_jobs
+        self.model = None
+        if self.model_name == "xgboost":
+            self.model = xgboost_optuna
+        elif self.model_name == "catboost":
+            self.model = catboost_optuna
+        elif self.model_name == "lgbm":
+            self.model = lgbm_optuna
+        else:
+            raise ValueError(f"Model {self.model_name} not supported")
+
+    def __call__(self, trial):
+        return self.model(
+            trial,
+            self.X_train,
+            self.y_train,
+            self.X_test,
+            self.y_test,
+            self.fine_tuned_values,
+            self.static_params,
         )
-        return rmse
-
-    return optuna_func
 
 
 sklearn_models_names = ["ridge", "svr", "knn", "rfr", "gbr", "gpr"]
 
 
-def get_optuna_objective(model_name: str) -> callable:
-    if model_name == "xgboost":
-        return xgboost_optuna
-    elif model_name == "catboost":
-        return catboost_optuna
-    elif model_name == "lgbm":
-        return lgbm_optuna
-    elif model_name in sklearn_models_names:
-        return sklearn_models(model_name)
-    else:
-        raise ValueError(f"Model {model_name} not supported")
+class SklearnModelsObjective(object):
+    def __init__(
+        self,
+        model_name: str,
+        X: np.ndarray,
+        y: np.ndarray,
+        fine_tuned_values: FineTunedValues,
+        static_params: dict[str, str | int | float | bool] = {},
+        cv: int = None,
+        n_jobs: int = None,
+    ):
+        self.model_name = model_name
+        self.fine_tuned_values = fine_tuned_values
+        self.static_params = static_params
+
+        self.X = X
+        self.y = y
+
+        self.cv = cv
+        self.n_jobs = n_jobs
+
+    def __call__(self, trial):
+        param = get_parm_grid_optuna(trial, self.fine_tuned_values)
+        param.update(self.static_params)
+
+        model = models_dict[self.model_name](**param)
+        rmse = self.get_rmse(model)
+        return rmse
+
+    def get_rmse(self, model) -> float:
+        rmse = -cross_val_score(
+            model,
+            self.X,
+            self.y,
+            cv=self.cv,
+            scoring="neg_root_mean_squared_error",
+            n_jobs=self.n_jobs,
+        )
+
+        if self.cv:
+            return rmse.mean()
+
+        return rmse

@@ -33,7 +33,12 @@ from umdalib.training.read_data import read_as_ddf
 from umdalib.training.utils import Yscalers, get_transformed_data
 from umdalib.utils import Paths
 
-from .ml_utils.optuna_grids import get_optuna_objective, sklearn_models_names
+from .ml_utils.optuna_grids import (
+    # get_optuna_objective_for_extreme_boosting_models,
+    sklearn_models_names,
+    SklearnModelsObjective,
+    ExtremeBoostingModelsObjective,
+)
 from .ml_utils.utils import (
     grid_search_dict,
     kernels_dict,
@@ -129,6 +134,8 @@ def optuna_optimize(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
+    X: np.ndarray,
+    y: np.ndarray,
 ):
     optuna_n_trials = int(args.optuna_n_trials)
     optuna_n_warmup_steps = int(args.optuna_n_warmup_steps)
@@ -177,26 +184,27 @@ def optuna_optimize(
         if key not in args.fine_tuned_values:
             static_params[key] = value
 
-    extra_kwargs = {
-        "fine_tuned_values": args.fine_tuned_values,
-        "static_params": static_params,
-    }
+    objective: Union[SklearnModelsObjective, ExtremeBoostingModelsObjective] = None
+
     if current_model_name in sklearn_models_names:
-        extra_kwargs.update(
-            {"cv": cv, "n_jobs": n_jobs, "optuna_n_warmup_steps": optuna_n_warmup_steps}
+        objective = SklearnModelsObjective(
+            current_model_name, X, y, args.fine_tuned_values, static_params, cv, n_jobs
         )
-
-    objective_func = get_optuna_objective(current_model_name)
-
-    def objective(trial: optuna.Trial):
-        return objective_func(
-            trial,
+    elif current_model_name in ["xgboost", "catboost", "lgbm"]:
+        objective = ExtremeBoostingModelsObjective(
+            current_model_name,
             X_train,
             y_train,
             X_test,
             y_test,
-            **extra_kwargs,
+            args.fine_tuned_values,
+            static_params,
         )
+
+    if objective is None:
+        raise ValueError(f"Model {current_model_name} not supported")
+
+    logger.info(f"{objective=}, {type(objective)=}")
 
     save_parameters(
         f".{args.grid_search_method}.fine_tuned_parameters.json",
@@ -211,7 +219,6 @@ def optuna_optimize(
         },
     )
     logger.info("Optimizing hyperparameters using Optuna")
-    # study.optimize(objective, n_trials=optuna_n_trials)
     study.optimize(objective, n_trials=optuna_n_trials, n_jobs=n_jobs)
     logger.info("Optuna - optimization complete")
 
@@ -820,11 +827,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         if args.grid_search_method == "Optuna":
             logger.info("Optimizing hyperparameters using Optuna")
             estimator, best_params = optuna_optimize(
-                args,
-                X_train,
-                y_train,
-                X_test,
-                y_test,
+                args, X_train, y_train, X_test, y_test, X, y
             )
         else:
             logger.info(
