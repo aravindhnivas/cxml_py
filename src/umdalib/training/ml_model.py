@@ -499,7 +499,9 @@ def compute_cv(
         logger.info(f"{scoring=}")
         cv_scores = custom_cross_validate(estimator, X, y, cv=cv_fold, scoring=scoring)
     else:
-        logger.info("Using built-in cross-validation")
+        logger.info(
+            f"Using built-in cross-validation with {cv_fold} folds and n_jobs={n_jobs}"
+        )
         scoring = [
             "r2",
             "neg_mean_squared_error",
