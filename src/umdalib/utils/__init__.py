@@ -121,10 +121,11 @@ def safe_json_dump(
     if filename.suffix != ".json":
         filename = filename.with_suffix(".json")
 
-    if filename.exists() and overwrite:
-        filename.unlink()
-    else:
-        raise FileExistsError(f"File already exists: {filename}")
+    if filename.exists():
+        if overwrite:
+            filename.unlink()
+        else:
+            raise FileExistsError(f"File already exists: {filename}")
 
     if not filename.parent.exists() and create_dir:
         filename.parent.mkdir(parents=True)

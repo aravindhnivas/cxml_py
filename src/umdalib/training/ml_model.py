@@ -921,20 +921,18 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         results["noise_percentage"] = args.noise_percentage
 
     if args.save_pretrained_model:
-        save_test_train_stats = (
-            {
-                "test": {
-                    "y_true": test_stats[4].tolist(),
-                    "y_pred": test_stats[5].tolist(),
-                    "y_linear_fit": test_stats[6].tolist(),
-                },
-                "train": {
-                    "y_true": train_stats[4].tolist(),
-                    "y_pred": train_stats[5].tolist(),
-                    "y_linear_fit": train_stats[6].tolist(),
-                },
+        save_test_train_stats = {
+            "test": {
+                "y_true": test_stats[4].tolist(),
+                "y_pred": test_stats[5].tolist(),
+                "y_linear_fit": test_stats[6].tolist(),
             },
-        )
+            "train": {
+                "y_true": train_stats[4].tolist(),
+                "y_pred": train_stats[5].tolist(),
+                "y_linear_fit": train_stats[6].tolist(),
+            },
+        }
         # with open(f"{pre_trained_file.with_suffix('.dat.json')}", "w") as f:
         #     json.dump(
         #         save_test_train_stats,
