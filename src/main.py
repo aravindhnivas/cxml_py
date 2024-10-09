@@ -7,7 +7,7 @@ from time import perf_counter
 from pathlib import Path as pt
 import numpy as np
 
-from umdalib.utils import Paths, logger
+from umdalib.utils import Paths, logger, safe_json_dump
 
 log_dir = Paths().app_log_dir
 
@@ -41,9 +41,10 @@ if __name__ == "__main__":
         # args = json.loads(sys.argv[2])
 
     args_file = log_dir / f"{pyfile}.args.json"
-    with open(args_file, "w") as f:
-        json.dump(args, f, indent=4)
-        logger.success(f"Result saved to {args_file}")
+    safe_json_dump(args, args_file)
+    # with open(args_file, "w") as f:
+    #     json.dump(args, f, indent=4)
+    #     logger.success(f"Result saved to {args_file}")
 
     logger.info(f"{pyfile=}")
     logger.info(f"\n[Received arguments]\n{json.dumps(args, indent=4)}")
@@ -83,8 +84,9 @@ if __name__ == "__main__":
         result["computed_time"] = computed_time
         logger.success(f"Computation completed successfully in {computed_time}")
         logger.success(f"{result=}")
-        with open(result_file, "w") as f:
-            json.dump(result, f, indent=4)
-            logger.success(f"Result saved to {result_file}")
+        safe_json_dump(result, result_file)
+        # with open(result_file, "w") as f:
+        #     json.dump(result, f, indent=4)
+        #     logger.success(f"Result saved to {result_file}")
 
     logger.info("Finished main.py")

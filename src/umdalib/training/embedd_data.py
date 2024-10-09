@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-import json
 from pathlib import Path as pt
 from time import perf_counter
 from typing import Callable, Literal
@@ -11,7 +10,7 @@ from mol2vec import features
 from rdkit import Chem
 
 from umdalib.training.read_data import read_as_ddf
-from umdalib.utils import load_model, logger
+from umdalib.utils import load_model, logger, safe_json_dump
 
 
 @dataclass
@@ -215,25 +214,28 @@ def main(args: Args):
         np.save(vectors_file, vec_computed)
         logger.success(f"Embedded numpy array saved to {vectors_file}")
 
+        save_obj = {
+            "embedder": args.embedding,
+            "pre_trained_embedder_location": args.pretrained_model_location,
+            "PCA_location": args.PCA_pipeline_location,
+            "filename": args.filename,
+            "filetype": args.filetype,
+            "key": args.key,
+            "npartitions": args.npartitions,
+            "df_column": args.df_column,
+        }
         # save other meta informations such as embedder used and it's location, if PCA used and it's locations
-        with open(embedding_loc / f"{vectors_file.stem}.metadata.json", "w") as f:
-            json.dump(
-                {
-                    "embedder": args.embedding,
-                    "pre_trained_embedder_location": args.pretrained_model_location,
-                    "PCA_location": args.PCA_pipeline_location,
-                    "filename": args.filename,
-                    "filetype": args.filetype,
-                    "key": args.key,
-                    "npartitions": args.npartitions,
-                    "df_column": args.df_column,
-                },
-                f,
-                indent=4,
-            )
-        logger.success(
-            f"Metadata for embedding saved to {vectors_file.with_suffix('.json')}"
-        )
+        # with open(embedding_loc / f"{vectors_file.stem}.metadata.json", "w") as f:
+        #     json.dump(
+        #         save_obj,
+        #         f,
+        #         indent=4,
+        #     )
+        # logger.success(
+        #     f"Metadata for embedding saved to {vectors_file.with_suffix('.json')}"
+        # )
+
+        safe_json_dump(save_obj, vectors_file.with_suffix(".metadata.json"))
 
     logger.info(f"{vec_computed.shape=}")
     logger.info(

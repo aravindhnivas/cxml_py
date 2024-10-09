@@ -1,8 +1,4 @@
-try:
-    from umdalib.utils import logger
-except ImportError:
-    from loguru import logger
-
+from umdalib.utils import logger, safe_json_dump
 import json
 from dataclasses import dataclass
 from datetime import datetime
@@ -477,10 +473,10 @@ def compute_cv(
         nfold_cv_scores = read_cv_scores
 
     # Save to JSON file
-    with open(cv_scores_savefile, "w") as f:
-        json.dump(nfold_cv_scores, f, indent=4)
-
-    logger.info(f"Data saved to {cv_scores_savefile}")
+    # with open(cv_scores_savefile, "w") as f:
+    #     json.dump(nfold_cv_scores, f, indent=4)
+    # logger.info(f"Data saved to {cv_scores_savefile}")
+    safe_json_dump(nfold_cv_scores, cv_scores_savefile)
 
     return cv_scores
 
@@ -534,11 +530,10 @@ def learn_curve(
         pre_trained_loc / f"{pre_trained_file.stem}.learning_curve.json"
     )
     # Save to JSON file
-    with open(learning_curve_savefile, "w") as f:
-        json.dump(learning_curve_data, f, indent=4)
-
-    logger.info(f"Data saved to {learning_curve_savefile}")
-
+    # with open(learning_curve_savefile, "w") as f:
+    #     json.dump(learning_curve_data, f, indent=4)
+    # logger.info(f"Data saved to {learning_curve_savefile}")
+    safe_json_dump(learning_curve_data, learning_curve_savefile)
     return
 
 
@@ -570,11 +565,11 @@ def analyse_shap_values(estimator, X: np.ndarray):
 
     shapely_savefile = pre_trained_loc / f"{pre_trained_file.stem}.shapely.json"
     # Save to JSON file
-    with open(shapely_savefile, "w") as f:
-        json.dump(data, f, indent=4)
+    # with open(shapely_savefile, "w") as f:
+    #     json.dump(data, f, indent=4)
+    # logger.info(f"Data saved to {shapely_savefile}")
 
-    logger.info(f"Data saved to {shapely_savefile}")
-
+    safe_json_dump(data, shapely_savefile)
     return
 
 
@@ -732,19 +727,20 @@ def save_parameters(
     try:
         parameters_file = pre_trained_file.with_suffix(suffix)
         timestamp = datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")
-        with open(parameters_file, "w") as f:
-            parameters_dict = {
-                "values": parameters,
-                "model": current_model_name,
-                "timestamp": timestamp,
-                "mode": mode,
-            }
-            if misc:
-                parameters_dict.update(misc)
+        parameters_dict = {
+            "values": parameters,
+            "model": current_model_name,
+            "timestamp": timestamp,
+            "mode": mode,
+        }
+        if misc:
+            parameters_dict.update(misc)
 
-            json.dump(parameters_dict, f, indent=4)
-            logger.info(f"Model parameters saved to {parameters_file.name}")
+        # with open(parameters_file, "w") as f:
+        #     json.dump(parameters_dict, f, indent=4)
+        #     logger.info(f"Model parameters saved to {parameters_file.name}")
 
+        safe_json_dump(parameters_dict, parameters_file)
         return timestamp
 
     except Exception as e:
@@ -771,10 +767,10 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         pre_trained_loc.mkdir(parents=True)
 
     arguments_file = pre_trained_loc / f"{pre_trained_file.stem}.arguments.json"
-
-    with open(arguments_file, "w") as f:
-        json.dump(args.__dict__, f, indent=4)
-        logger.info(f"Arguments saved to {arguments_file}")
+    # with open(arguments_file, "w") as f:
+    #     json.dump(args.__dict__, f, indent=4)
+    #     logger.info(f"Arguments saved to {arguments_file}")
+    safe_json_dump(args.__dict__, arguments_file)
 
     # bootstrap data
     if args.bootstrap:
@@ -925,23 +921,27 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         results["noise_percentage"] = args.noise_percentage
 
     if args.save_pretrained_model:
-        with open(f"{pre_trained_file.with_suffix('.dat.json')}", "w") as f:
-            json.dump(
-                {
-                    "test": {
-                        "y_true": test_stats[4].tolist(),
-                        "y_pred": test_stats[5].tolist(),
-                        "y_linear_fit": test_stats[6].tolist(),
-                    },
-                    "train": {
-                        "y_true": train_stats[4].tolist(),
-                        "y_pred": train_stats[5].tolist(),
-                        "y_linear_fit": train_stats[6].tolist(),
-                    },
+        save_test_train_stats = (
+            {
+                "test": {
+                    "y_true": test_stats[4].tolist(),
+                    "y_pred": test_stats[5].tolist(),
+                    "y_linear_fit": test_stats[6].tolist(),
                 },
-                f,
-                indent=4,
-            )
+                "train": {
+                    "y_true": train_stats[4].tolist(),
+                    "y_pred": train_stats[5].tolist(),
+                    "y_linear_fit": train_stats[6].tolist(),
+                },
+            },
+        )
+        # with open(f"{pre_trained_file.with_suffix('.dat.json')}", "w") as f:
+        #     json.dump(
+        #         save_test_train_stats,
+        #         f,
+        #         indent=4,
+        #     )
+        safe_json_dump(save_test_train_stats, pre_trained_file.with_suffix(".dat.json"))
 
     # Additional validation step
     results["cross_validation"] = args.cross_validation
@@ -971,13 +971,13 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     logger.info(f"Training completed in {(end_time - start_time):.2f} s")
     results["time"] = f"{(end_time - start_time):.2f} s"
 
-    with open(
-        pre_trained_file.with_suffix(".results.json"),
-        "w",
-    ) as f:
-        json.dump(results, f, indent=4)
-        logger.info(f"Results saved to {pre_trained_file.with_suffix('.results.json')}")
-
+    # with open(
+    #     pre_trained_file.with_suffix(".results.json"),
+    #     "w",
+    # ) as f:
+    #     json.dump(results, f, indent=4)
+    #     logger.info(f"Results saved to {pre_trained_file.with_suffix('.results.json')}")
+    safe_json_dump(results, pre_trained_file.with_suffix(".results.json"))
     return results
 
 

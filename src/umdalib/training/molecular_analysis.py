@@ -11,7 +11,7 @@ from rdkit import Chem, RDLogger
 from rdkit.Chem import Descriptors
 
 from umdalib.training.read_data import read_as_ddf
-from umdalib.utils import logger
+from umdalib.utils import logger, safe_json_dump
 
 # from utils import loc
 
@@ -239,19 +239,19 @@ def main(args: Args):
     molecular_analysis(analysis_file, args.atoms_bin_size)
     logger.success("Analysis complete.")
 
-    with open(loc / "metadata.json", "w") as f:
-        metadata = {
-            "filename": args.filename,
-            "analysis_files_dir": str(loc),
-            "filetype": args.filetype,
-            "key": args.key,
-            "use_dask": args.use_dask,
-            "smiles_column_name": args.smiles_column_name,
-            "index_column_name": args.index_column_name,
-        }
-        json.dump(metadata, f, indent=4)
-        logger.success(f"Metadata saved as {loc / 'metadata.json'}")
-
+    metadata = {
+        "filename": args.filename,
+        "analysis_files_dir": str(loc),
+        "filetype": args.filetype,
+        "key": args.key,
+        "use_dask": args.use_dask,
+        "smiles_column_name": args.smiles_column_name,
+        "index_column_name": args.index_column_name,
+    }
+    # with open(loc / "metadata.json", "w") as f:
+    #     json.dump(metadata, f, indent=4)
+    #     logger.success(f"Metadata saved as {loc / 'metadata.json'}")
+    safe_json_dump(metadata, loc / "metadata.json")
     return {"analysis_file": str(analysis_file), "metadata": metadata}
 
 

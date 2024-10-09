@@ -1,13 +1,19 @@
+import datetime
+import decimal
+import pathlib
 import tempfile
+import types
 from multiprocessing import cpu_count
 from os import environ
 from pathlib import Path as pt
 from platform import system
 
 import joblib
+import numpy as np
 from gensim.models import word2vec
 from loguru import logger
 from psutil import virtual_memory
+import json
 
 RAM_IN_GB = virtual_memory().total / 1024**3
 NPARTITIONS = cpu_count() * 5
@@ -63,3 +69,70 @@ def load_model(filepath: str, use_joblib: bool = False):
     if use_joblib:
         return joblib.load(filepath)
     return word2vec.Word2Vec.load(str(filepath))
+
+
+def convert_to_json_compatible(obj):
+    if isinstance(obj, dict):
+        return {key: convert_to_json_compatible(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_to_json_compatible(item) for item in obj]
+    elif isinstance(obj, tuple):
+        return tuple(convert_to_json_compatible(item) for item in obj)
+    elif isinstance(obj, set):
+        return list(convert_to_json_compatible(item) for item in obj)
+    elif isinstance(obj, (datetime.date, datetime.datetime)):
+        return obj.isoformat()
+    elif isinstance(obj, decimal.Decimal):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, np.generic):
+        return obj.item()
+    elif isinstance(obj, pathlib.Path):
+        return str(obj)
+    elif isinstance(obj, types.FunctionType):
+        return f"<function {obj.__name__}>"
+    elif isinstance(obj, (int, float, str, bool, type(None))):
+        return obj
+    else:
+        # General handling for class objects
+        if hasattr(obj, "__dict__"):
+            return {
+                "__class__": obj.__class__.__name__,
+                "__module__": obj.__class__.__module__,
+                "attributes": convert_to_json_compatible(obj.__dict__),
+            }
+        else:
+            return str(obj)
+
+
+def safe_json_dump(
+    obj: dict, filename: str | pt, overwrite=True, create_dir: bool = True
+):
+    if not isinstance(obj, dict):
+        raise ValueError(f"Expected a dictionary, got {type(obj)}")
+
+    if not isinstance(filename, (str, pt)):
+        raise ValueError(f"Expected a string or Path, got {type(filename)}")
+
+    if isinstance(filename, str):
+        filename = pt(filename)
+
+    if filename.suffix != ".json":
+        filename = filename.with_suffix(".json")
+
+    if filename.exists() and overwrite:
+        filename.unlink()
+    else:
+        raise FileExistsError(f"File already exists: {filename}")
+
+    if not filename.parent.exists() and create_dir:
+        filename.parent.mkdir(parents=True)
+
+    try:
+        with open(filename, "w") as f:
+            json.dump(convert_to_json_compatible(obj), f, indent=4)
+            logger.success(f"{filename.name} saved successfully to {filename.parent}")
+    except Exception as e:
+        logger.error(f"Error saving to {filename}: {e}")
+        raise e
