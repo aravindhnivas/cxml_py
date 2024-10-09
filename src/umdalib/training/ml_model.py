@@ -821,7 +821,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     global pre_trained_file, pre_trained_loc, current_model_name
 
     current_model_name = args.model
-    args.cv_fold = int(args.cv_fold)
     start_time = perf_counter()
 
     estimator = None
@@ -899,6 +898,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     logger.info(f"{models_dict[args.model]=}")
 
     if args.fine_tune_model:
+        args.cv_fold = int(args.cv_fold)
         if args.grid_search_method == "Optuna":
             logger.info("Optimizing hyperparameters using Optuna")
             estimator, best_params = optuna_optimize(
