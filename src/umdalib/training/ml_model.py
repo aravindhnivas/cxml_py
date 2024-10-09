@@ -729,23 +729,30 @@ def save_parameters(
     mode: Literal["fine_tuned", "normal", "grid"] = "normal",
     misc: Dict[str, Union[str, int, float, None]] = None,
 ):
-    parameters_file = pre_trained_file.with_suffix(suffix)
-    timestamp = datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")
+    try:
+        parameters_file = pre_trained_file.with_suffix(suffix)
+        timestamp = datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")
+        with open(parameters_file, "w") as f:
+            parameters_dict = {
+                "values": parameters,
+                "model": current_model_name,
+                "timestamp": timestamp,
+                "mode": mode,
+            }
+            if misc:
+                parameters_dict.update(misc)
 
-    with open(parameters_file, "w") as f:
-        parameters_dict = {
-            "values": parameters,
-            "model": current_model_name,
-            "timestamp": timestamp,
-            "mode": mode,
-        }
-        if misc:
-            parameters_dict.update(misc)
+            json.dump(parameters_dict, f, indent=4)
+            logger.info(f"Model parameters saved to {parameters_file.name}")
 
-        json.dump(parameters_dict, f, indent=4)
-        logger.info(f"Model parameters saved to {parameters_file.name}")
+        return timestamp
 
-    return timestamp
+    except Exception as e:
+        logger.error(f"Error saving parameters: {e}")
+        logger.error("Checking for key, value in parameters.items()")
+        logger.error(f"{parameters=}")
+        for key, value in parameters.items():
+            logger.error(f"{key=}, {value=}, {type(value)=}")
 
 
 def compute(args: Args, X: np.ndarray, y: np.ndarray):
@@ -819,7 +826,9 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         if "kernel" in args.parameters and args.parameters["kernel"]:
             kernel = make_custom_kernels(args.parameters["kernel"])
             args.parameters["kernel"] = kernel
-            logger.info(f"{args.parameters['kernel']=}")
+            logger.info(
+                f"{args.parameters['kernel']=}, {type(args.parameters['kernel'])=}"
+            )
 
     if args.model == "catboost":
         args.parameters["train_dir"] = str(Paths().app_log_dir / "catboost_info")
