@@ -126,11 +126,18 @@ def main(args: Args):
         }
         include_elements_keys = set(include_elements.keys())
         all_elements = set(elements_containing.keys())
-        filter_elements = all_elements - include_elements_keys
+        args.filter_elements = list(all_elements - include_elements_keys)
+        logger.info(f"Elements containing: {elements_containing}")
+        logger.info(f"Include elements keys: {include_elements_keys}")
+        logger.info(f"Include elements: {include_elements}")
+        logger.info(f"All elements: {all_elements}")
+        logger.info(f"Filter elements: {args.filter_elements}")
 
-        args.filter_elements = filter_elements.update(args.filter_elements)
+        # args.filter_elements = filter_elements.update(args.filter_elements)
+        # logger.info(f"Filter elements (applied): {args.filter_elements}")
+
         logger.info(
-            f"Filtering out elements: {filter_elements} based on threshold count"
+            f"Filtering out elements: {args.filter_elements} based on threshold count"
         )
 
     # filter based on atomic size threshold
