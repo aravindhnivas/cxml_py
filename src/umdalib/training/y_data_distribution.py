@@ -110,13 +110,30 @@ def get_skew_and_transformation(df_y: pd.Series):
     return computed_skewness, best_skew_key, transformed_data[best_skew_key]
 
 
+def calculate_bin_size(bin_edges):
+    # Calculate the width of each bin
+    bin_sizes = np.diff(bin_edges)
+    all_equal_bins = np.allclose(bin_sizes, bin_sizes[0])
+    logger.warning(f"{all_equal_bins=}")  # Should print True if all bin sizes are equal
+    # Assuming uniform bin widths, take the first bin width as the bin size
+    bin_size = bin_sizes[0]
+    return bin_size
+
+
 def get_analysis_results(df_y: pd.Series):
     # 1. Descriptive Statistics
     desc_stats = df_y.describe().to_dict()
 
     # 2. Histogram data
     hist, bin_edges = np.histogram(df_y, bins="auto")
-    hist_data = {"counts": hist.tolist(), "bin_edges": bin_edges.tolist()}
+    # Calculate bin size from histogram data
+    bin_size = calculate_bin_size(bin_edges)
+    logger.info(f"{bin_size=} for {len(hist)} bins")
+    hist_data = {
+        "counts": hist.tolist(),
+        "bin_edges": bin_edges.tolist(),
+        "bin_size": bin_size,
+    }
 
     # 3. Box Plot data
     box_plot_data = {
@@ -162,7 +179,7 @@ def get_analysis_results(df_y: pd.Series):
     # 7. KDE data
     kde = stats.gaussian_kde(df_y)
     x_range = np.linspace(df_y.min(), df_y.max(), 100)
-    kde_data = {"x": x_range.tolist(), "y": kde(x_range).tolist()}
+    kde_data = {"x": x_range.tolist(), "y": kde(x_range).tolist(), "bin_size": kde.n}
 
     # Combine all data
     analysis_results = {
