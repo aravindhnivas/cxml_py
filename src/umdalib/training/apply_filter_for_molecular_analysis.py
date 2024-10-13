@@ -151,7 +151,7 @@ def main(args: Args):
 
         # filter by atomic size count threshold
         atoms_distribution_df = atoms_distribution_df[
-            atoms_distribution_df["Count"] > int(args.size_count_threshold)
+            atoms_distribution_df["Count"] >= int(args.size_count_threshold)
         ]
         no_of_atoms = set(atoms_distribution_df["No. of atoms"].values)
         analysis_df = analysis_df[analysis_df["No. of atoms"].isin(no_of_atoms)]
