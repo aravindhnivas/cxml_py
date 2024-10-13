@@ -122,7 +122,7 @@ def main(args: Args):
         include_elements = {
             key: count
             for key, count in elements_containing.items()
-            if count > int(args.elemental_count_threshold)
+            if count >= int(args.elemental_count_threshold)
         }
         include_elements_keys = set(include_elements.keys())
         all_elements = set(elements_containing.keys())
