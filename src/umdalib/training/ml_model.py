@@ -823,9 +823,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     current_model_name = args.model
     start_time = perf_counter()
 
-    estimator = None
-    initial_estimator = None  # for CV
-
     pre_trained_file = pt(args.pre_trained_file.strip()).with_suffix(".pkl")
     pre_trained_loc = pre_trained_file.parent
     if not pre_trained_loc.exists():
@@ -897,6 +894,14 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
     logger.info(f"{models_dict[args.model]=}")
 
+    estimator = None
+    initial_estimator = None  # for CV
+
+    if args.parallel_computation and args.model in n_jobs_keyword_available_models:
+        args.parameters["n_jobs"] = n_jobs
+
+    initial_estimator = models_dict[args.model](**args.parameters)
+
     if args.fine_tune_model:
         args.cv_fold = int(args.cv_fold)
         if args.grid_search_method == "Optuna":
@@ -912,10 +917,11 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             estimator, best_params = fine_tune_estimator(args, X_train, y_train)
     else:
         logger.info("Training model without fine-tuning")
-        if args.parallel_computation and args.model in n_jobs_keyword_available_models:
-            args.parameters["n_jobs"] = n_jobs
-        estimator = models_dict[args.model](**args.parameters)
-        initial_estimator = models_dict[args.model](**args.parameters)
+        # if args.parallel_computation and args.model in n_jobs_keyword_available_models:
+        #     args.parameters["n_jobs"] = n_jobs
+        # estimator = models_dict[args.model](**args.parameters)
+        # initial_estimator = models_dict[args.model](**args.parameters)
+        estimator = clone(initial_estimator)
 
     if args.learning_curve_train_sizes is not None and args.cross_validation:
         learn_curve(
