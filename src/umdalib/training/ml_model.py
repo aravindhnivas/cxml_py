@@ -242,6 +242,39 @@ def optuna_optimize(
     best_model.fit(X_train, y_train)
     logger.info("Fitting complete for best model from Optuna")
 
+    if args.save_pretrained_model:
+        pre_trained_loc = pre_trained_file.parent
+        grid_search_name = (
+            f"{pre_trained_file.stem}_{args.grid_search_method}_grid_search"
+        )
+
+        grid_savefile_best_model = (
+            pre_trained_loc / f"{grid_search_name}_best_model.pkl"
+        )
+        dump(best_model, grid_savefile_best_model)
+        logger.success(f"Best model saved to {grid_savefile_best_model.name}")
+
+        grid_savefile = pre_trained_loc / f"{grid_search_name}.csv"
+        df_trials = study.trials_dataframe()
+        df_trials.to_csv(grid_savefile, index=False)
+        logger.success(f"Trials saved to {grid_savefile.name}")
+
+        # # Calculate hyperparameter importance
+        # importance = optuna.importance.get_param_importances(study)
+
+        # # Convert hyperparameter importance to a dataframe
+        # df_importance = pd.DataFrame(
+        #     list(importance.items()), columns=["parameter", "importance"]
+        # )
+        # df_importance = df_importance.sort_values("importance", ascending=False)
+
+        # # Save the hyperparameter importance to a CSV file
+        # grid_savefile_importance = (
+        #     pre_trained_loc / f"{grid_search_name}_importance.csv"
+        # )
+        # df_importance.to_csv(grid_savefile_importance, index=False)
+        # logger.success(f"Importance saved to {grid_savefile_importance.name}")
+
     return best_model, best_params
 
 
@@ -771,9 +804,14 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
     # save grid search
     if args.save_pretrained_model:
         grid_savefile = pre_trained_file.with_name(
-            f"{pre_trained_file.stem}_grid_search"
+            f"{pre_trained_file.stem}_{args.grid_search_method}_grid_search"
         ).with_suffix(".pkl")
         dump(grid_search, grid_savefile)
+
+        grid_savefile_best_model = pre_trained_file.with_name(
+            f"{pre_trained_file.stem}_{args.grid_search_method}_grid_search_best_model"
+        ).with_suffix(".pkl")
+        dump(best_model, grid_savefile_best_model)
 
         df = pd.DataFrame(grid_search.cv_results_)
         df = df.sort_values(by="rank_test_score")
