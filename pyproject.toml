@@ -34,6 +34,7 @@ dependencies = [
     "optuna>=4.0.0",
     "optuna-dashboard>=0.16.2",
     "optuna-integration>=4.0.0",
+    "mapply>=0.1.27",
 ]
 
 

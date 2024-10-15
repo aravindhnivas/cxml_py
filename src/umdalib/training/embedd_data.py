@@ -8,9 +8,12 @@ from dask import array as da
 from dask.diagnostics import ProgressBar
 from mol2vec import features
 from rdkit import Chem
-
 from umdalib.training.read_data import read_as_ddf
 from umdalib.utils import load_model, logger, safe_json_dump
+
+import mapply
+
+mapply.init(n_workers=-1, chunk_size=100, max_chunks_per_worker=10, progressbar=True)
 
 
 @dataclass
@@ -188,7 +191,11 @@ def main(args: Args):
             smi_to_vector, args=(model,), meta=(None, np.float32)
         )
     else:
-        vectors = ddf[args.df_column].apply(smi_to_vector, args=(model,))
+        # for some reason, mapply is not faster with mol2vec embeddings
+        if args.embedding == "mol2vec":
+            vectors = ddf[args.df_column].apply(smi_to_vector, args=(model,))
+        else:
+            vectors = ddf[args.df_column].mapply(smi_to_vector, args=(model,))
 
     if vectors is None:
         raise ValueError(f"Unknown embedding model: {args.embedding}")
@@ -223,6 +230,8 @@ def main(args: Args):
             "key": args.key,
             "npartitions": args.npartitions,
             "df_column": args.df_column,
+            "data_shape": vec_computed.shape,
+            "invalid_smiles": len(invalid_smiles),
         }
         # save other meta informations such as embedder used and it's location, if PCA used and it's locations
         # with open(embedding_loc / f"{vectors_file.stem}.metadata.json", "w") as f:
@@ -234,7 +243,6 @@ def main(args: Args):
         # logger.success(
         #     f"Metadata for embedding saved to {vectors_file.with_suffix('.json')}"
         # )
-
         safe_json_dump(save_obj, vectors_file.with_suffix(".metadata.json"))
 
     logger.info(f"{vec_computed.shape=}")
