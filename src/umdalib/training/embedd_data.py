@@ -35,19 +35,19 @@ class Args:
 
 
 def VICGAE2vec(smi: str, model):
-    global invalid_smiles
+    # global invalid_smiles
     smi = str(smi).replace("\xa0", "")
     if smi == "nan":
-        invalid_smiles.append(smi)
+        # invalid_smiles.append(smi)
         return np.zeros(32)
     try:
         return model.embed_smiles(smi).numpy().reshape(-1)
     except Exception as _:
-        invalid_smiles.append(smi)
+        # invalid_smiles.append(smi)
         return np.zeros(32)
 
 
-invalid_smiles = []
+# invalid_smiles = []
 test_mode = False
 
 
@@ -57,12 +57,12 @@ def mol2vec(smi: str, model, radius=1) -> list[np.ndarray]:
     NumPy vector.
     """
 
-    global invalid_smiles
+    # global invalid_smiles
     smi = str(smi).replace("\xa0", "")
     if test_mode:
         logger.info(f"{smi=}")
     if smi == "nan":
-        invalid_smiles.append(smi)
+        # invalid_smiles.append(smi)
         return np.zeros(model.vector_size)
 
     # Molecule from SMILES will break on "bad" SMILES; this tries
@@ -71,8 +71,8 @@ def mol2vec(smi: str, model, radius=1) -> list[np.ndarray]:
         mol = Chem.MolFromSmiles(smi, sanitize=False)
         if test_mode:
             logger.info(f"{mol=}")
-        if not mol:
-            invalid_smiles.append(str(smi))
+        # if not mol:
+        #     invalid_smiles.append(str(smi))
 
         mol.UpdatePropertyCache(strict=False)
         Chem.GetSymmSSSR(mol)
@@ -91,8 +91,8 @@ def mol2vec(smi: str, model, radius=1) -> list[np.ndarray]:
         return vector
 
     except Exception as _:
-        if smi not in invalid_smiles and isinstance(smi, str):
-            invalid_smiles.append(smi)
+        # if smi not in invalid_smiles and isinstance(smi, str):
+        #     invalid_smiles.append(smi)
         return np.zeros(model.vector_size)
 
 
@@ -145,8 +145,8 @@ def get_smi_to_vec(embedder, pretrained_file, pca_file=None):
 def main(args: Args):
     logger.info(f"{args=}")
 
-    global invalid_smiles, embedding, PCA_pipeline_location, test_mode
-    invalid_smiles = []
+    global embedding, PCA_pipeline_location, test_mode
+
     test_mode = args.test_mode
 
     smi_to_vector, model = get_smi_to_vec(
@@ -221,44 +221,40 @@ def main(args: Args):
         np.save(vectors_file, vec_computed)
         logger.success(f"Embedded numpy array saved to {vectors_file}")
 
-        save_obj = {
-            "embedder": args.embedding,
-            "pre_trained_embedder_location": args.pretrained_model_location,
-            "PCA_location": args.PCA_pipeline_location,
-            "filename": args.filename,
-            "filetype": args.filetype,
-            "key": args.key,
-            "npartitions": args.npartitions,
-            "df_column": args.df_column,
-            "data_shape": vec_computed.shape,
-            "invalid_smiles": len(invalid_smiles),
-        }
-        # save other meta informations such as embedder used and it's location, if PCA used and it's locations
-        # with open(embedding_loc / f"{vectors_file.stem}.metadata.json", "w") as f:
-        #     json.dump(
-        #         save_obj,
-        #         f,
-        #         indent=4,
-        #     )
-        # logger.success(
-        #     f"Metadata for embedding saved to {vectors_file.with_suffix('.json')}"
-        # )
-        safe_json_dump(save_obj, vectors_file.with_suffix(".metadata.json"))
-
     logger.info(f"{vec_computed.shape=}")
+
     logger.info(
         f"Embeddings computed in {(perf_counter() - time):.2f} s and saved to {vectors_file.name}"
     )
 
+    invalid_embedding_indices = [
+        i for i, arr in enumerate(vec_computed) if np.all(arr == 0)
+    ]
+    invalid_smiles = ddf[args.df_column].iloc[invalid_embedding_indices].tolist()
+
     # \xa0 is a non-breaking space in Latin1 (ISO 8859-1), also known as NBSP in Unicode. It's a character that prevents an automatic line break at its position. In HTML, it's often used to create multiple spaces that are visible.
     invalid_smiles = [smiles.replace("\xa0", "").strip() for smiles in invalid_smiles]
-
     invalid_smiles_filename = embedding_loc / f"{vectors_file.stem}_invalid_smiles.smi"
 
     if len(invalid_smiles) > 0:
         with open(invalid_smiles_filename, "w") as f:
             for smiles in invalid_smiles:
                 f.write(smiles + "\n")
+
+    save_obj = {
+        "embedder": args.embedding,
+        "pre_trained_embedder_location": args.pretrained_model_location,
+        "PCA_location": args.PCA_pipeline_location,
+        "filename": args.filename,
+        "filetype": args.filetype,
+        "key": args.key,
+        "npartitions": args.npartitions,
+        "df_column": args.df_column,
+        "data_shape": vec_computed.shape,
+        "invalid_smiles": len(invalid_smiles),
+        "invalid_smiles_file": str(invalid_smiles_filename),
+    }
+    safe_json_dump(save_obj, vectors_file.with_suffix(".metadata.json"))
 
     return {
         "file_mode": {
