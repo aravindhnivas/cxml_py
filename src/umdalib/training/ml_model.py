@@ -1181,16 +1181,7 @@ def main(args: Args):
     logger.info("Apply the conversion function to handle strings like 188.0 - 189.0")
     y = y.apply(convert_to_float)
 
-    # Keep track of valid indices
-    valid_y_indices = y.notna()
-    y = y[valid_y_indices]
-    X = X[valid_y_indices]
-    logger.info(f"{X.shape=} after removing invalid y")
-
-    y = y.values
-
     invalid_embedding_indices = [i for i, arr in enumerate(X) if np.all(arr == 0)]
-
     # Initially, mark all as valid
     valid_embedding_mask = np.ones(len(X), dtype=bool)
     # Then, mark invalid indices as False
@@ -1202,6 +1193,14 @@ def main(args: Args):
     y = y[valid_embedding_mask]
 
     logger.info(f"{X.shape=} after removing invalid X i.e., all zeros")
+
+    # Keep track of valid indices
+    valid_y_indices = y.notna()
+    y = y[valid_y_indices]
+    X = X[valid_y_indices]
+    logger.info(f"{X.shape=} after removing invalid y")
+
+    y = y.values
 
     y_transformer = None
 
