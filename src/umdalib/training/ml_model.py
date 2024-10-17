@@ -42,6 +42,10 @@ from .ml_utils.utils import (
     n_jobs_keyword_available_models,
 )
 
+from optuna.importance import get_param_importances
+from optuna.visualization import plot_param_importances
+import plotly.io as pio
+
 tqdm.pandas()
 
 
@@ -123,6 +127,41 @@ def get_unique_study_name(base_name: str, storage: str) -> str:
         new_name = f"{base_name}_{index}"
 
     return new_name
+
+
+def save_optuna_importance_plot(study: optuna.study.Study, savefile: pt):
+    importances_fanova = get_param_importances(study)  # default method is "fanova"
+    importances_mdi = get_param_importances(
+        study, evaluator=optuna.importance.MeanDecreaseImpurityImportanceEvaluator()
+    )
+
+    logger.info("Importances from get_param_importances (fanova):")
+    for param, importance in importances_fanova.items():
+        logger.info(f"{param}: {importance}")
+
+    logger.info("\nImportances from get_param_importances (MDI):")
+    for param, importance in importances_mdi.items():
+        logger.info(f"{param}: {importance}")
+
+    # Save both importance methods to a CSV file
+    df_importance = pd.DataFrame(
+        {
+            "Parameter": importances_fanova.keys(),
+            "Importance (fanova)": importances_fanova.values(),
+            "Importance (MDI)": [
+                importances_mdi.get(param, 0) for param in importances_fanova.keys()
+            ],
+        }
+    )
+    df_importance = df_importance.sort_values("Importance (fanova)", ascending=False)
+
+    # Save the hyperparameter importance to a CSV file
+    df_importance.to_csv(savefile, index=False)
+    logger.success(f"Importance saved to {savefile.name}")
+
+    # Create and save the plot (which uses MDI by default)
+    fig = plot_param_importances(study)
+    pio.write_html(fig, file=savefile.with_suffix(".importance.html"))
 
 
 def optuna_optimize(
@@ -265,20 +304,7 @@ def optuna_optimize(
         logger.success(f"Trials saved to {grid_savefile.name}")
 
         # Calculate hyperparameter importance
-        importance = optuna.importance.get_param_importances(study)
-
-        # Convert hyperparameter importance to a dataframe
-        df_importance = pd.DataFrame(
-            list(importance.items()), columns=["parameter", "importance"]
-        )
-        df_importance = df_importance.sort_values("importance", ascending=False)
-
-        # Save the hyperparameter importance to a CSV file
-        grid_savefile_importance = (
-            pre_trained_loc / f"{grid_search_name}_importance.csv"
-        )
-        df_importance.to_csv(grid_savefile_importance, index=False)
-        logger.success(f"Importance saved to {grid_savefile_importance.name}")
+        save_optuna_importance_plot(study, grid_savefile.with_suffix(".importance.csv"))
 
     return best_model, best_params
 
