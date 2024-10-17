@@ -53,6 +53,7 @@ from optuna.visualization import (
     plot_intermediate_values,
     plot_edf,
     plot_contour,
+    plot_timeline,
 )
 import plotly.io as pio
 
@@ -216,6 +217,13 @@ def save_optuna_importance_plot(study: optuna.study.Study, grid_search_name: str
         save_figure(fig_contour, "contour_plot")
     except Exception as e:
         logger.error(f"Could not generate contour plot: {str(e)}")
+
+    # 8. plot timeline
+    try:
+        fig_timeline = plot_timeline(study)
+        save_figure(fig_timeline, "timeline")
+    except Exception as e:
+        logger.error(f"Could not generate timeline plot: {str(e)}")
 
     logger.success("All figures have been saved in the 'optuna_figures' directory.")
 
