@@ -23,6 +23,8 @@ alembic==1.13.3
 altgraph==0.17.4
     # via macholib
     # via pyinstaller
+appnope==0.1.4
+    # via ipykernel
 astrochem-embedding @ git+https://github.com/aravindhnivas/astrochem_embedding.git@618411489faf687f34c345d8aedeb0405cbf0ad0
     # via umdalib
 asttokens==2.4.1
@@ -47,6 +49,8 @@ cloudpickle==3.0.0
     # via shap
 colorlog==6.8.2
     # via optuna
+comm==0.2.2
+    # via ipykernel
 contourpy==1.3.0
     # via matplotlib
 cycler==0.12.1
@@ -63,6 +67,8 @@ dask-glm==0.3.2
     # via dask-ml
 dask-ml==2024.4.4
     # via umdalib
+debugpy==1.8.7
+    # via ipykernel
 decorator==5.1.1
     # via ipython
 dill==0.3.9
@@ -99,7 +105,9 @@ h5py==3.11.0
     # via umdalib
 idna==3.8
     # via yarl
+ipykernel==6.29.5
 ipython==8.27.0
+    # via ipykernel
     # via mol2vec
 itsdangerous==2.2.0
     # via flask
@@ -113,6 +121,13 @@ joblib==1.4.2
     # via astrochem-embedding
     # via mol2vec
     # via scikit-learn
+    # via umdalib
+jupyter-client==8.6.3
+    # via ipykernel
+jupyter-core==5.7.2
+    # via ipykernel
+    # via jupyter-client
+kaleido==0.2.1
     # via umdalib
 kiwisolver==1.4.6
     # via matplotlib
@@ -145,6 +160,7 @@ matplotlib==3.9.2
     # via mol2vec
     # via seaborn
 matplotlib-inline==0.1.7
+    # via ipykernel
     # via ipython
 mol2vec @ git+https://github.com/aravindhnivas/mol2vec.git@6e8924c3a3512e4ceb83419515948d925b225d90
     # via umdalib
@@ -161,6 +177,8 @@ multipledispatch==1.0.0
 multiprocess==0.70.17
     # via mapply
     # via pathos
+nest-asyncio==1.6.0
+    # via ipykernel
 networkx==3.3
     # via torch
 numba==0.60.0
@@ -205,6 +223,7 @@ packaging==24.1
     # via dask
     # via dask-ml
     # via distributed
+    # via ipykernel
     # via lightning-utilities
     # via matplotlib
     # via optuna
@@ -238,6 +257,8 @@ pexpect==4.9.0
 pillow==10.4.0
     # via matplotlib
     # via rdkit
+platformdirs==4.3.6
+    # via jupyter-core
 plotly==5.24.0
     # via catboost
 pox==0.3.5
@@ -250,6 +271,7 @@ protobuf==5.28.0
     # via tensorboard
 psutil==6.0.0
     # via distributed
+    # via ipykernel
     # via mapply
 ptyprocess==0.7.0
     # via pexpect
@@ -266,6 +288,7 @@ pyinstaller-hooks-contrib==2024.8
 pyparsing==3.1.4
     # via matplotlib
 python-dateutil==2.9.0.post0
+    # via jupyter-client
     # via matplotlib
     # via pandas
 pytorch-lightning==2.4.0
@@ -277,6 +300,9 @@ pyyaml==6.0.2
     # via distributed
     # via optuna
     # via pytorch-lightning
+pyzmq==26.2.0
+    # via ipykernel
+    # via jupyter-client
 rdkit==2024.3.5
     # via umdalib
 ruamel-yaml==0.18.6
@@ -358,6 +384,8 @@ torchmetrics==1.4.1
     # via pytorch-lightning
 tornado==6.4.1
     # via distributed
+    # via ipykernel
+    # via jupyter-client
 tqdm==4.66.5
     # via mapply
     # via mol2vec
@@ -365,7 +393,11 @@ tqdm==4.66.5
     # via pytorch-lightning
     # via shap
 traitlets==5.14.3
+    # via comm
+    # via ipykernel
     # via ipython
+    # via jupyter-client
+    # via jupyter-core
     # via matplotlib-inline
 typing-extensions==4.12.2
     # via alembic

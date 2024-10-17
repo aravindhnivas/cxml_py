@@ -114,6 +114,8 @@ joblib==1.4.2
     # via mol2vec
     # via scikit-learn
     # via umdalib
+kaleido==0.2.1
+    # via umdalib
 kiwisolver==1.4.6
     # via matplotlib
 lightgbm==4.5.0

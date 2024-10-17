@@ -35,6 +35,7 @@ dependencies = [
     "optuna-dashboard>=0.16.2",
     "optuna-integration>=4.0.0",
     "mapply>=0.1.27",
+    "kaleido>=0.2.1",
 ]
 
 
@@ -44,7 +45,7 @@ build-backend = "hatchling.build"
 
 [tool.rye]
 managed = true
-dev-dependencies = []
+dev-dependencies = ['ipykernel']
 
 [tool.hatch.metadata]
 allow-direct-references = true
