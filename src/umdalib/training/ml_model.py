@@ -43,21 +43,38 @@ from .ml_utils.utils import (
 )
 
 from optuna.importance import get_param_importances
+import matplotlib.pyplot as plt
 
 # from optuna.visualization import plot_param_importances
-from optuna.visualization import (
-    plot_param_importances,
-    plot_optimization_history,
-    plot_parallel_coordinate,
-    plot_slice,
-    plot_intermediate_values,
-    plot_edf,
-    plot_contour,
-    plot_timeline,
-)
+import optuna.visualization as opv
+import optuna.visualization.matplotlib as opm
 import plotly.io as pio
 
 tqdm.pandas()
+
+plots = [
+    ("hyperparameter_importance", opv.plot_param_importances),
+    ("optimization_history", opv.plot_optimization_history),
+    ("parallel_coordinate", opv.plot_parallel_coordinate),
+    ("slice_plot", opv.plot_slice),
+    ("intermediate_values", opv.plot_intermediate_values),
+    ("edf", opv.plot_edf),
+    ("contour", opv.plot_contour),
+    ("timeline", opv.plot_timeline),
+]
+
+mplots = [
+    ("hyperparameter_importance", opm.plot_param_importances),
+    ("optimization_history", opm.plot_optimization_history),
+    ("parallel_coordinate", opm.plot_parallel_coordinate),
+    ("slice_plot", opm.plot_slice),
+    # ("intermediate_values", opm.plot_intermediate_values),
+    ("edf", opm.plot_edf),
+    ("contour", opm.plot_contour),
+    ("timeline", opm.plot_timeline),
+]
+
+save_formats = ["html"]
 
 
 class TrainingFile(TypedDict):
@@ -177,7 +194,7 @@ def save_optuna_importance_plot(study: optuna.study.Study, grid_search_name: str
     if not optuna_figures_folder.exists():
         optuna_figures_folder.mkdir(parents=True)
 
-    def save_figure(fig, filename, formats=["html", "png", "svg"]):
+    def save_figure(fig, filename, formats=save_formats):
         for fmt in formats:
             full_filename = optuna_figures_folder / f"{filename}.{fmt}"
             if fmt == "html":
@@ -186,46 +203,37 @@ def save_optuna_importance_plot(study: optuna.study.Study, grid_search_name: str
                 pio.write_image(fig, file=full_filename)
             logger.info(f"Saved: {full_filename}")
 
-    # 1. Hyperparameter Importances
-    fig = plot_param_importances(study)
-    # pio.write_html(fig, file=savefile.with_suffix(".hyperparameter_importance.html"))
-    save_figure(fig, "hyperparameter_importance")
+    for name, plot_func in plots:
+        try:
+            fig = plot_func(study)
+            save_figure(fig, name)
+        except Exception as e:
+            logger.error(f"Could not generate {name} plot: {str(e)}")
 
-    # 2. Optimization History
-    fig_history = plot_optimization_history(study)
-    save_figure(fig_history, "optimization_history")
+    for name, plot_func in mplots:
+        try:
+            with plt.style.context("seaborn-v0_8-dark"):
+                ax = plot_func(study)
+                if isinstance(ax, np.ndarray):
+                    if ax.ndim == 1:
+                        fig = ax[0].get_figure()
+                    elif ax.ndim == 2:
+                        fig = ax[0, 0].get_figure()
+                else:
+                    fig = ax.get_figure()
 
-    # 3. Parallel Coordinate
-    fig_parallel = plot_parallel_coordinate(study)
-    save_figure(fig_parallel, "parallel_coordinate")
-
-    # 4. Slice Plot
-    fig_slice = plot_slice(study)
-    save_figure(fig_slice, "slice_plot")
-
-    # 5. Intermediate Values
-    fig_intermediate = plot_intermediate_values(study)
-    save_figure(fig_intermediate, "intermediate_values")
-
-    # 6. Empirical Distribution Function (EDF)
-    fig_edf = plot_edf(study)
-    save_figure(fig_edf, "empirical_distribution")
-
-    # 7. Contour Plot
-    try:
-        fig_contour = plot_contour(study)
-        save_figure(fig_contour, "contour_plot")
-    except Exception as e:
-        logger.error(f"Could not generate contour plot: {str(e)}")
-
-    # 8. plot timeline
-    try:
-        fig_timeline = plot_timeline(study)
-        save_figure(fig_timeline, "timeline")
-    except Exception as e:
-        logger.error(f"Could not generate timeline plot: {str(e)}")
-
-    logger.success("All figures have been saved in the 'optuna_figures' directory.")
+                if name == "contour":
+                    fig.set_size_inches((15, 12))
+                elif name == "parallel_coordinate":
+                    fig.set_size_inches((15, 5))
+                fig.savefig(
+                    optuna_figures_folder / f"{name}.pdf",
+                    format="pdf",
+                    bbox_inches="tight",
+                )
+        except Exception as e:
+            logger.error(f"Could not generate {name} plot: {str(e)}")
+    logger.success("All figures have been saved in the 'optuna'")
 
 
 def optuna_optimize(
