@@ -43,7 +43,17 @@ from .ml_utils.utils import (
 )
 
 from optuna.importance import get_param_importances
-from optuna.visualization import plot_param_importances
+
+# from optuna.visualization import plot_param_importances
+from optuna.visualization import (
+    plot_param_importances,
+    plot_optimization_history,
+    plot_parallel_coordinate,
+    plot_slice,
+    plot_intermediate_values,
+    plot_edf,
+    plot_contour,
+)
 import plotly.io as pio
 
 tqdm.pandas()
@@ -129,7 +139,7 @@ def get_unique_study_name(base_name: str, storage: str) -> str:
     return new_name
 
 
-def save_optuna_importance_plot(study: optuna.study.Study, savefile: pt):
+def save_optuna_importance_plot(study: optuna.study.Study, grid_search_name: str):
     importances_fanova = get_param_importances(study)  # default method is "fanova"
     importances_mdi = get_param_importances(
         study, evaluator=optuna.importance.MeanDecreaseImpurityImportanceEvaluator()
@@ -156,12 +166,58 @@ def save_optuna_importance_plot(study: optuna.study.Study, savefile: pt):
     df_importance = df_importance.sort_values("Importance (fanova)", ascending=False)
 
     # Save the hyperparameter importance to a CSV file
+    savefile = pre_trained_loc / f"{grid_search_name}.hyperparameter_importance.csv"
+    logger.info(f"Saving importance to {savefile.name}")
     df_importance.to_csv(savefile, index=False)
-    logger.success(f"Importance saved to {savefile.name}")
+    logger.success(f"hyperparameter_importance saved to {savefile.name}")
 
-    # Create and save the plot (which uses MDI by default)
+    # save all optuna figures to a folder
+    optuna_figures_folder = pre_trained_loc / "optuna_figures"
+    if not optuna_figures_folder.exists():
+        optuna_figures_folder.mkdir(parents=True)
+
+    def save_figure(fig, filename, formats=["html", "png", "svg"]):
+        for fmt in formats:
+            full_filename = optuna_figures_folder / f"{filename}.{fmt}"
+            if fmt == "html":
+                pio.write_html(fig, file=full_filename)
+            else:
+                pio.write_image(fig, file=full_filename)
+            logger.info(f"Saved: {full_filename}")
+
+    # 1. Hyperparameter Importances
     fig = plot_param_importances(study)
-    pio.write_html(fig, file=savefile.with_suffix(".importance.html"))
+    # pio.write_html(fig, file=savefile.with_suffix(".hyperparameter_importance.html"))
+    save_figure(fig, "hyperparameter_importance")
+
+    # 2. Optimization History
+    fig_history = plot_optimization_history(study)
+    save_figure(fig_history, "optimization_history")
+
+    # 3. Parallel Coordinate
+    fig_parallel = plot_parallel_coordinate(study)
+    save_figure(fig_parallel, "parallel_coordinate")
+
+    # 4. Slice Plot
+    fig_slice = plot_slice(study)
+    save_figure(fig_slice, "slice_plot")
+
+    # 5. Intermediate Values
+    fig_intermediate = plot_intermediate_values(study)
+    save_figure(fig_intermediate, "intermediate_values")
+
+    # 6. Empirical Distribution Function (EDF)
+    fig_edf = plot_edf(study)
+    save_figure(fig_edf, "empirical_distribution")
+
+    # 7. Contour Plot
+    try:
+        fig_contour = plot_contour(study)
+        save_figure(fig_contour, "contour_plot")
+    except Exception as e:
+        logger.error(f"Could not generate contour plot: {str(e)}")
+
+    logger.success("All figures have been saved in the 'optuna_figures' directory.")
 
 
 def optuna_optimize(
@@ -287,7 +343,6 @@ def optuna_optimize(
     logger.info("Fitting complete for best model from Optuna")
 
     if args.save_pretrained_model:
-        pre_trained_loc = pre_trained_file.parent
         grid_search_name = (
             f"{pre_trained_file.stem}_{args.grid_search_method}_grid_search"
         )
@@ -303,8 +358,7 @@ def optuna_optimize(
         df_trials.to_csv(grid_savefile, index=False)
         logger.success(f"Trials saved to {grid_savefile.name}")
 
-        # Calculate hyperparameter importance
-        save_optuna_importance_plot(study, grid_savefile.with_suffix(".importance.csv"))
+        save_optuna_importance_plot(study, grid_search_name)
 
     return best_model, best_params
 
