@@ -98,6 +98,7 @@ class Args:
     optuna_n_trials: int
     optuna_n_warmup_steps: int
     optuna_resume_study: OptunaResumeStudy
+    optuna_storage_file: str
 
 
 def linear(x, m, c):
@@ -140,8 +141,12 @@ def optuna_optimize(
     if not save_loc.exists():
         save_loc.mkdir(parents=True)
 
-    logfile = save_loc / "storage.db"
-    storage = f"sqlite:///{str(logfile)}"
+    # logfile = save_loc / "storage.db"
+    optuna_storage_file = pt(args.optuna_storage_file)
+    if not optuna_storage_file.parent.exists():
+        optuna_storage_file.parent.mkdir(parents=True)
+
+    storage = f"sqlite:///{str(optuna_storage_file)}"
 
     logger.info(f"Using {storage} for storage")
 
@@ -259,21 +264,21 @@ def optuna_optimize(
         df_trials.to_csv(grid_savefile, index=False)
         logger.success(f"Trials saved to {grid_savefile.name}")
 
-        # # Calculate hyperparameter importance
-        # importance = optuna.importance.get_param_importances(study)
+        # Calculate hyperparameter importance
+        importance = optuna.importance.get_param_importances(study)
 
-        # # Convert hyperparameter importance to a dataframe
-        # df_importance = pd.DataFrame(
-        #     list(importance.items()), columns=["parameter", "importance"]
-        # )
-        # df_importance = df_importance.sort_values("importance", ascending=False)
+        # Convert hyperparameter importance to a dataframe
+        df_importance = pd.DataFrame(
+            list(importance.items()), columns=["parameter", "importance"]
+        )
+        df_importance = df_importance.sort_values("importance", ascending=False)
 
-        # # Save the hyperparameter importance to a CSV file
-        # grid_savefile_importance = (
-        #     pre_trained_loc / f"{grid_search_name}_importance.csv"
-        # )
-        # df_importance.to_csv(grid_savefile_importance, index=False)
-        # logger.success(f"Importance saved to {grid_savefile_importance.name}")
+        # Save the hyperparameter importance to a CSV file
+        grid_savefile_importance = (
+            pre_trained_loc / f"{grid_search_name}_importance.csv"
+        )
+        df_importance.to_csv(grid_savefile_importance, index=False)
+        logger.success(f"Importance saved to {grid_savefile_importance.name}")
 
     return best_model, best_params
 
