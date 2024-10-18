@@ -35,6 +35,9 @@ from .ml_utils.optuna_grids import (
     # get_optuna_objective_for_extreme_boosting_models,
     sklearn_models_names,
 )
+from .ml_utils.ml_types import MLResults, DataType
+from .ml_utils.ml_plots import main_plot
+
 from .ml_utils.utils import (
     grid_search_dict,
     kernels_dict,
@@ -1112,7 +1115,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     logger.info("Evaluating model for train data")
     train_stats = get_stats(estimator, X_train, y_train)
 
-    results = {
+    results: MLResults = {
         "data_shapes": {
             "X": X.shape,
             "y": y.shape,
@@ -1140,27 +1143,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         results["bootstrap_nsamples"] = args.bootstrap_nsamples
         results["noise_percentage"] = args.noise_percentage
 
-    if args.save_pretrained_model:
-        save_test_train_stats = {
-            "test": {
-                "y_true": test_stats[4].tolist(),
-                "y_pred": test_stats[5].tolist(),
-                "y_linear_fit": test_stats[6].tolist(),
-            },
-            "train": {
-                "y_true": train_stats[4].tolist(),
-                "y_pred": train_stats[5].tolist(),
-                "y_linear_fit": train_stats[6].tolist(),
-            },
-        }
-        # with open(f"{pre_trained_file.with_suffix('.dat.json')}", "w") as f:
-        #     json.dump(
-        #         save_test_train_stats,
-        #         f,
-        #         indent=4,
-        #     )
-        safe_json_dump(save_test_train_stats, pre_trained_file.with_suffix(".dat.json"))
-
     # Additional validation step
     results["cross_validation"] = args.cross_validation
 
@@ -1187,13 +1169,32 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     logger.info(f"Training completed in {(end_time - start_time):.2f} s")
     results["time"] = f"{(end_time - start_time):.2f} s"
 
-    # with open(
-    #     pre_trained_file.with_suffix(".results.json"),
-    #     "w",
-    # ) as f:
-    #     json.dump(results, f, indent=4)
-    #     logger.info(f"Results saved to {pre_trained_file.with_suffix('.results.json')}")
+    dat: DataType = {
+        "test": {
+            "y_true": test_stats[4].tolist(),
+            "y_pred": test_stats[5].tolist(),
+            "y_linear_fit": test_stats[6].tolist(),
+        },
+        "train": {
+            "y_true": train_stats[4].tolist(),
+            "y_pred": train_stats[5].tolist(),
+            "y_linear_fit": train_stats[6].tolist(),
+        },
+    }
+
+    # if args.save_pretrained_model:
+    safe_json_dump(dat, pre_trained_file.with_suffix(".dat.json"))
     safe_json_dump(results, pre_trained_file.with_suffix(".results.json"))
+
+    if args.save_pretrained_model:
+        fig = main_plot(dat, results, args.model)
+        fig_dir = pre_trained_loc / "figures"
+
+        if not fig_dir.exists():
+            fig_dir.mkdir(parents=True)
+
+        figname = pre_trained_file.stem + ".main_plot.pdf"
+        fig.savefig(fig_dir / figname, bbox_inches="tight")
     return results
 
 
