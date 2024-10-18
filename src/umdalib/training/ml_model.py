@@ -335,7 +335,7 @@ def optuna_optimize(
     logger.info(f"{objective=}, {type(objective)=}")
 
     save_parameters(
-        f".{args.grid_search_method}.fine_tuned_parameters.json",
+        f".fine_tuned_parameters.json",
         args.fine_tuned_values,
         mode="fine_tuned",
         misc={
@@ -370,9 +370,7 @@ def optuna_optimize(
     logger.info("Fitting complete for best model from Optuna")
 
     if args.save_pretrained_model:
-        grid_search_name = (
-            f"{pre_trained_file.stem}_{args.grid_search_method}_grid_search"
-        )
+        grid_search_name = f"{pre_trained_file.stem}_grid_search"
 
         grid_savefile_best_model = (
             pre_trained_loc / f"{grid_search_name}_best_model.pkl"
@@ -862,14 +860,14 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
         "cv_fold": args.cv_fold,
     }
     save_parameters(
-        f".{args.grid_search_method}.fine_tuned_parameters.json",
+        ".fine_tuned_parameters.json",
         args.fine_tuned_values,
         mode="fine_tuned",
         misc=misc,
     )
 
     save_parameters(
-        f".{args.grid_search_method}.param_grid.json",
+        ".param_grid.json",
         param_grid,
         mode="grid",
         misc=misc,
@@ -916,12 +914,12 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
     # save grid search
     if args.save_pretrained_model:
         grid_savefile = pre_trained_file.with_name(
-            f"{pre_trained_file.stem}_{args.grid_search_method}_grid_search"
+            f"{pre_trained_file.stem}_grid_search"
         ).with_suffix(".pkl")
         dump(grid_search, grid_savefile)
 
         grid_savefile_best_model = pre_trained_file.with_name(
-            f"{pre_trained_file.stem}_{args.grid_search_method}_grid_search_best_model"
+            f"{pre_trained_file.stem}_grid_search_best_model"
         ).with_suffix(".pkl")
         dump(best_model, grid_savefile_best_model)
 
@@ -1106,9 +1104,8 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         trained_params = trained_params | estimator.get_all_params()
 
     if args.save_pretrained_model:
-        pname = args.grid_search_method if args.fine_tune_model else "normal"
-        save_parameters(f".parameters.{pname}.user.json", args.parameters)
-        save_parameters(f".parameters.{pname}.trained.json", trained_params)
+        save_parameters(".parameters.user.json", args.parameters)
+        save_parameters(".parameters.trained.json", trained_params)
 
     logger.info("Evaluating model for test data")
     test_stats = get_stats(estimator, X_test, y_test)
@@ -1179,9 +1176,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             "cv_fold": args.cv_fold,
             "grid_search_method": args.grid_search_method,
         }
-        timestamp = save_parameters(
-            f".{args.grid_search_method}.best_params.json", best_params, misc=misc
-        )
+        timestamp = save_parameters(".best_params.json", best_params, misc=misc)
 
     if timestamp is None:
         timestamp = datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")
