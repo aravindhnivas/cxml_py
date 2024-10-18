@@ -1267,6 +1267,7 @@ def main(args: Args):
     )
 
     if args.model not in models_dict:
+        logger.error(f"{args.model} not implemented in yet!")
         raise ValueError(f"{args.model} not implemented in yet!")
 
     ytransformation = args.ytransformation
