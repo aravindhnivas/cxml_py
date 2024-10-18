@@ -1073,40 +1073,21 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
                 args.grid_search_method,
             )
             estimator, best_params = fine_tune_estimator(args, X_train, y_train)
+        logger.info("Using best estimator from grid search")
     else:
         logger.info("Training model without fine-tuning")
-        # if args.parallel_computation and args.model in n_jobs_keyword_available_models:
-        #     args.parameters["n_jobs"] = n_jobs
-        # estimator = models_dict[args.model](**args.parameters)
-        # initial_estimator = models_dict[args.model](**args.parameters)
         estimator = clone(initial_estimator)
-
-    if args.learning_curve_train_sizes is not None and args.cross_validation:
-        learn_curve(
-            initial_estimator,
-            X,
-            y,
-            sizes=args.learning_curve_train_sizes,
-            n_jobs=n_jobs,
-            cv=args.cv_fold,
-        )
-
-    if not args.fine_tune_model:
         logger.info("Training model")
         estimator.fit(X_train, y_train)
         logger.info("Training complete")
-    else:
-        logger.info("Using best estimator from grid search")
+
+    if estimator is None:
+        raise ValueError("Estimator is None")
 
     if args.save_pretrained_model:
         logger.info(f"Saving model to {pre_trained_file}")
         dump((estimator, yscaler), pre_trained_file)
         logger.success("Trained model saved")
-
-    if args.analyse_shapley_values:
-        analyse_shap_values(estimator, X)
-
-    logger.info(f"Saving model to {pre_trained_file}")
 
     trained_params = estimator.get_params()
     if args.model == "catboost":
@@ -1202,6 +1183,22 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
         figname = pre_trained_file.stem + ".main_plot.pdf"
         fig.savefig(fig_dir / figname, bbox_inches="tight")
+
+    if args.learning_curve_train_sizes is not None and args.cross_validation:
+        logger.info("Computing learning curve")
+        learn_curve(
+            initial_estimator,
+            X,
+            y,
+            sizes=args.learning_curve_train_sizes,
+            n_jobs=n_jobs,
+            cv=args.cv_fold,
+        )
+        logger.info("Learning curve computed")
+
+    if args.analyse_shapley_values:
+        analyse_shap_values(estimator, X_train)
+
     return results
 
 
@@ -1262,6 +1259,7 @@ def main(args: Args):
         logfile,
         rotation="10 MB",
         compression="zip",
+        mode="w",
     )
 
     if args.model not in models_dict:
