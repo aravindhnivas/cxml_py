@@ -216,17 +216,18 @@ def save_optuna_importance_plot(study: optuna.study.Study, grid_search_name: str
         try:
             with plt.style.context("seaborn-v0_8-dark"):
                 ax = plot_func(study)
-                if isinstance(ax, np.ndarray):
+                fig: plt.Figure = None
+                if isinstance(ax, plt.Axes):
+                    fig = ax.get_figure()
+                    ax.set_title("")
+                elif isinstance(ax, np.ndarray):
                     if ax.ndim == 1:
                         fig = ax[0].get_figure()
                     elif ax.ndim == 2:
                         fig = ax[0, 0].get_figure()
-                else:
-                    fig = ax.get_figure()
+                if fig is None:
+                    raise ValueError("Could not get figure")
 
-                # remove title
-                if isinstance(ax, plt.Axes):
-                    ax.set_title("")
                 fig.suptitle("")
 
                 if name == "contour":
@@ -240,6 +241,7 @@ def save_optuna_importance_plot(study: optuna.study.Study, grid_search_name: str
                 )
         except Exception as e:
             logger.error(f"Could not generate {name} plot: {str(e)}")
+
     logger.success("All figures have been saved in the 'optuna'")
 
 
