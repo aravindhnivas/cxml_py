@@ -1,5 +1,6 @@
-from .ml_types import DataType, MLResults
+from .ml_types import DataType, MLResults, LearningCurve
 import matplotlib.pyplot as plt
+from pathlib import Path as pt
 
 
 def main_plot(data: DataType, results: MLResults, model: str):
@@ -75,5 +76,42 @@ def main_plot(data: DataType, results: MLResults, model: str):
     ax.set_title(model.upper())
     fig.set_dpi(300)
     fig.tight_layout()
+
+    return fig
+
+
+def learning_curve_plot(learning_curve: LearningCurve, savefile: pt):
+    # plot the learning curve
+    fig, ax = plt.subplots(dpi=300)
+    train_sizes = learning_curve["train_sizes"]
+    learning_curve_data = learning_curve["data"]
+
+    for t in ["train", "test"]:
+        scores = [learning_curve_data[f"{size}"][t]["mean"] for size in train_sizes]
+        ci_lower = [
+            learning_curve_data[f"{size}"][t]["ci_lower"] for size in train_sizes
+        ]
+        ci_upper = [
+            learning_curve_data[f"{size}"][t]["ci_upper"] for size in train_sizes
+        ]
+
+        ax.plot(
+            train_sizes,
+            scores,
+            ".--",
+            label=t,
+            color="C0" if t == "train" else "C1",
+            ms=10,
+        )
+        ax.fill_between(train_sizes, ci_lower, ci_upper, alpha=0.3)
+
+    ax.set_xlabel("Number of samples")
+    ax.set_ylabel(f"R² ({learning_curve['CV']}-fold CV)")
+    ax.legend()
+    ax.minorticks_on()
+    ax.set_xbound(0, 1.1 * max(train_sizes))
+    ax.set_ylim(ymax=1)
+    fig.tight_layout()
+    fig.savefig(savefile, dpi=300, bbox_inches="tight")
 
     return fig

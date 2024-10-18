@@ -35,8 +35,8 @@ from .ml_utils.optuna_grids import (
     # get_optuna_objective_for_extreme_boosting_models,
     sklearn_models_names,
 )
-from .ml_utils.ml_types import MLResults, DataType
-from .ml_utils.ml_plots import main_plot
+from .ml_utils.ml_types import MLResults, DataType, LearningCurve, LearningCurveData
+from .ml_utils.ml_plots import learning_curve_plot, main_plot
 
 from .ml_utils.utils import (
     grid_search_dict,
@@ -338,7 +338,7 @@ def optuna_optimize(
     logger.info(f"{objective=}, {type(objective)=}")
 
     save_parameters(
-        f".fine_tuned_parameters.json",
+        ".fine_tuned_parameters.json",
         args.fine_tuned_values,
         mode="fine_tuned",
         misc={
@@ -702,17 +702,22 @@ def learn_curve(
     cv=5,
 ):
     logger.info("Learning curve")
+    scoring = "r2"
     train_sizes, train_scores, test_scores = learning_curve(
         estimator,
         X,
         y,
         train_sizes=np.linspace(*sizes),
         cv=cv,
-        scoring="r2",
+        scoring=scoring,
         n_jobs=n_jobs,
     )
 
-    learning_curve_data = {}
+    max_train_size_for_cv = int(y.size - y.size / cv)
+    computed_train_sizes: np.ndarray = max_train_size_for_cv * np.linspace(*sizes)
+    computed_train_sizes = computed_train_sizes.astype(int)
+
+    learning_curve_data: LearningCurveData = {}
     for train_size, cv_train_scores, cv_test_scores in zip(
         train_sizes, train_scores, test_scores
     ):
@@ -723,14 +728,18 @@ def learn_curve(
 
         learning_curve_data[f"{train_size}"] = {
             "test": {
-                "mean": f"{test_mean:.2f}",
-                "std": f"{test_std :.2f}",
+                "mean": test_mean,
+                "std": test_std,
                 "scores": cv_test_scores.tolist(),
+                "ci_lower": test_mean - 1.96 * test_std,
+                "ci_upper": test_mean + 1.96 * test_std,
             },
             "train": {
-                "mean": f"{train_mean:.2f}",
-                "std": f"{train_std:.2f}",
+                "mean": train_mean,
+                "std": train_std,
                 "scores": cv_train_scores.tolist(),
+                "ci_lower": train_mean - 1.96 * train_std,
+                "ci_upper": train_mean + 1.96 * train_std,
             },
         }
 
@@ -741,11 +750,16 @@ def learn_curve(
     learning_curve_savefile = (
         pre_trained_loc / f"{pre_trained_file.stem}.learning_curve.json"
     )
-    # Save to JSON file
-    # with open(learning_curve_savefile, "w") as f:
-    #     json.dump(learning_curve_data, f, indent=4)
-    # logger.info(f"Data saved to {learning_curve_savefile}")
-    safe_json_dump(learning_curve_data, learning_curve_savefile)
+    save_json: LearningCurve = {
+        "data": learning_curve_data,
+        "train_sizes": train_sizes.tolist(),
+        "sizes": sizes,
+        "CV": cv,
+        "scoring": scoring,
+    }
+
+    safe_json_dump(save_json, learning_curve_savefile)
+    learning_curve_plot(save_json, learning_curve_savefile.with_suffix(".pdf"))
     return
 
 

@@ -1,4 +1,4 @@
-from typing import TypedDict, Literal, Optional, List, Dict, Union
+from typing import TypedDict, Literal, Optional, List, Dict, Union, Tuple
 
 
 # Define the structure of the inner dictionaries
@@ -39,6 +39,15 @@ CV_scoring_methods = Literal["r2", "mse", "rmse", "mae"]
 
 # Define the LearningCurveData type
 LearningCurveData = Dict[str, Dict[Literal["test", "train"], CVScores]]
+
+
+class LearningCurve(TypedDict):
+    data: LearningCurveData
+    train_sizes: List[float]
+    sizes: Tuple[float, float, int]
+    CV: int
+    scoring: Literal["r2"]
+
 
 # Define the CVScoresData type
 CVScoresData = Dict[Literal["test", "train"], Dict[CV_scoring_methods, CVScores]]
