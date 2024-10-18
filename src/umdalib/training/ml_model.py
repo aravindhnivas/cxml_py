@@ -239,6 +239,7 @@ def save_optuna_importance_plot(study: optuna.study.Study, grid_search_name: str
                     format="pdf",
                     bbox_inches="tight",
                 )
+                plt.close("all")
         except Exception as e:
             logger.error(f"Could not generate {name} plot: {str(e)}")
 
