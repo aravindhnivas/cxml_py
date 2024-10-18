@@ -4,14 +4,21 @@ from datetime import datetime
 from multiprocessing import cpu_count
 from pathlib import Path as pt
 from time import perf_counter
-from typing import Dict, Literal, Tuple, TypedDict, Union, List, Callable, Any
+from typing import Any, Callable, Dict, List, Literal, Tuple, TypedDict, Union
 
+import matplotlib.pyplot as plt
 import numpy as np
 import optuna
+
+# from optuna.visualization import plot_param_importances
+import optuna.visualization as opv
+import optuna.visualization.matplotlib as opm
 import pandas as pd
+import plotly.io as pio
 import shap
 from dask.diagnostics import ProgressBar
 from joblib import dump, parallel_config
+from optuna.importance import get_param_importances
 from scipy.optimize import curve_fit
 from sklearn import metrics
 from sklearn.base import clone
@@ -27,31 +34,23 @@ from tqdm import tqdm
 
 from umdalib.training.read_data import read_as_ddf
 from umdalib.training.utils import Yscalers, get_transformed_data
-from umdalib.utils import Paths, logger, safe_json_dump
+from umdalib.utils import Paths, safe_json_dump
 
+from .ml_utils.ml_plots import learning_curve_plot, main_plot
+from .ml_utils.ml_types import DataType, LearningCurve, LearningCurveData, MLResults
 from .ml_utils.optuna_grids import (
     ExtremeBoostingModelsObjective,
     SklearnModelsObjective,
     # get_optuna_objective_for_extreme_boosting_models,
     sklearn_models_names,
 )
-from .ml_utils.ml_types import MLResults, DataType, LearningCurve, LearningCurveData
-from .ml_utils.ml_plots import learning_curve_plot, main_plot
-
 from .ml_utils.utils import (
     grid_search_dict,
     kernels_dict,
     models_dict,
     n_jobs_keyword_available_models,
 )
-
-from optuna.importance import get_param_importances
-import matplotlib.pyplot as plt
-
-# from optuna.visualization import plot_param_importances
-import optuna.visualization as opv
-import optuna.visualization.matplotlib as opm
-import plotly.io as pio
+from loguru import logger
 
 tqdm.pandas()
 
@@ -992,15 +991,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     current_model_name = args.model
     start_time = perf_counter()
 
-    pre_trained_file = pt(args.pre_trained_file.strip()).with_suffix(".pkl")
-    pre_trained_loc = pre_trained_file.parent
-    if not pre_trained_loc.exists():
-        pre_trained_loc.mkdir(parents=True)
-
     arguments_file = pre_trained_loc / f"{pre_trained_file.stem}.arguments.json"
-    # with open(arguments_file, "w") as f:
-    #     json.dump(args.__dict__, f, indent=4)
-    #     logger.info(f"Arguments saved to {arguments_file}")
     safe_json_dump(args.__dict__, arguments_file)
 
     # bootstrap data
@@ -1246,9 +1237,6 @@ loaded_training_file: pt = None
 
 
 def main(args: Args):
-    if args.model not in models_dict:
-        raise ValueError(f"{args.model} not implemented in yet!")
-
     global \
         n_jobs, \
         backend, \
@@ -1260,7 +1248,26 @@ def main(args: Args):
         inverse_scaling, \
         inverse_transform, \
         y_transformer, \
-        loaded_training_file
+        loaded_training_file, \
+        pre_trained_file, \
+        pre_trained_loc
+
+    pre_trained_file = pt(args.pre_trained_file.strip()).with_suffix(".pkl")
+    pre_trained_loc = pre_trained_file.parent
+    if not pre_trained_loc.exists():
+        pre_trained_loc.mkdir(parents=True)
+
+    logfile = pre_trained_loc / f"{pre_trained_file.stem}.log"
+    logger.info(f"Logging to {logfile}")
+
+    logger.add(
+        logfile,
+        rotation="10 MB",
+        compression="zip",
+    )
+
+    if args.model not in models_dict:
+        raise ValueError(f"{args.model} not implemented in yet!")
 
     ytransformation = args.ytransformation
     yscaling = args.yscaling
