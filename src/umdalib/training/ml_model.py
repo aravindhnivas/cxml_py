@@ -770,7 +770,7 @@ def analyse_shap_values(estimator, X: np.ndarray):
     time_start = perf_counter()
     logger.info("Analyzing SHAP values")
 
-    explainer = shap.Explainer(estimator, X)
+    explainer = shap.TreeExplainer(estimator, X)
     shap_values = explainer(X)
 
     # shap.summary_plot(shap_values, X, plot_type="bar")
@@ -793,9 +793,9 @@ def analyse_shap_values(estimator, X: np.ndarray):
     # log data shapes
     logger.info(f"{shap_values_array.shape=}, {mean_abs_shap.shape=}")
 
-    shapely_savefile = pre_trained_loc / f"{pre_trained_file.stem}.shapely.json"
-    safe_json_dump(data, shapely_savefile)
-    logger.info(f"SHAP values saved to {shapely_savefile}.")
+    shapley_savefile = pre_trained_loc / f"{pre_trained_file.stem}.shapley.json"
+    safe_json_dump(data, shapley_savefile)
+    logger.info(f"SHAP values saved to {shapley_savefile}.")
     logger.info(f"Time taken: {perf_counter() - time_start:.2f} seconds")
     return
 
