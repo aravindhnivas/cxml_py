@@ -4,7 +4,7 @@ from datetime import datetime
 from multiprocessing import cpu_count
 from pathlib import Path as pt
 from time import perf_counter
-from typing import Dict, Literal, Tuple, TypedDict, Union
+from typing import Dict, Literal, Tuple, TypedDict, Union, List, Callable, Any
 
 import numpy as np
 import optuna
@@ -52,6 +52,8 @@ import plotly.io as pio
 
 tqdm.pandas()
 
+AxesArray = np.ndarray[Any, np.dtype[plt.Axes]]
+
 plots = [
     ("hyperparameter_importance", opv.plot_param_importances),
     ("optimization_history", opv.plot_optimization_history),
@@ -63,7 +65,7 @@ plots = [
     ("timeline", opv.plot_timeline),
 ]
 
-mplots = [
+mplots: List[Tuple[str, Callable[..., Union[plt.Axes, AxesArray]]]] = [
     ("hyperparameter_importance", opm.plot_param_importances),
     ("optimization_history", opm.plot_optimization_history),
     ("parallel_coordinate", opm.plot_parallel_coordinate),
@@ -221,6 +223,11 @@ def save_optuna_importance_plot(study: optuna.study.Study, grid_search_name: str
                         fig = ax[0, 0].get_figure()
                 else:
                     fig = ax.get_figure()
+
+                # remove title
+                if not isinstance(ax, np.ndarray):
+                    ax.set_title("")
+                fig.suptitle("")
 
                 if name == "contour":
                     fig.set_size_inches((15, 12))
