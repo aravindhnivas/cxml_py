@@ -227,6 +227,7 @@ def save_optuna_importance_plot(study: optuna.study.Study, grid_search_name: str
                 if fig is None:
                     raise ValueError("Could not get figure")
 
+                fig.set_dpi(300)
                 fig.suptitle("")
 
                 if name == "contour":
