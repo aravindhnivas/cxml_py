@@ -221,10 +221,9 @@ def save_optuna_importance_plot(study: optuna.study.Study, grid_search_name: str
                     fig = ax.get_figure()
                     ax.set_title("")
                 elif isinstance(ax, np.ndarray):
-                    if ax.ndim == 1:
-                        fig = ax[0].get_figure()
-                    elif ax.ndim == 2:
-                        fig = ax[0, 0].get_figure()
+                    ax0 = ax.flatten()[0]
+                    if isinstance(ax0, plt.Axes):
+                        fig = ax0.get_figure()
                 if fig is None:
                     raise ValueError("Could not get figure")
 
