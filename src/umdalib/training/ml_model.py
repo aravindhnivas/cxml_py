@@ -225,7 +225,7 @@ def save_optuna_importance_plot(study: optuna.study.Study, grid_search_name: str
                     fig = ax.get_figure()
 
                 # remove title
-                if not isinstance(ax, np.ndarray):
+                if isinstance(ax, plt.Axes):
                     ax.set_title("")
                 fig.suptitle("")
 
