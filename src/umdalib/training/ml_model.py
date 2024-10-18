@@ -344,6 +344,7 @@ def optuna_optimize(
             "optuna_n_warmup_steps": optuna_n_warmup_steps,
             "cv_fold": args.cv_fold,
             "storage": storage,
+            "study_name": study_name,
         },
     )
     logger.info("Optimizing hyperparameters using Optuna")
