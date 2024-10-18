@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path as pt
 from time import perf_counter
-from typing import Callable, Literal
+from typing import Callable, Literal, List
 
 import numpy as np
 from dask import array as da
@@ -51,7 +51,7 @@ def VICGAE2vec(smi: str, model):
 test_mode = False
 
 
-def mol2vec(smi: str, model, radius=1) -> list[np.ndarray]:
+def mol2vec(smi: str, model, radius=1) -> List[np.ndarray]:
     """
     Given a model, convert a SMILES string into the corresponding
     NumPy vector.

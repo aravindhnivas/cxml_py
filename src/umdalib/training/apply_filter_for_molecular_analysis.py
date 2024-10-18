@@ -3,7 +3,7 @@ from collections import Counter
 from dataclasses import dataclass
 from multiprocessing import Pool, cpu_count
 from pathlib import Path as pt
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, List
 
 import pandas as pd
 
@@ -24,8 +24,8 @@ def apply_filters_to_df(
     row: pd.Series,
     min_atomic_number: Optional[int],
     max_atomic_number: Optional[int],
-    filter_elements: list[str],
-    filter_structures: list[str],
+    filter_elements: List[str],
+    filter_structures: List[str],
 ) -> bool:
     # Filter based on atomic number
     if min_atomic_number:
@@ -75,8 +75,8 @@ class Args:
     max_atomic_number: int
     size_count_threshold: int
     elemental_count_threshold: int
-    filter_elements: list[str]
-    filter_structures: list[str]
+    filter_elements: List[str]
+    filter_structures: List[str]
     filtered_filename: str
     index_column_name: str
 

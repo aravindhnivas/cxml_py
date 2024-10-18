@@ -1,4 +1,4 @@
-from typing import Literal, TypedDict
+from typing import Literal, TypedDict, List
 
 import lightgbm as lgb
 import numpy as np
@@ -11,7 +11,7 @@ from .utils import models_dict
 
 
 class FineTunedValues(TypedDict):
-    value: list[str | int | float | bool]
+    value: List[str | int | float | bool]
     type: Literal["string", "integer", "float", "bool"]
     scale: Literal["linear", "log", None]
 
@@ -19,7 +19,7 @@ class FineTunedValues(TypedDict):
 def get_suggest(
     trial: optuna.Trial,
     name: str,
-    value: list[str],
+    value: List[str],
     number_type: Literal["integer", "float"],
     log=False,
 ) -> float | int:

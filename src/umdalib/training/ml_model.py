@@ -86,7 +86,7 @@ class TrainingFile(TypedDict):
 
 
 class FineTunedValues(TypedDict):
-    value: list[str | int | float | bool]
+    value: List[str | int | float | bool]
     type: Literal["string", "integer", "float", "bool"]
     scale: Literal["linear", "log", None]
 
@@ -127,7 +127,7 @@ class Args:
     skip_invalid_y_values: bool
     inverse_scaling: bool
     inverse_transform: bool
-    learning_curve_train_sizes: list[float] | None
+    learning_curve_train_sizes: List[float] | None
     analyse_shapley_values: bool
     optuna_n_trials: int
     optuna_n_warmup_steps: int
@@ -692,7 +692,7 @@ def learn_curve(
     estimator,
     X: np.ndarray,
     y: np.ndarray,
-    sizes: list[float] = None,
+    sizes: List[float] = None,
     n_jobs: int = -2,
     cv=5,
 ):
@@ -808,7 +808,7 @@ def custom_nspace(start: float, stop: float, num: int, log=True) -> np.ndarray:
 
 
 def get_param_grid(fine_tuned_values: FineTunedValues) -> Dict[str, list]:
-    param_grid: Dict[str, list[str] | np.ndarray] = {}
+    param_grid: Dict[str, List[str] | np.ndarray] = {}
 
     for key, value in fine_tuned_values.items():
         if value["type"] == "string":
