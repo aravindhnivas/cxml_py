@@ -767,6 +767,7 @@ def learn_curve(
 
 
 def analyse_shap_values(estimator, X: np.ndarray):
+    time_start = perf_counter()
     logger.info("Analyzing SHAP values")
 
     explainer = shap.Explainer(estimator, X)
@@ -793,12 +794,9 @@ def analyse_shap_values(estimator, X: np.ndarray):
     logger.info(f"{shap_values_array.shape=}, {mean_abs_shap.shape=}")
 
     shapely_savefile = pre_trained_loc / f"{pre_trained_file.stem}.shapely.json"
-    # Save to JSON file
-    # with open(shapely_savefile, "w") as f:
-    #     json.dump(data, f, indent=4)
-    # logger.info(f"Data saved to {shapely_savefile}")
-
     safe_json_dump(data, shapely_savefile)
+    logger.info(f"SHAP values saved to {shapely_savefile}.")
+    logger.info(f"Time taken: {perf_counter() - time_start:.2f} seconds")
     return
 
 
