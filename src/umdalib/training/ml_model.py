@@ -759,7 +759,11 @@ def learn_curve(
     }
 
     safe_json_dump(save_json, learning_curve_savefile)
-    learning_curve_plot(save_json, learning_curve_savefile.with_suffix(".pdf"))
+    fig_dir = pre_trained_loc / "figures"
+    if not fig_dir.exists():
+        fig_dir.mkdir(parents=True)
+    savefig_file = fig_dir / f"{pre_trained_file.stem}.learning_curve.pdf"
+    learning_curve_plot(save_json, savefig_file)
     return
 
 
