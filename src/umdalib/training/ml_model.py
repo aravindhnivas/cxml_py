@@ -992,42 +992,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     arguments_file = pre_trained_loc / f"{pre_trained_file.stem}.arguments.json"
     safe_json_dump(args.__dict__, arguments_file)
 
-    # bootstrap data
-    if args.bootstrap:
-        logger.info("Bootstrapping data")
-        X, y = augment_data(
-            X,
-            y,
-            n_samples=int(args.bootstrap_nsamples),
-            noise_percentage=float(args.noise_percentage),
-        )
-
-    # stack the arrays (n_samples, n_features)
-    if len(X.shape) == 1:
-        logger.info("Reshaping X")
-        X = np.vstack(X)
-
-    logger.info(f"{X[0].shape=}\n{y[0]=}")
-    logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
-
-    # save the processed X and y data
-    vectors_file = pt(args.vectors_file)
-    vectors_loc = vectors_file.parent
-    processed_file_dir = vectors_loc / f"processed_{vectors_file.stem}"
-    X_file = processed_file_dir / "processed.X.npy"
-    y_file = processed_file_dir / "processed.y.npy"
-    if not processed_file_dir.exists():
-        processed_file_dir.mkdir(parents=True)
-        logger.info(
-            f"Created directory: {processed_file_dir} for saving processed vectors"
-        )
-    if not X_file.exists():
-        np.save(X_file, X)
-        logger.info(f"processed X vectors saved to {X_file}")
-    if not y_file.exists():
-        np.save(y_file, y)
-        logger.info(f"processed y vectors saved to {y_file}")
-
     test_size = float(args.test_size)
     y_copy = y.copy()
     if test_size > 0:
@@ -1249,57 +1213,8 @@ inverse_transform = True
 loaded_training_file: pt = None
 
 
-def main(args: Args):
-    global \
-        n_jobs, \
-        backend, \
-        skip_invalid_y_values, \
-        ytransformation, \
-        yscaling, \
-        yscaler, \
-        boxcox_lambda_param, \
-        inverse_scaling, \
-        inverse_transform, \
-        y_transformer, \
-        loaded_training_file, \
-        pre_trained_file, \
-        pre_trained_loc
-
-    pre_trained_file = pt(args.pre_trained_file.strip()).with_suffix(".pkl")
-    pre_trained_loc = pre_trained_file.parent
-    if not pre_trained_loc.exists():
-        pre_trained_loc.mkdir(parents=True)
-
-    logfile = pre_trained_loc / f"{pre_trained_file.stem}.log"
-    logger.info(f"Logging to {logfile}")
-
-    logger.add(
-        logfile,
-        rotation="10 MB",
-        compression="zip",
-        mode="w",
-    )
-
-    if args.model not in models_dict:
-        logger.error(f"{args.model} not implemented in yet!")
-        raise ValueError(f"{args.model} not implemented in yet!")
-
-    ytransformation = args.ytransformation
-    yscaling = args.yscaling
-    inverse_scaling = args.inverse_scaling
-    inverse_transform = args.inverse_transform
-    loaded_training_file = pt(args.training_file["filename"])
-
-    skip_invalid_y_values = args.skip_invalid_y_values
-    if args.parallel_computation:
-        n_jobs = int(args.n_jobs)
-        if n_jobs < 1:
-            n_jobs = cpu_count() + n_jobs
-
-        backend = args.parallel_computation_backend
-
-    logger.info(f"Training {args.model} model")
-    logger.info(f"{args.training_file['filename']}")
+def get_data(args: Args) -> Tuple[np.ndarray, np.ndarray]:
+    global yscaler, boxcox_lambda_param, y_transformer
 
     X = np.load(args.vectors_file, allow_pickle=True)
     X = np.array(X, dtype=float)
@@ -1379,6 +1294,105 @@ def main(args: Args):
         logger.warning("No scaling applied")
 
     logger.info(f"{y[:5]=}, {type(y)=}")
+
+    # bootstrap data
+    if args.bootstrap:
+        logger.info("Bootstrapping data")
+        X, y = augment_data(
+            X,
+            y,
+            n_samples=int(args.bootstrap_nsamples),
+            noise_percentage=float(args.noise_percentage),
+        )
+
+    # stack the arrays (n_samples, n_features)
+    if len(X.shape) == 1:
+        logger.info("Reshaping X")
+        X = np.vstack(X)
+
+    logger.info(f"{X[0].shape=}\n{y[0]=}")
+    logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
+
+    return X, y
+
+
+def main(args: Args):
+    global n_jobs, backend, skip_invalid_y_values, ytransformation, yscaling, inverse_scaling, inverse_transform, loaded_training_file, pre_trained_file, pre_trained_loc
+    # yscaler, \
+    # boxcox_lambda_param, \
+    # y_transformer, \
+
+    pre_trained_file = pt(args.pre_trained_file.strip()).with_suffix(".pkl")
+    pre_trained_loc = pre_trained_file.parent
+    if not pre_trained_loc.exists():
+        pre_trained_loc.mkdir(parents=True)
+
+    logfile = pre_trained_loc / f"{pre_trained_file.stem}.log"
+    logger.info(f"Logging to {logfile}")
+
+    logger.add(
+        logfile,
+        rotation="10 MB",
+        compression="zip",
+        mode="w",
+    )
+
+    if args.model not in models_dict:
+        logger.error(f"{args.model} not implemented in yet!")
+        raise ValueError(f"{args.model} not implemented in yet!")
+
+    ytransformation = args.ytransformation
+    yscaling = args.yscaling
+    inverse_scaling = args.inverse_scaling
+    inverse_transform = args.inverse_transform
+    loaded_training_file = pt(args.training_file["filename"])
+
+    skip_invalid_y_values = args.skip_invalid_y_values
+    if args.parallel_computation:
+        n_jobs = int(args.n_jobs)
+        if n_jobs < 1:
+            n_jobs = cpu_count() + n_jobs
+
+        backend = args.parallel_computation_backend
+
+    logger.info(f"Training {args.model} model")
+    logger.info(f"{args.training_file['filename']}")
+
+    # save the processed X and y data
+    vectors_file = pt(args.vectors_file)
+    vectors_loc = vectors_file.parent
+    processed_vectors_file_dir = vectors_loc / f"processed_{vectors_file.stem}"
+    if not processed_vectors_file_dir.exists():
+        processed_vectors_file_dir.mkdir(parents=True)
+        logger.info(
+            f"Created directory: {processed_vectors_file_dir} for saving processed vectors"
+        )
+
+    X_file: pt = None
+    y_file: pt = None
+
+    if args.bootstrap:
+        X_file = processed_vectors_file_dir / "processed_augmented.X.npy"
+        y_file = processed_vectors_file_dir / "processed_augmented.y.npy"
+    else:
+        X_file = processed_vectors_file_dir / "processed.X.npy"
+        y_file = processed_vectors_file_dir / "processed.y.npy"
+
+    if X_file.exists() and y_file.exists():
+        X = np.load(X_file, allow_pickle=True)
+        y = np.load(y_file, allow_pickle=True)
+        logger.info(f"Loaded processed X vectors from {X_file}")
+        logger.info(f"Loaded processed y vectors from {y_file}")
+    else:
+        X, y = get_data(args)
+        logger.info(f"{X.shape=}, {y.shape=}")
+
+    if not X_file.exists():
+        np.save(X_file, X)
+        logger.info(f"processed X vectors saved to {X_file}")
+    if not y_file.exists():
+        np.save(y_file, y)
+        logger.info(f"processed y vectors saved to {y_file}")
 
     results = None
     if args.parallel_computation:
