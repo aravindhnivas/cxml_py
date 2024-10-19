@@ -8,6 +8,8 @@ from scipy import stats
 from umdalib.training.read_data import read_as_ddf
 from umdalib.utils import logger, safe_json_dump
 from umdalib.training.utils import get_transformed_data
+# import matplotlib.pyplot as plt
+# import seaborn as sns
 
 
 @dataclass
@@ -99,11 +101,6 @@ def get_skew_and_transformation(df_y: pd.Series):
     logger.info(f"Best transformation: {best_skew_key}")
 
     savefile_skews = save_loc / "skewness_after_all_transformation.json"
-    # with open(savefile_skews, "w") as f:
-    #     json.dump(
-    #         {"best_skew_key": best_skew_key, "skews": computed_skewness}, f, indent=2
-    #     )
-    #     logger.info(f"Skewness after all transformation saved to {savefile_skews}")
     safe_json_dump(
         {"best_skew_key": best_skew_key, "skews": computed_skewness}, savefile_skews
     )
@@ -231,11 +228,6 @@ def main(args: Args):
     y_data_distribution_file = y_data_distribution_file.with_suffix(".json")
 
     if not y_data_distribution_file.exists():
-        # with open(y_data_distribution_file, "w") as f:
-        #     json.dump(get_analysis_results(df_y), f, indent=2)
-        #     logger.info(
-        #         f"Analysis complete. Results saved to {y_data_distribution_file}.json"
-        #     )
         safe_json_dump(get_analysis_results(df_y), y_data_distribution_file)
 
     y_transformed = None
@@ -289,9 +281,6 @@ def main(args: Args):
         savefilename += f"_for_{ytransformation}_transformation.json"
 
     savefile = save_loc / savefilename
-    # with open(savefile, "w") as f:
-    #     json.dump(analysis_results, f, indent=2)
-    #     logger.info(f"Analysis complete. Results saved to {savefile}.json")
     safe_json_dump(analysis_results, savefile)
 
     # save the transformed data
@@ -301,17 +290,11 @@ def main(args: Args):
         if ytransformation == "boxcox":
             y_transformed_data["lambda"] = boxcox_lambda_param
         savefile_y = save_loc / f"{ytransformation}_y_transformed_data.json"
-        # with open(savefile_y, "w") as f:
-        #     json.dump(y_transformed_data, f, indent=2)
-        #     logger.info(f"Transformed data saved to {savefile_y}")
         safe_json_dump(y_transformed_data, savefile_y)
 
     # save the original data
     savefile_y = save_loc / "original_y_data.json"
     if not savefile_y.exists():
-        # with open(savefile_y, "w") as f:
-        #     json.dump({"data": df_y.tolist()}, f, indent=2)
-        #     logger.info(f"Original data saved to {savefile_y}")
         safe_json_dump({"data": df_y.tolist()}, savefile_y)
 
     return {
