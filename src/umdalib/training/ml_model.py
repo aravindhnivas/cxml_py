@@ -968,10 +968,6 @@ def save_parameters(
         if misc:
             parameters_dict.update(misc)
 
-        # with open(parameters_file, "w") as f:
-        #     json.dump(parameters_dict, f, indent=4)
-        #     logger.info(f"Model parameters saved to {parameters_file.name}")
-
         safe_json_dump(parameters_dict, parameters_file)
         return timestamp
 
