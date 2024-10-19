@@ -786,7 +786,7 @@ def analyse_shap_values(estimator, X: np.ndarray):
     data = {
         "feature_names": explainer.feature_names or feature_names,
         "shap_values": shap_values_array.tolist(),
-        "feature_values": X.tolist(),
+        # "feature_values": X.tolist(),
         "mean_abs_shap": mean_abs_shap.tolist(),
     }
 
