@@ -1010,6 +1010,24 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     logger.info(f"{X[0].shape=}\n{y[0]=}")
     logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
 
+    # save the processed X and y data
+    vectors_file = pt(args.vectors_file)
+    vectors_loc = vectors_file.parent
+    processed_file_dir = vectors_loc / f"processed_{vectors_file.stem}"
+    X_file = processed_file_dir / "processed.X.npy"
+    y_file = processed_file_dir / "processed.y.npy"
+    if not processed_file_dir.exists():
+        processed_file_dir.mkdir(parents=True)
+        logger.info(
+            f"Created directory: {processed_file_dir} for saving processed vectors"
+        )
+    if not X_file.exists():
+        np.save(X_file, X)
+        logger.info(f"processed X vectors saved to {X_file}")
+    if not y_file.exists():
+        np.save(y_file, y)
+        logger.info(f"processed y vectors saved to {y_file}")
+
     test_size = float(args.test_size)
     y_copy = y.copy()
     if test_size > 0:
