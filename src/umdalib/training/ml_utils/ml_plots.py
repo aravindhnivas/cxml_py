@@ -11,19 +11,6 @@ def main_plot(data: DataType, results: MLResults, model: str):
     y_true_train = data["train"]["y_true"]
     y_pred_train = data["train"]["y_pred"]
 
-    metrics = ["r2", "mse", "rmse", "mae"]
-    test_scores = {}
-    train_scores = {}
-
-    for v in ["test", "train"]:
-        for k in metrics:
-            mean = results["cv_scores"][v][k]["mean"]
-            std = results["cv_scores"][v][k]["std"]
-            if v == "test":
-                test_scores[k] = f"{mean:.2f} ± {std:.2f}"
-            else:
-                train_scores[k] = f"{mean:.2f} ± {std:.2f}"
-
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.scatter(y_true_train, y_pred_train, color="C0", label="Train", alpha=0.1)
     ax.scatter(y_true_test, y_pred_test, color="C1", label="Test")
@@ -32,10 +19,32 @@ def main_plot(data: DataType, results: MLResults, model: str):
     ax.set_ylabel("Predicted values")
     ax.legend(loc="upper right")
 
+    metrics = ["r2", "mse", "rmse", "mae"]
+    test_scores = {}
+    train_scores = {}
+
+    if "cv_scores" in results:
+        for v in ["test", "train"]:
+            for k in metrics:
+                mean = results["cv_scores"][v][k]["mean"]
+                std = results["cv_scores"][v][k]["std"]
+                if v == "test":
+                    test_scores[k] = f"{mean:.2f} ± {std:.2f}"
+                else:
+                    train_scores[k] = f"{mean:.2f} ± {std:.2f}"
+    else:
+        for k in metrics:
+            test_scores[k] = f'{results["test_stats"][k]:.2f}'
+            train_scores[k] = f'{results["train_stats"][k]:.2f}'
+
+    lg_ = ""
+    if "cv_fold" in results:
+        lg_ = f" ({results['cv_fold']}-fold CV)"
+
     # Add text annotations for metrics
     textstr_train = "\n".join(
         (
-            f"Train ({results['cv_fold']}-fold CV):",
+            f"Train{lg_}:",
             f'R²: {train_scores["r2"]}',
             f'MSE: {train_scores["mse"]}',
             f'RMSE: {train_scores["rmse"]}',
@@ -45,7 +54,7 @@ def main_plot(data: DataType, results: MLResults, model: str):
 
     textstr_test = "\n".join(
         (
-            f"Test ({results['cv_fold']}-fold CV):",
+            f"Test{lg_}:",
             f'R²: {test_scores["r2"]}',
             f'MSE: {test_scores["mse"]}',
             f'RMSE: {test_scores["rmse"]}',

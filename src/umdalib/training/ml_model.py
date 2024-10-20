@@ -1158,6 +1158,8 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             fig_dir.mkdir(parents=True)
 
         figname = pre_trained_file.stem + ".main_plot.pdf"
+        if "cv_scores" in results:
+            figname = pre_trained_file.stem + ".main_plot_cv.pdf"
         fig.savefig(fig_dir / figname, bbox_inches="tight")
 
     if args.learning_curve_train_sizes is not None and args.cross_validation:
