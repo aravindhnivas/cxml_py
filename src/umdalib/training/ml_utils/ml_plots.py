@@ -1,41 +1,7 @@
 from .ml_types import DataType, MLResults, LearningCurve
 import matplotlib.pyplot as plt
 from pathlib import Path as pt
-
-
-def format_mean_std(mean, std=None):
-    if std is None:
-        return f"{mean:.10f}".rstrip("0").rstrip(".")
-
-    if std > mean:
-        formatted_mean = f"{mean:.10f}".rstrip("0").rstrip(".")
-        formatted_std = f"{std:.10f}".rstrip("0").rstrip(".")
-        return f"{formatted_mean} ± {formatted_std}"
-
-    # Convert std to string and find first non-zero digit
-    std_str = f"{std:.16g}"
-    first_digit = next(c for c in std_str if c.isdigit() and c != "0")
-    print(f"std_str: {std_str}, first_digit: {first_digit}")
-
-    # Find position of first significant digit
-    if "e" in std_str:
-        std_val, exp = std_str.split("e")
-        sig_pos = std_val.index(first_digit) - std_val.index(".") - int(exp)
-    else:
-        sig_pos = std_str.index(first_digit) - std_str.index(".")
-
-    print(f"sig_pos: {sig_pos}, {max(sig_pos, 0)=}")
-
-    # Format mean to correct precision
-    formatted_mean = f"{mean:.{max(sig_pos, 0)}f}"
-
-    # Get uncertainty digit
-    if std > 1:
-        uncertainty = round(std)
-    else:
-        uncertainty = int(first_digit)
-
-    return f"{formatted_mean} ({uncertainty})"
+from sigfig import round
 
 
 def main_plot(data: DataType, results: MLResults, model: str):
@@ -64,17 +30,17 @@ def main_plot(data: DataType, results: MLResults, model: str):
                 mean = results["cv_scores"][v][k]["mean"]
                 std = results["cv_scores"][v][k]["std"]
                 if v == "test":
-                    test_scores[k] = f"{mean:.2f} ± {std:.2f}"
-                    # test_scores[k] = format_mean_std(mean, std)
+                    # test_scores[k] = f"{mean:.2f} ± {std:.2f}"
+                    test_scores[k] = round(mean, std, sep="external_brackets")
                 else:
-                    train_scores[k] = f"{mean:.2f} ± {std:.2f}"
-                    # train_scores[k] = format_mean_std(mean, std)
+                    # train_scores[k] = f"{mean:.2f} ± {std:.2f}"
+                    train_scores[k] = round(mean, std, sep="external_brackets")
     else:
         for k in metrics:
-            test_scores[k] = f'{results["test_stats"][k]:.2f}'
-            train_scores[k] = f'{results["train_stats"][k]:.2f}'
-            # test_scores[k] = format_mean_std(results["test_stats"][k])
-            # train_scores[k] = format_mean_std(results["train_stats"][k])
+            # test_scores[k] = f'{results["test_stats"][k]:.2f}'
+            # train_scores[k] = f'{results["train_stats"][k]:.2f}'
+            test_scores[k] = round(results["test_stats"][k], sep="external_brackets")
+            train_scores[k] = round(results["train_stats"][k], sep="external_brackets")
 
     lg_ = ""
     if "cv_fold" in results:
