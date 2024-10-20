@@ -764,11 +764,19 @@ def learn_curve(
     return
 
 
-def analyse_shap_values(estimator, X: np.ndarray):
+def analyse_shap_values(estimator, X: np.ndarray, model_name: str):
     time_start = perf_counter()
     logger.info("Analyzing SHAP values")
 
-    explainer = shap.TreeExplainer(estimator, X)
+    if model_name in ["gpr", "svr"]:
+        raise ValueError(f"SHAP values not supported for {model_name}")
+    elif model_name in ["rfr", "gbr", "xgboost", "lgbm", "catboost"]:
+        logger.info("Using TreeExplainer for SHAP values")
+        explainer = shap.TreeExplainer(estimator, X)
+    else:
+        logger.info("Using KernelExplainer for SHAP values")
+        explainer = shap.KernelExplainer(estimator.predict, X)
+    # explainer = shap.TreeExplainer(estimator, X)
     shap_values = explainer(X)
 
     # shap.summary_plot(shap_values, X, plot_type="bar")
@@ -1175,7 +1183,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         logger.info("Learning curve computed")
 
     if args.analyse_shapley_values:
-        analyse_shap_values(estimator, X_train)
+        analyse_shap_values(estimator, X_train, args.model)
 
     return results
 
