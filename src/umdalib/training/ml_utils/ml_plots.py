@@ -39,8 +39,8 @@ def main_plot(data: DataType, results: MLResults, model: str):
         for k in metrics:
             # test_scores[k] = f'{results["test_stats"][k]:.2f}'
             # train_scores[k] = f'{results["train_stats"][k]:.2f}'
-            test_scores[k] = round(results["test_stats"][k], sep="external_brackets")
-            train_scores[k] = round(results["train_stats"][k], sep="external_brackets")
+            test_scores[k] = round(results["test_stats"][k], sigfigs=2)
+            train_scores[k] = round(results["train_stats"][k], sigfigs=2)
 
     lg_ = ""
     if "cv_fold" in results:
