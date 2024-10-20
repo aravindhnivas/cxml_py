@@ -159,6 +159,7 @@ matplotlib==3.9.2
     # via catboost
     # via mol2vec
     # via seaborn
+    # via umdalib
 matplotlib-inline==0.1.7
     # via ipykernel
     # via ipython
@@ -200,6 +201,7 @@ numpy==1.26.4
     # via numba
     # via optuna
     # via pandas
+    # via patsy
     # via pyarrow
     # via rdkit
     # via scikit-learn
@@ -207,6 +209,7 @@ numpy==1.26.4
     # via seaborn
     # via shap
     # via sparse
+    # via statsmodels
     # via tensorboard
     # via torchmetrics
     # via umdalib
@@ -233,6 +236,7 @@ packaging==24.1
     # via pyinstaller-hooks-contrib
     # via pytorch-lightning
     # via shap
+    # via statsmodels
     # via tensorboard
     # via torchmetrics
 pandas==2.2.2
@@ -245,6 +249,7 @@ pandas==2.2.2
     # via mol2vec
     # via seaborn
     # via shap
+    # via statsmodels
     # via umdalib
 parso==0.8.4
     # via jedi
@@ -252,6 +257,8 @@ partd==1.4.2
     # via dask
 pathos==0.3.3
     # via mapply
+patsy==0.5.6
+    # via statsmodels
 pexpect==4.9.0
     # via ipython
 pillow==10.4.0
@@ -325,10 +332,12 @@ scipy==1.13.1
     # via scikit-learn
     # via shap
     # via sparse
+    # via statsmodels
     # via umdalib
     # via xgboost
 seaborn==0.13.2
     # via mol2vec
+    # via umdalib
 selfies==2.1.2
     # via astrochem-embedding
     # via umdalib
@@ -343,6 +352,7 @@ shap==0.46.0
 six==1.16.0
     # via asttokens
     # via catboost
+    # via patsy
     # via python-dateutil
     # via tensorboard
 slicer==0.0.8
@@ -358,6 +368,8 @@ sqlalchemy==2.0.35
     # via optuna
 stack-data==0.6.3
     # via ipython
+statsmodels==0.14.4
+    # via umdalib
 sympy==1.13.2
     # via torch
 tblib==3.0.0
