@@ -815,7 +815,15 @@ def analyse_shap_values(
     # explainer = shap.TreeExplainer(estimator, X)
     shap_values = explainer(X, check_additivity=False)
 
-    # shap.summary_plot(shap_values, X, plot_type="bar")
+    plt.close("all")
+    # plt.figure(figsize=(10, 5))
+    shap.summary_plot(shap_values, X, plot_type="bar", show=False)
+    fig_dir = pre_trained_loc / "figures"
+    if not fig_dir.exists():
+        fig_dir.mkdir(parents=True)
+    savefig_file = fig_dir / f"{pre_trained_file.stem}.shapley.pdf"
+    plt.savefig(savefig_file, bbox_inches="tight")
+    plt.close("all")
     # shap.summary_plot(shap_values, X)
 
     # Convert SHAP values to a numpy array
