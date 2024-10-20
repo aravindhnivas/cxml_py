@@ -820,20 +820,20 @@ def analyse_shap_values(
 
     # Convert SHAP values to a numpy array
     shap_values_array = shap_values.values
+    feature_names = [f"Feature {i}" for i in range(X.shape[1])]
 
     # Calculate mean absolute SHAP values for each feature
-    mean_abs_shap = np.abs(shap_values_array).mean(axis=0)
-    feature_names = [f"Feature {i}" for i in range(X.shape[1])]
+    # mean_abs_shap = np.abs(shap_values_array).mean(axis=0)
     # Create a dictionary with all necessary data
     data = {
         "feature_names": explainer.feature_names or feature_names,
         "shap_values": shap_values_array.tolist(),
         # "feature_values": X.tolist(),
-        "mean_abs_shap": mean_abs_shap.tolist(),
+        # "mean_abs_shap": mean_abs_shap.tolist(),
     }
 
     # log data shapes
-    logger.info(f"{shap_values_array.shape=}, {mean_abs_shap.shape=}")
+    # logger.info(f"{shap_values_array.shape=}, {mean_abs_shap.shape=}")
 
     shapley_savefile = pre_trained_loc / f"{pre_trained_file.stem}.shapley.json"
     safe_json_dump(data, shapley_savefile)
