@@ -813,7 +813,7 @@ def analyse_shap_values(
     explainer = get_shap_explainer(model_name, estimator, X)
 
     # explainer = shap.TreeExplainer(estimator, X)
-    shap_values = explainer(X)
+    shap_values = explainer(X, check_additivity=False)
 
     # shap.summary_plot(shap_values, X, plot_type="bar")
     # shap.summary_plot(shap_values, X)
@@ -1219,7 +1219,14 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         logger.info("Learning curve computed")
 
     if args.analyse_shapley_values:
-        analyse_shap_values(args.model, estimator, X)
+        sample_size = 1000  # If X is too large, take a random sample
+        if X.shape[0] > sample_size:
+            idx = np.random.choice(X.shape[0], sample_size, replace=False)
+            background_data = X[idx]
+        else:
+            background_data = X
+
+        analyse_shap_values(args.model, estimator, background_data)
 
     return results
 
