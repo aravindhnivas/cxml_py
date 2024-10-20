@@ -3,6 +3,29 @@ import matplotlib.pyplot as plt
 from pathlib import Path as pt
 
 
+def format_values(mean, std=None):
+    # Start with 2 decimal places
+    precision = 2
+    formatted_mean = f"{mean:.{precision}f}"
+    if std is not None:
+        formatted_std = f"{std:.{precision}f}"
+
+    # Increment precision until the mean is non-zero
+    while precision < 10 and (
+        # float(formatted_mean) == 0.0 or float(formatted_std) == 0
+        float(formatted_mean) == 0.0 or (std is not None and float(formatted_std) == 0)
+    ):  # Limit to 10 decimal places to avoid infinite loop
+        precision += 1
+        formatted_mean = f"{mean:.{precision}f}"
+        if std is not None:
+            formatted_std = f"{std:.{precision}f}"
+
+    if std is None:
+        return formatted_mean
+
+    return f"{formatted_mean} ± {formatted_std}"
+
+
 def main_plot(data: DataType, results: MLResults, model: str):
     y_true_test = data["test"]["y_true"]
     y_pred_test = data["test"]["y_pred"]
@@ -29,13 +52,17 @@ def main_plot(data: DataType, results: MLResults, model: str):
                 mean = results["cv_scores"][v][k]["mean"]
                 std = results["cv_scores"][v][k]["std"]
                 if v == "test":
-                    test_scores[k] = f"{mean:.2f} ± {std:.2f}"
+                    # test_scores[k] = f"{mean:.2f} ± {std:.2f}"
+                    test_scores[k] = format_values(mean, std)
                 else:
-                    train_scores[k] = f"{mean:.2f} ± {std:.2f}"
+                    # train_scores[k] = f"{mean:.2f} ± {std:.2f}"
+                    train_scores[k] = format_values(mean, std)
     else:
         for k in metrics:
-            test_scores[k] = f'{results["test_stats"][k]:.2f}'
-            train_scores[k] = f'{results["train_stats"][k]:.2f}'
+            # test_scores[k] = f'{results["test_stats"][k]:.2f}'
+            # train_scores[k] = f'{results["train_stats"][k]:.2f}'
+            test_scores[k] = format_values(results["test_stats"][k])
+            train_scores[k] = format_values(results["train_stats"][k])
 
     lg_ = ""
     if "cv_fold" in results:
