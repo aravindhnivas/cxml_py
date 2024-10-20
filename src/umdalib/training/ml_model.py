@@ -764,18 +764,54 @@ def learn_curve(
     return
 
 
-def analyse_shap_values(estimator, X: np.ndarray, model_name: str):
-    time_start = perf_counter()
-    logger.info("Analyzing SHAP values")
+def get_shap_explainer(model_name, estimator, X):
+    """
+    Select and return the appropriate SHAP explainer based on the model type.
 
+    Args:
+    model_name (str): The name of the model.
+    estimator: The trained model object.
+    X: The feature matrix used for explanation.
+
+    Returns:
+    shap.Explainer: The appropriate SHAP explainer object.
+    """
     if model_name in ["gpr", "svr"]:
         raise ValueError(f"SHAP values not supported for {model_name}")
     elif model_name in ["rfr", "gbr", "xgboost", "lgbm", "catboost"]:
         logger.info("Using TreeExplainer for SHAP values")
-        explainer = shap.TreeExplainer(estimator, X)
+        return shap.TreeExplainer(estimator, X)
+    elif model_name in ["linear_regression", "ridge", "lasso", "elastic_net"]:
+        logger.info("Using LinearExplainer for SHAP values")
+        return shap.LinearExplainer(estimator, X)
+    elif model_name == "knn":
+        logger.info("Using KernelExplainer for KNN SHAP values")
+
+        # KNN doesn't have a specific explainer, so we use KernelExplainer
+        # We need to define a prediction function that returns probabilities
+        def predict_proba(X):
+            return (
+                estimator.predict_proba(X)
+                if hasattr(estimator, "predict_proba")
+                else estimator.predict(X)
+            )
+
+        return shap.KernelExplainer(predict_proba, X)
     else:
-        logger.info("Using KernelExplainer for SHAP values")
-        explainer = shap.KernelExplainer(estimator.predict, X)
+        logger.info(f"Using default Explainer for {model_name}")
+        return shap.Explainer(estimator, X)
+
+
+def analyse_shap_values(
+    model_name: str,
+    estimator,
+    X: np.ndarray,
+):
+    time_start = perf_counter()
+    logger.info("Analyzing SHAP values")
+
+    explainer = get_shap_explainer(model_name, estimator, X)
+
     # explainer = shap.TreeExplainer(estimator, X)
     shap_values = explainer(X)
 
@@ -1183,7 +1219,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         logger.info("Learning curve computed")
 
     if args.analyse_shapley_values:
-        analyse_shap_values(estimator, X_train, args.model)
+        analyse_shap_values(args.model, estimator, X)
 
     return results
 
