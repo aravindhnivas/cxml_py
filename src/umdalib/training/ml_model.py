@@ -1433,7 +1433,7 @@ def main(args: Args):
         X_file = processed_vectors_file_dir / "processed.X.npy"
         y_file = processed_vectors_file_dir / "processed.y.npy"
 
-    if X_file.exists() and y_file.exists():
+    if not (yscaling or ytransformation) and X_file.exists() and y_file.exists():
         X = np.load(X_file, allow_pickle=True)
         y = np.load(y_file, allow_pickle=True)
         logger.info(f"Loaded processed X vectors from {X_file}")
