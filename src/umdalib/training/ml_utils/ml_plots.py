@@ -3,27 +3,39 @@ import matplotlib.pyplot as plt
 from pathlib import Path as pt
 
 
-def format_values(mean, std=None):
-    # Start with 2 decimal places
-    precision = 2
-    formatted_mean = f"{mean:.{precision}f}"
-    if std is not None:
-        formatted_std = f"{std:.{precision}f}"
-
-    # Increment precision until the mean is non-zero
-    while precision < 10 and (
-        # float(formatted_mean) == 0.0 or float(formatted_std) == 0
-        float(formatted_mean) == 0.0 or (std is not None and float(formatted_std) == 0)
-    ):  # Limit to 10 decimal places to avoid infinite loop
-        precision += 1
-        formatted_mean = f"{mean:.{precision}f}"
-        if std is not None:
-            formatted_std = f"{std:.{precision}f}"
-
+def format_mean_std(mean, std=None):
     if std is None:
-        return formatted_mean
+        return f"{mean:.10f}".rstrip("0").rstrip(".")
 
-    return f"{formatted_mean} ± {formatted_std}"
+    if std > mean:
+        formatted_mean = f"{mean:.10f}".rstrip("0").rstrip(".")
+        formatted_std = f"{std:.10f}".rstrip("0").rstrip(".")
+        return f"{formatted_mean} ± {formatted_std}"
+
+    # Convert std to string and find first non-zero digit
+    std_str = f"{std:.16g}"
+    first_digit = next(c for c in std_str if c.isdigit() and c != "0")
+    print(f"std_str: {std_str}, first_digit: {first_digit}")
+
+    # Find position of first significant digit
+    if "e" in std_str:
+        std_val, exp = std_str.split("e")
+        sig_pos = std_val.index(first_digit) - std_val.index(".") - int(exp)
+    else:
+        sig_pos = std_str.index(first_digit) - std_str.index(".")
+
+    print(f"sig_pos: {sig_pos}, {max(sig_pos, 0)=}")
+
+    # Format mean to correct precision
+    formatted_mean = f"{mean:.{max(sig_pos, 0)}f}"
+
+    # Get uncertainty digit
+    if std > 1:
+        uncertainty = round(std)
+    else:
+        uncertainty = int(first_digit)
+
+    return f"{formatted_mean} ({uncertainty})"
 
 
 def main_plot(data: DataType, results: MLResults, model: str):
@@ -52,17 +64,17 @@ def main_plot(data: DataType, results: MLResults, model: str):
                 mean = results["cv_scores"][v][k]["mean"]
                 std = results["cv_scores"][v][k]["std"]
                 if v == "test":
-                    # test_scores[k] = f"{mean:.2f} ± {std:.2f}"
-                    test_scores[k] = format_values(mean, std)
+                    test_scores[k] = f"{mean:.2f} ± {std:.2f}"
+                    # test_scores[k] = format_mean_std(mean, std)
                 else:
-                    # train_scores[k] = f"{mean:.2f} ± {std:.2f}"
-                    train_scores[k] = format_values(mean, std)
+                    train_scores[k] = f"{mean:.2f} ± {std:.2f}"
+                    # train_scores[k] = format_mean_std(mean, std)
     else:
         for k in metrics:
-            # test_scores[k] = f'{results["test_stats"][k]:.2f}'
-            # train_scores[k] = f'{results["train_stats"][k]:.2f}'
-            test_scores[k] = format_values(results["test_stats"][k])
-            train_scores[k] = format_values(results["train_stats"][k])
+            test_scores[k] = f'{results["test_stats"][k]:.2f}'
+            train_scores[k] = f'{results["train_stats"][k]:.2f}'
+            # test_scores[k] = format_mean_std(results["test_stats"][k])
+            # train_scores[k] = format_mean_std(results["train_stats"][k])
 
     lg_ = ""
     if "cv_fold" in results:
