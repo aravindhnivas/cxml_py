@@ -637,8 +637,9 @@ def compute_cv(
     cv_fold: int,
 ):
     logger.info("Cross-validating model")
+
+    estimator = clone(estimator)
     cv_fold = int(cv_fold)
-    # cv_scores = custom_cross_validate(estimator, X, y, cv=cv_fold, scoring=scoring)
 
     if yscaler or yscaling:
         logger.warning(
@@ -657,6 +658,7 @@ def compute_cv(
             "neg_root_mean_squared_error",
             "neg_mean_absolute_error",
         ]
+
         logger.info(f"{scoring=}")
         cross_validated_scores = cross_validate(
             estimator,
@@ -683,10 +685,6 @@ def compute_cv(
 
         nfold_cv_scores = read_cv_scores
 
-    # Save to JSON file
-    # with open(cv_scores_savefile, "w") as f:
-    #     json.dump(nfold_cv_scores, f, indent=4)
-    # logger.info(f"Data saved to {cv_scores_savefile}")
     safe_json_dump(nfold_cv_scores, cv_scores_savefile)
 
     return cv_scores
