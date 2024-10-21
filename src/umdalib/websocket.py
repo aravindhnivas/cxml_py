@@ -23,7 +23,7 @@ async def echo(websocket, pyfile: str) -> None:
             else:
                 message = json.loads(message)
                 # time.sleep(10)
-                await asyncio.sleep(10)
+                # await asyncio.sleep(10)
                 # try:
                 #     result = compute(pyfile, message)
                 #     await websocket.send(json.dumps(result))
