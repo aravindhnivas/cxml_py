@@ -13,7 +13,7 @@ def main_plot(data: DataType, results: MLResults, model: str):
     y_pred_train = data["train"]["y_pred"]
 
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.scatter(y_true_train, y_pred_train, color="C0", label="Train", alpha=0.1)
+    ax.scatter(y_true_train, y_pred_train, color="C0", label="Train", alpha=0.5)
     ax.scatter(y_true_test, y_pred_test, color="C1", label="Test")
     ax.plot(y_true_test, y_linear_fit_test, color="k")
     ax.set_xlabel("True values")
