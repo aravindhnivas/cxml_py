@@ -7,7 +7,7 @@ from umdalib.utils import logger
 stop = asyncio.Event()
 
 
-async def echo(websocket, pyfile):
+async def echo(websocket, pyfile: str) -> None:
     try:
         async for message in websocket:
             logger.info(f"Received: {message} from {pyfile}")
@@ -23,6 +23,7 @@ async def echo(websocket, pyfile):
             else:
                 message = json.loads(message)
                 # time.sleep(10)
+                await asyncio.sleep(10)
                 # try:
                 #     result = compute(pyfile, message)
                 #     await websocket.send(json.dumps(result))
@@ -35,7 +36,7 @@ async def echo(websocket, pyfile):
         logger.info("Connection closed.")
 
 
-async def start(wsport: int):
+async def start(wsport: int) -> None:
     # async with websockets.serve(echo, "localhost", wsport):
     #     await asyncio.Future()  # Run forever
     server = await websockets.serve(echo, "localhost", wsport)
@@ -51,7 +52,7 @@ class Args:
     wsport: int = 8765
 
 
-def main(args: Args):
+def main(args: Args) -> None:
     asyncio.run(start(args.wsport))
 
 
