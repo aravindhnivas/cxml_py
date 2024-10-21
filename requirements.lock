@@ -23,6 +23,8 @@ alembic==1.13.3
 altgraph==0.17.4
     # via macholib
     # via pyinstaller
+arrow==1.3.0
+    # via rq-dashboard
 astrochem-embedding @ git+https://github.com/aravindhnivas/astrochem_embedding.git@618411489faf687f34c345d8aedeb0405cbf0ad0
     # via umdalib
 asttokens==2.4.1
@@ -40,6 +42,7 @@ click==8.1.7
     # via dask
     # via distributed
     # via flask
+    # via rq
 cloudpickle==3.0.0
     # via dask
     # via dask-glm
@@ -77,6 +80,7 @@ filelock==3.15.4
     # via torch
 flask==3.0.3
     # via flask-cors
+    # via rq-dashboard
     # via umdalib
 flask-cors==5.0.0
     # via umdalib
@@ -91,8 +95,13 @@ fsspec==2024.6.1
     # via torch
 gensim==4.3.3
     # via mol2vec
+gevent==24.10.3
+    # via rq-gevent-worker
+    # via umdalib
 graphviz==0.20.3
     # via catboost
+greenlet==3.1.1
+    # via gevent
 grpcio==1.66.1
     # via tensorboard
 h5py==3.11.0
@@ -275,6 +284,7 @@ pyinstaller-hooks-contrib==2024.8
 pyparsing==3.1.4
     # via matplotlib
 python-dateutil==2.9.0.post0
+    # via arrow
     # via matplotlib
     # via pandas
 pytorch-lightning==2.4.0
@@ -287,6 +297,21 @@ pyyaml==6.0.2
     # via optuna
     # via pytorch-lightning
 rdkit==2024.3.5
+    # via umdalib
+redis==5.1.1
+    # via redis-sentinel-url
+    # via rq
+    # via rq-dashboard
+    # via umdalib
+redis-sentinel-url==1.0.1
+    # via rq-dashboard
+rq==1.16.2
+    # via rq-dashboard
+    # via rq-gevent-worker
+    # via umdalib
+rq-dashboard==0.8.0.2
+    # via umdalib
+rq-gevent-worker==0.1.6
     # via umdalib
 ruamel-yaml==0.18.6
     # via astrochem-embedding
@@ -323,6 +348,8 @@ setuptools==74.1.1
     # via pyinstaller-hooks-contrib
     # via tensorboard
     # via torch
+    # via zope-event
+    # via zope-interface
 shap==0.46.0
     # via umdalib
 sigfig==1.3.3
@@ -384,6 +411,8 @@ tqdm==4.66.5
 traitlets==5.14.3
     # via ipython
     # via matplotlib-inline
+types-python-dateutil==2.9.0.20241003
+    # via arrow
 typing-extensions==4.12.2
     # via alembic
     # via lightning-utilities
@@ -398,6 +427,8 @@ waitress==3.0.0
     # via umdalib
 wcwidth==0.2.13
     # via prompt-toolkit
+websockets==13.1
+    # via umdalib
 werkzeug==3.0.4
     # via flask
     # via tensorboard
@@ -409,3 +440,7 @@ yarl==1.9.8
     # via aiohttp
 zict==3.0.0
     # via distributed
+zope-event==5.0
+    # via gevent
+zope-interface==7.1.0
+    # via gevent

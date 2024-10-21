@@ -7,13 +7,17 @@ from multiprocessing import cpu_count
 from os import environ
 from pathlib import Path as pt
 from platform import system
-
+import traceback
 import joblib
 import numpy as np
 from gensim.models import word2vec
 from loguru import logger
 from psutil import virtual_memory
 import json
+
+import warnings
+from importlib import import_module, reload
+from time import perf_counter
 
 RAM_IN_GB = virtual_memory().total / 1024**3
 NPARTITIONS = cpu_count() * 5
@@ -95,7 +99,6 @@ def convert_to_json_compatible(obj):
     elif isinstance(obj, (int, float, str, bool, type(None))):
         return obj
     else:
-        # General handling for class objects
         if hasattr(obj, "__dict__"):
             return {
                 "__class__": obj.__class__.__name__,
@@ -141,3 +144,61 @@ def safe_json_dump(
     except Exception as e:
         logger.error(f"Error saving to {filename}: {e}")
         raise e
+
+
+class MyClass(object):
+    @logger.catch
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+
+def compute(pyfile: str, args: dict | str):
+    try:
+        logger.info(f"{pyfile=}")
+
+        log_dir = Paths().app_log_dir
+        args_file = log_dir / f"{pyfile}.args.json"
+        if isinstance(args, str):
+            args = json.loads(args)
+        safe_json_dump(args, args_file)
+        logger.info(f"\n[Received arguments]\n{json.dumps(args, indent=4)}")
+
+        args = MyClass(**args)
+
+        result_file = log_dir / f"{pyfile}.json"
+        if result_file.exists():
+            logger.warning(f"Removing existing file: {result_file}")
+            result_file.unlink()
+
+        with warnings.catch_warnings(record=True) as warnings_list:
+            pyfunction = import_module(f"umdalib.{pyfile}")
+            pyfunction = reload(pyfunction)
+
+            start_time = perf_counter()
+            result: dict = {}
+
+            if args:
+                result = pyfunction.main(args)
+            else:
+                result = pyfunction.main()
+
+            computed_time = f"{(perf_counter() - start_time):.2f} s"
+
+            if not result:
+                result = {"info": "No result returned from main() function"}
+
+            result["done"] = True
+            result["error"] = False
+            result["computed_time"] = computed_time
+            result["warnings"] = [str(warning.message) for warning in warnings_list]
+            logger.success(f"Computation completed successfully in {computed_time}")
+            logger.success(f"{result=}")
+            safe_json_dump(result, result_file)
+
+        logger.info(f"Finished main.py execution for {pyfile} in {computed_time}")
+        return result
+    except Exception:
+        error = traceback.format_exc(5)
+        logger.error(error)
+        raise

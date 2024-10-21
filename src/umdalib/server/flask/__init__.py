@@ -1,19 +1,59 @@
+# from importlib import import_module
 import sys
-import threading
-import traceback
-import warnings
-from importlib import import_module, reload
-from pathlib import Path as pt
-from time import perf_counter
 
-import numpy as np
+# import threading
+import traceback
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from umdalib.utils import logger, Paths, safe_json_dump
+from umdalib.utils import logger, Paths, compute
 
+from redis import Redis
+from rq import Queue
+from rq.job import Job
+
+import rq_dashboard
+
+# flask app
 log_dir = Paths().app_log_dir
 app = Flask(__name__)
 CORS(app)
+
+#
+# app.conf.worker_pool = "solo"
+
+# Redis configuration
+app.config["REDIS_URL"] = "redis://localhost:6379/0"
+# redis_conn = Redis()
+redis_conn = Redis.from_url(app.config["REDIS_URL"])
+queue = Queue(connection=redis_conn)
+
+# Configure and initialize RQ Dashboard
+app.config.from_object(rq_dashboard.default_settings)
+app.config["RQ_DASHBOARD_REDIS_URL"] = app.config["REDIS_URL"]
+rq_dashboard.web.setup_rq_connection(app)
+app.register_blueprint(rq_dashboard.blueprint, url_prefix="/rq")
+
+
+@app.route("/job_status/<job_id>", methods=["GET"])
+def get_job_status(job_id):
+    job = Job.fetch(job_id, connection=redis_conn)
+    return jsonify({"status": job.get_status()}), 200
+
+
+@app.route("/job_result/<job_id>", methods=["GET"])
+def get_job_result(job_id):
+    job = Job.fetch(job_id, connection=redis_conn)
+    if job.is_finished:
+        return jsonify({"result": job.result}), 200
+    else:
+        return jsonify({"message": "Job not completed yet"}), 202
+
+
+@app.route("/cancel_job/<job_id>", methods=["POST"])
+def cancel_job(job_id):
+    job = Job.fetch(job_id, connection=redis_conn)
+    job.cancel()
+    return jsonify({"message": "Job cancelled"}), 200
 
 
 @app.errorhandler(Exception)
@@ -33,10 +73,6 @@ def home():
     return "Server running: umdapy"
 
 
-# Module cache
-module_cache = {}
-
-
 class MyClass(object):
     @logger.catch
     def __init__(self, **kwargs):
@@ -44,93 +80,47 @@ class MyClass(object):
             setattr(self, key, value)
 
 
-def preload_modules():
-    """Preload frequently used modules."""
-    frequently_used_modules = [
-        # Add your frequently used module names here
-        "training.read_data",
-        "training.check_duplicates_on_x_column",
-        "training.embedd_data",
-        "training.ml_prediction",
-    ]
-    for module_name in frequently_used_modules:
-        try:
-            module = import_module(f"umdalib.{module_name}")
-            module_cache[module_name] = module
-            logger.info(f"Preloaded module: {module_name}")
-        except ImportError as e:
-            logger.error(f"Failed to preload module {module_name}: {e}")
+start_queue_mode = False
+
+# Module cache
+# module_cache = {}
 
 
-def warm_up():
-    """Perform warm-up tasks."""
-    logger.info("Starting warm-up phase...")
-    preload_modules()
-    # Add any other initialization tasks here
-    logger.info("Warm-up phase completed.")
+# def preload_modules():
+#     """Preload frequently used modules."""
+#     frequently_used_modules = [
+#         # Add your frequently used module names here
+#         "training.read_data",
+#         "training.check_duplicates_on_x_column",
+#         "training.embedd_data",
+#         "training.ml_prediction",
+#     ]
+#     for module_name in frequently_used_modules:
+#         try:
+#             module = import_module(f"umdalib.{module_name}")
+#             module_cache[module_name] = module
+#             logger.info(f"Preloaded module: {module_name}")
+#         except ImportError as e:
+#             logger.error(f"Failed to preload module {module_name}: {e}")
 
 
-# Start warm-up in a separate thread
-threading.Thread(target=warm_up, daemon=True).start()
+# def warm_up():
+#     """Perform warm-up tasks."""
+#     logger.info("Starting warm-up phase...")
+#     preload_modules()
+#     # Add any other initialization tasks here
+#     logger.info("Warm-up phase completed.")
 
 
-@app.route("/", methods=["POST"])
-def compute():
+# # Start warm-up in a separate thread
+# threading.Thread(target=warm_up, daemon=True).start()
+
+
+@app.route("/enqueue_job", methods=["POST"])
+def enqueue_job():
     logger.info("fetching request")
-
-    try:
-        startTime = perf_counter()
-        data = request.get_json()
-        pyfile = data["pyfile"]
-
-        args_file = log_dir / f"{pyfile}.args.json"
-        # with open(args_file, "w") as f:
-        #     json.dump(data["args"], f, indent=4)
-        #     logger.success(f"Result saved to {args_file}")
-        safe_json_dump(data["args"], args_file)
-        args = MyClass(**data["args"])
-
-        logger.info(f"{pyfile=}\n{args=}")
-
-        with warnings.catch_warnings(record=True) as warnings_list:
-            # Use the module cache
-            if pyfile in module_cache:
-                pyfunction = module_cache[pyfile]
-            else:
-                pyfunction = import_module(f"umdalib.{pyfile}")
-                module_cache[pyfile] = pyfunction
-
-            # pyfunction = import_module(f"umdalib.{pyfile}")
-            # Always reload the module to ensure we have the latest version
-            pyfunction = reload(pyfunction)
-            output = pyfunction.main(args)
-
-            if warnings_list:
-                logger.warning(f"Warnings: {warnings_list}")
-                output["warnings"] = [str(warning.message) for warning in warnings_list]
-        computed_time = perf_counter() - startTime
-        if not output:
-            output = {"info": "No result returned from main() function"}
-
-        output["computed_time"] = f"{computed_time:.2f} s"
-        output["done"] = True
-        output["error"] = False
-        logger.info(f"function execution done in {computed_time:.2f} s")
-
-        if isinstance(output, dict):
-            logger.success("Computation done!!")
-
-            for k, v in output.items():
-                if isinstance(v, np.ndarray):
-                    output[k] = v.tolist()
-
-                if isinstance(v, pt):
-                    output[k] = str(v)
-
-            logger.info(f"Returning received to client\n{output=}")
-            return jsonify(output)
-
-    except Exception:
-        error = traceback.format_exc(5)
-        logger.error(error)
-        raise
+    data = request.get_json()
+    # job = queue.enqueue(compute, data["pyfile"], data["args"])
+    # return jsonify({"job_id": job.id}), 200
+    output = compute(data["pyfile"], data["args"])
+    return jsonify(output), 200
