@@ -19,7 +19,7 @@ def main(args: Args):
             app.run(port=args.port, debug=True)
             logger.warning("Server running in debug mode")
             return
-
+        # Make sure to log "Server running"
         logger.info("Server running in production mode")
         # raise NotImplementedError("Production mode not implemented yet")
         waitress.serve(app, port=args.port, url_scheme="http")
@@ -27,4 +27,5 @@ def main(args: Args):
         logger.error(e)
         raise
     finally:
+        # Make sure to log "Server stopped"
         logger.warning("Server stopped")
