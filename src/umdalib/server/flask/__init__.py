@@ -1,30 +1,22 @@
-# from importlib import import_module
 import sys
-
-# import threading
 import traceback
-from flask import Flask, jsonify, request, render_template
-from flask_cors import CORS
-from umdalib.utils import logger, Paths, compute
 
+import rq_dashboard
+from flask import Flask, jsonify, render_template, request
+from flask_cors import CORS
 from redis import Redis
 from rq import Queue
 from rq.job import Job
 
-import rq_dashboard
-from pathlib import Path as pt
+from umdalib.utils import Paths, compute, logger
 
 # flask app
 log_dir = Paths().app_log_dir
 app = Flask(__name__)
 CORS(app)
 
-#
-# app.conf.worker_pool = "solo"
-
 # Redis configuration
 app.config["REDIS_URL"] = "redis://localhost:6379/0"
-# redis_conn = Redis()
 redis_conn = Redis.from_url(app.config["REDIS_URL"])
 queue = Queue(connection=redis_conn)
 
@@ -33,6 +25,21 @@ app.config.from_object(rq_dashboard.default_settings)
 app.config["RQ_DASHBOARD_REDIS_URL"] = app.config["REDIS_URL"]
 rq_dashboard.web.setup_rq_connection(app)
 app.register_blueprint(rq_dashboard.blueprint, url_prefix="/rq")
+
+
+def long_computation(pyfile: str, args: dict | str):
+    result = compute(pyfile, args)
+    return result
+
+
+@app.route("/enqueue_job", methods=["POST"])
+def enqueue_job():
+    logger.info("fetching request")
+    data = request.get_json()
+    job = queue.enqueue(long_computation, data["pyfile"], data["args"])
+    return jsonify({"job_id": job.id}), 202
+    # output = compute(data["pyfile"], data["args"])
+    # return jsonify(output), 200
 
 
 @app.route("/job_status/<job_id>", methods=["GET"])
@@ -80,14 +87,11 @@ def home():
     return render_template("index.html")
 
 
-class MyClass(object):
-    @logger.catch
-    def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-
-start_queue_mode = False
+# class MyClass(object):
+#     @logger.catch
+#     def __init__(self, **kwargs):
+#         for key, value in kwargs.items():
+#             setattr(self, key, value)
 
 # Module cache
 # module_cache = {}
@@ -121,13 +125,3 @@ start_queue_mode = False
 
 # # Start warm-up in a separate thread
 # threading.Thread(target=warm_up, daemon=True).start()
-
-
-@app.route("/enqueue_job", methods=["POST"])
-def enqueue_job():
-    logger.info("fetching request")
-    data = request.get_json()
-    # job = queue.enqueue(compute, data["pyfile"], data["args"])
-    # return jsonify({"job_id": job.id}), 200
-    output = compute(data["pyfile"], data["args"])
-    return jsonify(output), 200
