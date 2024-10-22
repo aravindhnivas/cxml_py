@@ -3,7 +3,7 @@ import sys
 
 # import threading
 import traceback
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 from umdalib.utils import logger, Paths, compute
 
@@ -12,6 +12,7 @@ from rq import Queue
 from rq.job import Job
 
 import rq_dashboard
+from pathlib import Path as pt
 
 # flask app
 log_dir = Paths().app_log_dir
@@ -69,8 +70,14 @@ def handle_exception(e):
 
 
 @app.route("/umdapy")
-def home():
+def umdapy():
     return "Server running: umdapy"
+
+
+@app.route("/")
+def home():
+    # return "Python server running for UMDA_UI"
+    return render_template("index.html")
 
 
 class MyClass(object):

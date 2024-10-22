@@ -18,6 +18,13 @@ hiddenimports = [
 icons_dir = pt(umdalib.__file__).parent / "../icons"
 icons_files = [(str(file.resolve()), "icons") for file in icons_dir.glob("*")]
 
+# include templates folder in umdalib.server.flask
+templates_dir = pt(umdalib.__file__).parent / "server/flask/templates"
+templates_files = [
+    (str(file.resolve()), "umdalib/server/flask/templates")
+    for file in templates_dir.glob("*")
+]
+
 distributed_datas = [(str(distributed.resolve()), "distributed")]
 dask_datas = [(str(dask.resolve()), "dask")]
 
@@ -45,6 +52,7 @@ version_datas = [(str(umdalib_version.resolve()), "umdalib")]
 
 datas = (
     icons_files
+    + templates_files
     + distributed_datas
     + dask_datas
     + distributed_http_datas
