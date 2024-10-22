@@ -3,9 +3,7 @@ import sys
 import subprocess
 from redis import Redis
 from rq import Worker, Queue, Connection
-import gevent.monkey
 
-gevent.monkey.patch_all()
 listen = ["default"]
 
 redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
