@@ -7,6 +7,12 @@ from umdalib.utils import logger
 stop = asyncio.Event()
 
 
+async def long_running_computation(data):
+    # Simulate a long-running computation
+    await asyncio.sleep(10)  # Replace with actual computation
+    return {"result": f"Processed {data}"}
+
+
 async def echo(websocket, pyfile: str) -> None:
     try:
         async for message in websocket:
@@ -21,24 +27,23 @@ async def echo(websocket, pyfile: str) -> None:
                 await websocket.send("Server is shutting down.")
                 break
             else:
-                message = json.loads(message)
-                # time.sleep(10)
-                # await asyncio.sleep(10)
-                # try:
-                #     result = compute(pyfile, message)
-                #     await websocket.send(json.dumps(result))
-                # except Exception as e:
-                #     logger.error(f"Error: {e}")
-                #     message["error"] = str(e)
-                await websocket.send(json.dumps(message))
-                logger.info(f"Sent: {message}")
+                data = json.loads(message)
+                await websocket.send(json.dumps(data))
+                logger.info(f"Sent: {data}")
+                # result = await long_running_computation(data)
+                # await websocket.send(json.dumps(result))
+                # logger.info(f"Sent: {result}")
+
+    except json.JSONDecodeError:
+        await websocket.send("Invalid JSON received.")
+    except Exception as e:
+        logger.error(f"Error processing message: {e}")
+        await websocket.send("Error processing message.")
     finally:
         logger.info("Connection closed.")
 
 
 async def start(wsport: int) -> None:
-    # async with websockets.serve(echo, "localhost", wsport):
-    #     await asyncio.Future()  # Run forever
     server = await websockets.serve(echo, "localhost", wsport)
     logger.info(f"WebSocket server started on ws://localhost:{wsport}")
     await stop.wait()
