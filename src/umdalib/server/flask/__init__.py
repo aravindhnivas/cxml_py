@@ -1,19 +1,32 @@
 import sys
 import traceback
-
 import rq_dashboard
 from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 from redis import Redis
 from rq import Queue
 from rq.job import Job
-
+from flask_socketio import SocketIO
 from umdalib.utils import Paths, compute, logger
+import uuid
+import json
+
 
 # flask app
 log_dir = Paths().app_log_dir
 app = Flask(__name__)
-CORS(app)
+
+# CORS(app, resources={r"/*": {"origins": "http://localhost:1420"}})
+# socketio = SocketIO(app, cors_allowed_origins="http://localhost:1420")
+CORS(app, resources={r"/*": {"origins": "*"}})
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    # logger=True,
+    # engineio_logger=True,
+    # async_mode="threading",
+    async_mode="eventlet",
+)
 
 # Redis configuration
 app.config["REDIS_URL"] = "redis://localhost:6379/0"
@@ -26,20 +39,97 @@ app.config["RQ_DASHBOARD_REDIS_URL"] = app.config["REDIS_URL"]
 rq_dashboard.web.setup_rq_connection(app)
 app.register_blueprint(rq_dashboard.blueprint, url_prefix="/rq")
 
+# Track connected clients
+connected_clients = set()
 
-def long_computation(pyfile: str, args: dict | str):
-    result = compute(pyfile, args)
-    return result
+
+@socketio.on("connect")
+def handle_connect():
+    client_id = request.sid
+    connected_clients.add(client_id)
+    logger.info(f"Client connected: {client_id}")
+    # Emit directly to the connected client
+    socketio.emit(
+        "connection_response",
+        {"status": "connected", "client_id": client_id},
+        room=client_id,
+    )
+
+
+@socketio.on("disconnect")
+def handle_disconnect():
+    client_id = request.sid
+    if client_id in connected_clients:
+        connected_clients.remove(client_id)
+    logger.info(f"Client disconnected: {client_id}")
+
+
+def emit_to_all_clients(event_type, data):
+    """Helper function to emit to all connected clients"""
+    logger.info(f"Emitting {event_type} to {len(connected_clients)} clients")
+    for client_id in connected_clients:
+        try:
+            socketio.emit(event_type, data, room=client_id)
+            logger.info(f"Emitted {event_type} to client {client_id}")
+        except Exception as e:
+            logger.error(f"Error emitting to client {client_id}: {str(e)}")
+
+
+def handle_worker_message(message):
+    """Handle messages from workers through Redis pubsub"""
+    try:
+        if message and message.get("type") == "message":
+            data = json.loads(message["data"])
+            event_type = data.get("event")
+            if event_type:
+                logger.info(f"Broadcasting event: {event_type}")
+                # Use the helper function to emit to all clients
+                emit_to_all_clients(event_type, data["payload"])
+    except Exception as e:
+        logger.error(f"Error handling worker message: {str(e)}")
+        logger.error(traceback.format_exc())
+
+
+def pubsub_listener():
+    """Listen for messages from workers"""
+    pubsub = redis_conn.pubsub()
+    pubsub.subscribe("job_channel")
+    logger.info("Pubsub listener started")
+
+    while True:
+        try:
+            message = pubsub.get_message(timeout=1.0)
+            if message:
+                logger.info(f"Received message from Redis: {message}")
+                socketio.start_background_task(handle_worker_message, message)
+            eventlet.sleep(0.1)  # Use eventlet sleep
+        except Exception as e:
+            logger.error(f"Error in pubsub listener: {str(e)}")
+            eventlet.sleep(1)
 
 
 @app.route("/enqueue_job", methods=["POST"])
 def enqueue_job():
-    logger.info("fetching request")
-    data = request.get_json()
-    job = queue.enqueue(long_computation, data["pyfile"], data["args"])
-    return jsonify({"job_id": job.id}), 202
-    # output = compute(data["pyfile"], data["args"])
-    # return jsonify(output), 200
+    try:
+        data = request.get_json()
+        job_id = f"job_{uuid.uuid4().hex}"
+
+        # Enqueue the job
+        job = queue.enqueue(
+            "umdalib.worker.long_computation",
+            job_id,
+            data["pyfile"],
+            data["args"],
+            job_id=job_id,
+        )
+
+        # Emit job queued event to all clients
+        emit_to_all_clients("job_queued", {"job_id": job.id, "status": "queued"})
+
+        return jsonify({"job_id": job.id}), 202
+    except Exception as e:
+        logger.error(f"Error enqueueing job: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/job_status/<job_id>", methods=["GET"])
@@ -85,6 +175,17 @@ def umdapy():
 def home():
     # return "Python server running for UMDA_UI"
     return render_template("index.html")
+
+
+@app.route("/compute", methods=["POST"])
+def run_compute():
+    try:
+        data = request.get_json()
+        result = compute(data["pyfile"], data["args"])
+        return jsonify(result), 200
+    except Exception as e:
+        logger.error(f"Error enqueueing job: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 
 # class MyClass(object):

@@ -44,6 +44,8 @@ dependencies = [
     "rq>=1.16.2",
     "websockets>=13.1",
     "rq-dashboard>=0.8.0.2",
+    "flask-socketio>=5.4.1",
+    "eventlet>=0.37.0",
 ]
 
 

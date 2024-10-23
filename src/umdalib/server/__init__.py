@@ -1,8 +1,5 @@
 from dataclasses import dataclass
-
-import waitress
-
-from umdalib.server.flask import app
+from umdalib.server.flask import app, socketio, pubsub_listener
 from umdalib.utils import logger
 
 
@@ -15,17 +12,17 @@ class Args:
 def main(args: Args):
     try:
         logger.info(f"Starting server on port {args.port}")
+        logger.info("Server running")
         if args.debug:
-            app.run(port=args.port, debug=True)
-            logger.warning("Server running in debug mode")
-            return
-        # Make sure to log "Server running"
-        logger.info("Server running in production mode")
-        # raise NotImplementedError("Production mode not implemented yet")
-        waitress.serve(app, port=args.port, url_scheme="http")
+            logger.warning("Debug mode is enabled")
+
+        # Start pubsub listener
+        _background_thread = socketio.start_background_task(pubsub_listener)
+        socketio.run(
+            app, host="localhost", port=args.port, debug=args.debug, log_output=False
+        )
     except Exception as e:
         logger.error(e)
         raise
     finally:
-        # Make sure to log "Server stopped"
         logger.warning("Server stopped")

@@ -33,6 +33,8 @@ asttokens==2.4.1
     # via stack-data
 attrs==24.2.0
     # via aiohttp
+bidict==0.23.1
+    # via python-socketio
 blinker==1.8.2
     # via flask
 bottle==0.13.1
@@ -80,15 +82,22 @@ dill==0.3.9
 distributed==2024.8.2
     # via dask-glm
     # via dask-ml
+dnspython==2.7.0
+    # via eventlet
+eventlet==0.37.0
+    # via umdalib
 executing==2.1.0
     # via stack-data
 filelock==3.15.4
     # via torch
 flask==3.0.3
     # via flask-cors
+    # via flask-socketio
     # via rq-dashboard
     # via umdalib
 flask-cors==5.0.0
+    # via umdalib
+flask-socketio==5.4.1
     # via umdalib
 fonttools==4.53.1
     # via matplotlib
@@ -103,8 +112,12 @@ gensim==4.3.3
     # via mol2vec
 graphviz==0.20.3
     # via catboost
+greenlet==3.1.1
+    # via eventlet
 grpcio==1.66.1
     # via tensorboard
+h11==0.14.0
+    # via wsproto
 h5py==3.11.0
     # via umdalib
 idna==3.8
@@ -303,6 +316,10 @@ python-dateutil==2.9.0.post0
     # via jupyter-client
     # via matplotlib
     # via pandas
+python-engineio==4.10.1
+    # via python-socketio
+python-socketio==5.11.4
+    # via flask-socketio
 pytorch-lightning==2.4.0
     # via astrochem-embedding
 pytz==2024.1
@@ -368,6 +385,8 @@ shap==0.46.0
     # via umdalib
 sigfig==1.3.3
     # via umdalib
+simple-websocket==1.1.0
+    # via python-engineio
 six==1.16.0
     # via asttokens
     # via catboost
@@ -454,6 +473,8 @@ werkzeug==3.0.4
     # via tensorboard
 wrapt==1.16.0
     # via smart-open
+wsproto==1.2.0
+    # via simple-websocket
 xgboost==2.1.1
     # via umdalib
 yarl==1.9.8

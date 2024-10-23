@@ -161,6 +161,9 @@ def compute(pyfile: str, args: dict | str):
         args_file = log_dir / f"{pyfile}.args.json"
         if isinstance(args, str):
             args = json.loads(args)
+        if not isinstance(args, dict):
+            args = {}
+
         safe_json_dump(args, args_file)
         logger.info(f"\n[Received arguments]\n{json.dumps(args, indent=4)}")
 

@@ -1,26 +1,41 @@
-import os
-import sys
-import subprocess
+import json
 from redis import Redis
-from rq import Worker, Queue, Connection
+from umdalib.utils import compute, logger
 
-listen = ["default"]
+redis_conn = Redis.from_url("redis://localhost:6379/0")
 
-redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
 
-# Disable fork safety
-# os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = "YES"
+def publish_event(event_type, payload):
+    """Publish event to Redis channel"""
+    try:
+        message = {"event": event_type, "payload": payload}
+        redis_conn.publish("job_channel", json.dumps(message))
+    except Exception as e:
+        logger.error(f"Error publishing event: {str(e)}")
 
-# Check if the environment variable is set
-if os.getenv("OBJC_DISABLE_INITIALIZE_FORK_SAFETY") != "YES":
-    # Set the environment variable and restart the script
-    os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = "YES"
-    subprocess.run([sys.executable] + sys.argv)
-    sys.exit()
 
-conn = Redis.from_url(redis_url)
+def long_computation(job_id: str, pyfile: str, args: dict | str):
+    """Worker function that performs computation and publishes events"""
+    try:
+        # Publish job started event
+        publish_event("job_started", {"job_id": job_id, "status": "started"})
 
-if __name__ == "__main__":
-    with Connection(conn):
-        worker = Worker(map(Queue, listen))
-        worker.work()
+        # Perform computation
+        result = compute(pyfile, args)
+
+        # Publish result
+        publish_event(
+            "job_result", {"job_id": job_id, "result": result, "status": "completed"}
+        )
+
+        return result
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(f"Error in computation for job {job_id}: {error_msg}")
+
+        # Publish error event
+        publish_event(
+            "job_error", {"job_id": job_id, "error": error_msg, "status": "error"}
+        )
+
+        raise
