@@ -1,11 +1,12 @@
-import os
-import sys
-import subprocess
-from redis import Redis
-from rq import Worker, Queue, Connection
 import multiprocessing
-from umdalib.logger import logger
+import os
+import subprocess
+import sys
 
+from redis import Redis
+from rq import Connection, Queue, Worker
+
+from umdalib.logger import logger
 
 # Check if the environment variable is set
 if os.getenv("OBJC_DISABLE_INITIALIZE_FORK_SAFETY") != "YES":
@@ -28,7 +29,8 @@ def main():
 
     logger.info("Starting worker")
     # Get the number of CPU cores
-    num_workers = multiprocessing.cpu_count()
+    ncpus = multiprocessing.cpu_count()
+    num_workers = max(2, ncpus // 2)
 
     # Create a pool of workers
     processes: list[multiprocessing.Process] = []
