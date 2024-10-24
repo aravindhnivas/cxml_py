@@ -23,11 +23,16 @@ def create_worker(redis_url: str, listen: list[str] = ["default"]):
         worker.work(with_scheduler=True)
 
 
-def main():
-    listen = ["default"]
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+class Args:
+    redis_port: int = 6379
+    listen: list[str] = ["default"]
 
-    logger.info("Starting worker")
+
+def main(args: Args):
+    listen = args.listen
+    redis_url = f"redis://localhost:{args.redis_port}"
+    logger.info(f"Connecting to Redis at {redis_url} and listening to {listen}")
+
     # Get the number of CPU cores
     ncpus = multiprocessing.cpu_count()
     num_workers = max(2, ncpus // 2)
@@ -56,11 +61,5 @@ def main():
             process.join()
 
 
-# conn = Redis.from_url(redis_url)
-# if __name__ == "__main__":
-#     with Connection(conn):
-#         worker = Worker(map(Queue, listen))
-#         worker.work()
-
 if __name__ == "__main__":
-    main()
+    main(Args())
