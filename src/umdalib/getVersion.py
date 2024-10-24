@@ -1,10 +1,7 @@
 import sys
 from multiprocessing import cpu_count
-
 from umdalib import __version__ as umdalib_version
 from umdalib.utils import NPARTITIONS, RAM_IN_GB
-
-# from umdalib.utils import logger
 
 
 def main(args=None):
