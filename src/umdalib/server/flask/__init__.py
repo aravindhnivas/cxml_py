@@ -123,6 +123,9 @@ def enqueue_job():
             data["pyfile"],
             data["args"],
             job_id=job_id,
+            job_timeout="24h",  # Timeout set here during enqueueing
+            result_ttl=500,
+            failure_ttl=48 * 60 * 60,
         )
 
         # Emit job queued event to all clients
