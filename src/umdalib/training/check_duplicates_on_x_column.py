@@ -4,7 +4,7 @@ from pathlib import Path as pt
 import pandas as pd
 
 from umdalib.training.read_data import read_as_ddf
-from umdalib.utils import logger
+from umdalib.logger import logger
 
 
 @dataclass

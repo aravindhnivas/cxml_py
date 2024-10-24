@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from umdalib.utils import logger
+from umdalib.logger import logger
 from umdalib.training.read_data import read_as_ddf
 
 

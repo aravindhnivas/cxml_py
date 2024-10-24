@@ -9,8 +9,8 @@ from dask.diagnostics import ProgressBar
 from dask.distributed import Client
 from joblib import dump, parallel_backend
 from sklearn.pipeline import make_pipeline
-
-from umdalib.utils import load_model, logger
+from umdalib.utils.computation import load_model
+from umdalib.logger import logger
 
 from .embedd_data import smi_to_vec_dict
 

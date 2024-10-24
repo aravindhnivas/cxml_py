@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from dask.diagnostics import ProgressBar
 
-from umdalib.utils import logger
+from umdalib.logger import logger
 
 NPARTITIONS = cpu_count() * 5
 

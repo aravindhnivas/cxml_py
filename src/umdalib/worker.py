@@ -1,6 +1,7 @@
 import json
 from redis import Redis
-from umdalib.utils import compute, logger
+from umdalib.utils.computation import compute
+from umdalib.logger import logger
 
 redis_conn = Redis.from_url("redis://localhost:6379/0")
 

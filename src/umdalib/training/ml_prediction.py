@@ -7,7 +7,7 @@ import pandas as pd
 from joblib import load
 
 from umdalib.training.embedd_data import get_smi_to_vec
-from umdalib.utils import logger
+from umdalib.logger import logger
 
 
 @dataclass

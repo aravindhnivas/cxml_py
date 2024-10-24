@@ -4,7 +4,7 @@ from pathlib import Path as pt
 from loguru import logger
 from mol2vec import features
 
-from umdalib.utils import Paths
+from umdalib.logger import Paths
 
 logger.add(
     Paths().app_log_dir / "mol2vec.log",

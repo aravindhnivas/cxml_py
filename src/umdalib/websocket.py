@@ -2,7 +2,7 @@ import asyncio
 from dataclasses import dataclass
 import websockets
 import json
-from umdalib.utils import logger
+from umdalib.logger import logger
 
 stop = asyncio.Event()
 

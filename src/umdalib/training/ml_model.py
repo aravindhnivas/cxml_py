@@ -34,7 +34,8 @@ from tqdm import tqdm
 
 from umdalib.training.read_data import read_as_ddf
 from umdalib.training.utils import Yscalers, get_transformed_data
-from umdalib.utils import Paths, safe_json_dump
+from umdalib.logger import Paths
+from umdalib.utils.json import safe_json_dump
 
 from .ml_utils.ml_plots import learning_curve_plot, main_plot
 from .ml_utils.ml_types import DataType, LearningCurve, LearningCurveData, MLResults

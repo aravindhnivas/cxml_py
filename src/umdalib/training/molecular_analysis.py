@@ -11,9 +11,8 @@ from rdkit import Chem, RDLogger
 from rdkit.Chem import Descriptors
 
 from umdalib.training.read_data import read_as_ddf
-from umdalib.utils import logger, safe_json_dump
-
-# from utils import loc
+from umdalib.utils.json import safe_json_dump
+from umdalib.logger import logger
 
 RDLogger.DisableLog("rdApp.*")
 

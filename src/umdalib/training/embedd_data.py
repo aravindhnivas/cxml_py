@@ -9,7 +9,9 @@ from dask.diagnostics import ProgressBar
 from mol2vec import features
 from rdkit import Chem
 from umdalib.training.read_data import read_as_ddf
-from umdalib.utils import load_model, logger, safe_json_dump
+from umdalib.utils.computation import load_model
+from umdalib.utils.json import safe_json_dump
+from umdalib.logger import logger
 
 import mapply
 

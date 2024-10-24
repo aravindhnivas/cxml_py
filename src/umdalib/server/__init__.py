@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from umdalib.server.flask import app, socketio, pubsub_listener
-from umdalib.utils import logger
+from umdalib.logger import logger
 
 
 @dataclass

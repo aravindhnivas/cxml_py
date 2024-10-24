@@ -11,7 +11,8 @@ from redis import Redis  # noqa: E402
 from rq import Queue  # noqa: E402
 from rq.job import Job  # noqa: E402
 from flask_socketio import SocketIO  # noqa: E402
-from umdalib.utils import Paths, compute, logger  # noqa: E402
+from umdalib.utils.computation import compute  # noqa: E402
+from umdalib.logger import Paths, logger  # noqa: E402
 import uuid  # noqa: E402
 import json  # noqa: E402
 

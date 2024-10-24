@@ -3,10 +3,9 @@ import sys
 import subprocess
 from redis import Redis
 from rq import Worker, Queue, Connection
+import multiprocessing
+from umdalib.logger import logger
 
-listen = ["default"]
-
-redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
 
 # Check if the environment variable is set
 if os.getenv("OBJC_DISABLE_INITIALIZE_FORK_SAFETY") != "YES":
@@ -15,9 +14,51 @@ if os.getenv("OBJC_DISABLE_INITIALIZE_FORK_SAFETY") != "YES":
     subprocess.run([sys.executable] + sys.argv)
     sys.exit()
 
-conn = Redis.from_url(redis_url)
 
-if __name__ == "__main__":
+def create_worker(redis_url: str, listen: list[str] = ["default"]):
+    conn = Redis.from_url(redis_url)
     with Connection(conn):
         worker = Worker(map(Queue, listen))
-        worker.work()
+        worker.work(with_scheduler=True)
+
+
+def main():
+    listen = ["default"]
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+
+    logger.info("Starting worker")
+    # Get the number of CPU cores
+    num_workers = multiprocessing.cpu_count()
+
+    # Create a pool of workers
+    processes: list[multiprocessing.Process] = []
+
+    try:
+        # Start multiple worker processes
+        for _ in range(num_workers):
+            process = multiprocessing.Process(
+                target=create_worker, args=(redis_url, listen)
+            )
+            process.start()
+            processes.append(process)
+
+        # Wait for all processes to complete
+        for process in processes:
+            process.join()
+
+    except KeyboardInterrupt:
+        # Handle graceful shutdown
+        logger.warning("Shutting down workers...")
+        for process in processes:
+            process.terminate()
+            process.join()
+
+
+# conn = Redis.from_url(redis_url)
+# if __name__ == "__main__":
+#     with Connection(conn):
+#         worker = Worker(map(Queue, listen))
+#         worker.work()
+
+if __name__ == "__main__":
+    main()

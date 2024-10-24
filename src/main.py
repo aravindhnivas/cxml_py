@@ -1,8 +1,8 @@
 import json
 import multiprocessing
 import sys
-from umdalib.utils import logger, compute
-
+from umdalib.utils.computation import compute
+from umdalib.logger import logger
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
