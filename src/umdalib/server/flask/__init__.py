@@ -1,15 +1,19 @@
-import sys
-import traceback
-import rq_dashboard
-from flask import Flask, jsonify, render_template, request
-from flask_cors import CORS
-from redis import Redis
-from rq import Queue
-from rq.job import Job
-from flask_socketio import SocketIO
-from umdalib.utils import Paths, compute, logger
-import uuid
-import json
+import eventlet
+
+eventlet.monkey_patch()  # This needs to happen before other imports
+
+import sys  # noqa: E402
+import traceback  # noqa: E402
+import rq_dashboard  # noqa: E402
+from flask import Flask, jsonify, render_template, request  # noqa: E402
+from flask_cors import CORS  # noqa: E402
+from redis import Redis  # noqa: E402
+from rq import Queue  # noqa: E402
+from rq.job import Job  # noqa: E402
+from flask_socketio import SocketIO  # noqa: E402
+from umdalib.utils import Paths, compute, logger  # noqa: E402
+import uuid  # noqa: E402
+import json  # noqa: E402
 
 
 # flask app
@@ -22,9 +26,6 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    # logger=True,
-    # engineio_logger=True,
-    # async_mode="threading",
     async_mode="eventlet",
 )
 
