@@ -34,8 +34,9 @@ def main(args: Args):
     logger.info(f"Connecting to Redis at {redis_url} and listening to {listen}")
 
     # Get the number of CPU cores
-    ncpus = multiprocessing.cpu_count()
-    num_workers = max(2, ncpus // 2)
+    # ncpus = multiprocessing.cpu_count()
+    # num_workers = max(2, ncpus // 2)
+    num_workers = 1
 
     # Create a pool of workers
     processes: list[multiprocessing.Process] = []
