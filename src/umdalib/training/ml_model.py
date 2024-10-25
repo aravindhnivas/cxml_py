@@ -47,7 +47,9 @@ from .ml_utils.optuna_grids import (
     SklearnModelsObjective,
     sklearn_models_names,
 )
+from .ml_utils.cleanup import cleanup_temp_files
 
+cleanup_temp_files()
 tqdm.pandas()
 
 AxesArray = np.ndarray[Any, np.dtype[plt.Axes]]
@@ -1081,6 +1083,9 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
     if args.parallel_computation and args.model in n_jobs_keyword_available_models:
         args.parameters["n_jobs"] = n_jobs
+
+    if args.model == "catboost":
+        args.parameters["verbose"] = 0
 
     initial_estimator = models_dict[args.model](**args.parameters)
 
