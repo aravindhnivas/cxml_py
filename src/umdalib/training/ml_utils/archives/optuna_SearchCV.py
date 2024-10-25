@@ -8,7 +8,7 @@ from optuna.distributions import (
 )
 from optuna.integration import OptunaSearchCV
 
-from .utils import models_dict
+from .models import models_dict
 
 
 class FineTunedValues(TypedDict):
