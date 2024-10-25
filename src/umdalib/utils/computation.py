@@ -1,12 +1,14 @@
-from pathlib import Path as pt
-import traceback
-import joblib
-from gensim.models import word2vec
 import json
+import traceback
 import warnings
 from importlib import import_module, reload
+from pathlib import Path as pt
 from time import perf_counter
-from umdalib.logger import logger, Paths
+
+import joblib
+from gensim.models import word2vec
+
+from umdalib.logger import Paths, logger
 from umdalib.utils.json import safe_json_dump
 
 

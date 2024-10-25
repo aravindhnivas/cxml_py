@@ -3,11 +3,11 @@ import os
 import subprocess
 import sys
 import time
+
 from redis import Redis
 from rq import Connection, Queue, Worker
 
 from umdalib.logger import logger
-
 
 # Check if the environment variable is set
 if os.getenv("OBJC_DISABLE_INITIALIZE_FORK_SAFETY") != "YES":

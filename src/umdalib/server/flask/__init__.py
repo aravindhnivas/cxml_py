@@ -2,20 +2,21 @@ import eventlet
 
 eventlet.monkey_patch()  # This needs to happen before other imports
 
+import json  # noqa: E402
 import sys  # noqa: E402
 import traceback  # noqa: E402
+import uuid  # noqa: E402
+
 import rq_dashboard  # noqa: E402
 from flask import Flask, jsonify, render_template, request  # noqa: E402
 from flask_cors import CORS  # noqa: E402
+from flask_socketio import SocketIO  # noqa: E402
 from redis import Redis  # noqa: E402
 from rq import Queue  # noqa: E402
 from rq.job import Job  # noqa: E402
-from flask_socketio import SocketIO  # noqa: E402
-from umdalib.utils.computation import compute  # noqa: E402
-from umdalib.logger import Paths, logger  # noqa: E402
-import uuid  # noqa: E402
-import json  # noqa: E402
 
+from umdalib.logger import Paths, logger  # noqa: E402
+from umdalib.utils.computation import compute  # noqa: E402
 
 # flask app
 log_dir = Paths().app_log_dir
