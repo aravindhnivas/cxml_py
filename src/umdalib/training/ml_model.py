@@ -1086,8 +1086,10 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
     if args.model == "catboost":
         args.parameters["verbose"] = 0
-    if args.model == "lgbm":
+    elif args.model == "lgbm":
         args.parameters["verbose"] = -1
+    elif args.model == "xgboost":
+        args.parameters["verbosity"] = 0
 
     initial_estimator = models_dict[args.model](**args.parameters)
 
