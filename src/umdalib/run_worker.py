@@ -17,45 +17,45 @@ if os.getenv("OBJC_DISABLE_INITIALIZE_FORK_SAFETY") != "YES":
     sys.exit()
 
 
-class CustomWorker(Worker):
-    def execute_job(self, job, queue):
-        try:
-            return super().execute_job(job, queue)
-        except Exception as e:
-            logger.error(f"Error executing job {job.id}: {e}")
-            raise
+# class CustomWorker(Worker):
+#     def execute_job(self, job, queue):
+#         try:
+#             return super().execute_job(job, queue)
+#         except Exception as e:
+#             logger.error(f"Error executing job {job.id}: {e}")
+#             raise
 
-    def handle_job_failure(self, job, exc_info):
-        logger.error(f"Job {job.id} failed: {exc_info}")
-        super().handle_job_failure(job, exc_info)
+#     def handle_job_failure(self, job, exc_info):
+#         logger.error(f"Job {job.id} failed: {exc_info}")
+#         super().handle_job_failure(job, exc_info)
 
-    def main_work_horse(self, *args, **kwargs):
-        try:
-            super().main_work_horse(*args, **kwargs)
-        except Exception as e:
-            logger.error(f"Work-horse error: {e}")
-            raise
-
-
-def create_worker(redis_url: str, listen: list[str] = ["default"]):
-    try:
-        conn = Redis.from_url(redis_url, socket_timeout=30, retry_on_timeout=True)
-
-        with Connection(conn):
-            worker = CustomWorker(
-                queues=map(Queue, listen), connection=conn, job_monitoring_interval=30
-            )
-            worker.work(with_scheduler=True, burst=False)
-    except Exception as e:
-        logger.error(f"Error in worker: {e}")
-        sys.exit(1)
+#     def main_work_horse(self, *args, **kwargs):
+#         try:
+#             super().main_work_horse(*args, **kwargs)
+#         except Exception as e:
+#             logger.error(f"Work-horse error: {e}")
+#             raise
 
 
 # def create_worker(redis_url: str, listen: list[str] = ["default"]):
-#     conn = Redis.from_url(redis_url)
-#     with Connection(conn):
-#         worker = Worker(map(Queue, listen))
-#         worker.work(with_scheduler=True)
+#     try:
+#         conn = Redis.from_url(redis_url, socket_timeout=30, retry_on_timeout=True)
+
+#         with Connection(conn):
+#             worker = CustomWorker(
+#                 queues=map(Queue, listen), connection=conn, job_monitoring_interval=30
+#             )
+#             worker.work(with_scheduler=True, burst=False)
+#     except Exception as e:
+#         logger.error(f"Error in worker: {e}")
+#         sys.exit(1)
+
+
+def create_worker(redis_url: str, listen: list[str] = ["default"]):
+    conn = Redis.from_url(redis_url)
+    with Connection(conn):
+        worker = Worker(map(Queue, listen))
+        worker.work(with_scheduler=True)
 
 
 class Args:
