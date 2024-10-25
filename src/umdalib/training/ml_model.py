@@ -18,6 +18,7 @@ import plotly.io as pio
 import shap
 from dask.diagnostics import ProgressBar
 from joblib import dump, parallel_config
+from loguru import logger
 from optuna.importance import get_param_importances
 from scipy.optimize import curve_fit
 from sklearn import metrics
@@ -32,26 +33,20 @@ from sklearn.model_selection import (
 from sklearn.utils import resample
 from tqdm import tqdm
 
+from umdalib.logger import Paths
 from umdalib.training.read_data import read_as_ddf
 from umdalib.training.utils import Yscalers, get_transformed_data
-from umdalib.logger import Paths
 from umdalib.utils.json import safe_json_dump
 
 from .ml_utils.ml_plots import learning_curve_plot, main_plot
 from .ml_utils.ml_types import DataType, LearningCurve, LearningCurveData, MLResults
+from .ml_utils.utils import grid_search_dict
+from .ml_utils.models import models_dict, n_jobs_keyword_available_models, kernels_dict
 from .ml_utils.optuna_grids import (
     ExtremeBoostingModelsObjective,
     SklearnModelsObjective,
-    # get_optuna_objective_for_extreme_boosting_models,
     sklearn_models_names,
 )
-from .ml_utils.utils import (
-    grid_search_dict,
-    kernels_dict,
-    models_dict,
-    n_jobs_keyword_available_models,
-)
-from loguru import logger
 
 tqdm.pandas()
 

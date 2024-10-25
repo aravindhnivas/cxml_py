@@ -1,4 +1,5 @@
-from typing import Literal, TypedDict, List
+from multiprocessing import cpu_count
+from typing import List, Literal, TypedDict
 
 import lightgbm as lgb
 import numpy as np
@@ -6,8 +7,7 @@ import optuna
 import xgboost as xgb
 from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import cross_val_score
-from multiprocessing import cpu_count
-from .utils import models_dict
+from .models import models_dict
 
 
 class FineTunedValues(TypedDict):
