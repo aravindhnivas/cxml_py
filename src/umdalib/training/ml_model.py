@@ -48,6 +48,7 @@ from .ml_utils.optuna_grids import (
     sklearn_models_names,
 )
 from .ml_utils.cleanup import cleanup_temp_files
+# from cleanlab.regression.learn import CleanLearning
 
 cleanup_temp_files()
 tqdm.pandas()
@@ -916,7 +917,7 @@ def get_param_grid(fine_tuned_values: FineTunedValues) -> Dict[str, list]:
     return param_grid
 
 
-def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
+def fine_tune_estimator(args: Args, X: np.ndarray, y: np.ndarray):
     logger.info("Fine-tuning model")
     logger.info(f"{args.fine_tuned_values=}")
 
@@ -970,7 +971,7 @@ def fine_tune_estimator(args: Args, X_train: np.ndarray, y_train: np.ndarray):
     logger.info("Fitting grid search")
 
     # run grid search
-    grid_search.fit(X_train, y_train)
+    grid_search.fit(X, y)
     best_model = grid_search.best_estimator_
 
     logger.info("Grid search complete")
@@ -1105,7 +1106,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
                 "Fine-tuning model using traditional grid search method: ",
                 args.grid_search_method,
             )
-            estimator, best_params = fine_tune_estimator(args, X_train, y_train)
+            estimator, best_params = fine_tune_estimator(args, X, y)
         logger.info("Using best estimator from grid search")
     else:
         logger.info("Training model without fine-tuning")
