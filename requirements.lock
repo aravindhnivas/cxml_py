@@ -39,6 +39,8 @@ bottle==0.13.1
     # via optuna-dashboard
 catboost==1.2.5
     # via umdalib
+cleanlab==2.7.0
+    # via umdalib
 click==8.1.7
     # via astrochem-embedding
     # via dask
@@ -191,6 +193,7 @@ numba==0.60.0
 numpy==1.26.4
     # via astrochem-embedding
     # via catboost
+    # via cleanlab
     # via contourpy
     # via dask
     # via dask-ml
@@ -242,6 +245,7 @@ packaging==24.1
 pandas==2.2.2
     # via astrochem-embedding
     # via catboost
+    # via cleanlab
     # via dask
     # via dask-expr
     # via dask-ml
@@ -328,6 +332,7 @@ ruamel-yaml-clib==0.2.8
     # via ruamel-yaml
 scikit-learn==1.5.1
     # via astrochem-embedding
+    # via cleanlab
     # via dask-glm
     # via dask-ml
     # via optuna-dashboard
@@ -395,6 +400,8 @@ tensorboard==2.17.1
     # via astrochem-embedding
 tensorboard-data-server==0.7.2
     # via tensorboard
+termcolor==2.5.0
+    # via cleanlab
 threadpoolctl==3.5.0
     # via scikit-learn
 toolz==0.12.1
@@ -412,6 +419,7 @@ torchmetrics==1.4.1
 tornado==6.4.1
     # via distributed
 tqdm==4.66.5
+    # via cleanlab
     # via mapply
     # via mol2vec
     # via optuna

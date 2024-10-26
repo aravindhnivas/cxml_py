@@ -46,6 +46,7 @@ dependencies = [
     "rq-dashboard>=0.8.0.2",
     "flask-socketio>=5.4.1",
     "eventlet>=0.37.0",
+    "cleanlab>=2.7.0",
 ]
 
 
