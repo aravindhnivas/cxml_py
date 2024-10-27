@@ -47,10 +47,9 @@ from .ml_utils.optuna_grids import (
     SklearnModelsObjective,
     sklearn_models_names,
 )
-from .ml_utils.cleanup import cleanup_temp_files
-# from cleanlab.regression.learn import CleanLearning
 
-cleanup_temp_files()
+# from .ml_utils.cleanup import cleanup_temp_files
+# cleanup_temp_files()
 tqdm.pandas()
 
 AxesArray = np.ndarray[Any, np.dtype[plt.Axes]]
