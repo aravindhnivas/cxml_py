@@ -47,6 +47,7 @@ dependencies = [
     "flask-socketio>=5.4.1",
     "eventlet>=0.37.0",
     "cleanlab>=2.7.0",
+    "lightning>=2.4.0",
 ]
 
 

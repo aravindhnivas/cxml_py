@@ -108,6 +108,7 @@ frozenlist==1.4.1
     # via aiosignal
 fsspec==2024.6.1
     # via dask
+    # via lightning
     # via pytorch-lightning
     # via torch
 gensim==4.3.3
@@ -152,7 +153,10 @@ kiwisolver==1.4.6
     # via matplotlib
 lightgbm==4.5.0
     # via umdalib
+lightning==2.4.0
+    # via umdalib
 lightning-utilities==0.11.7
+    # via lightning
     # via pytorch-lightning
     # via torchmetrics
 llvmlite==0.43.0
@@ -247,6 +251,7 @@ packaging==24.1
     # via dask-ml
     # via distributed
     # via ipykernel
+    # via lightning
     # via lightning-utilities
     # via matplotlib
     # via optuna
@@ -326,11 +331,13 @@ python-socketio==5.11.4
     # via flask-socketio
 pytorch-lightning==2.4.0
     # via astrochem-embedding
+    # via lightning
 pytz==2024.1
     # via pandas
 pyyaml==6.0.2
     # via dask
     # via distributed
+    # via lightning
     # via optuna
     # via pytorch-lightning
 pyzmq==26.2.0
@@ -434,11 +441,13 @@ toolz==0.12.1
     # via partd
 torch==2.4.0
     # via astrochem-embedding
+    # via lightning
     # via pytorch-lightning
     # via torchmetrics
 torchinfo==1.8.0
     # via astrochem-embedding
 torchmetrics==1.4.1
+    # via lightning
     # via pytorch-lightning
 tornado==6.4.1
     # via distributed
@@ -446,6 +455,7 @@ tornado==6.4.1
     # via jupyter-client
 tqdm==4.66.5
     # via cleanlab
+    # via lightning
     # via mapply
     # via mol2vec
     # via optuna
@@ -462,6 +472,7 @@ types-python-dateutil==2.9.0.20241003
     # via arrow
 typing-extensions==4.12.2
     # via alembic
+    # via lightning
     # via lightning-utilities
     # via pytorch-lightning
     # via sqlalchemy
