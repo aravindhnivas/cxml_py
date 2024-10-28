@@ -698,8 +698,9 @@ def learn_curve(
 ):
     logger.info("Learning curve")
     scoring = "r2"
+    estimator = clone(estimator)
     train_sizes, train_scores, test_scores = learning_curve(
-        clone(estimator),
+        estimator,
         X,
         y,
         train_sizes=np.linspace(*sizes),
@@ -1079,7 +1080,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     logger.info(f"{models_dict[args.model]=}")
 
     estimator = None
-    initial_estimator = None  # for CV
 
     if args.parallel_computation and args.model in n_jobs_keyword_available_models:
         args.parameters["n_jobs"] = n_jobs
@@ -1090,8 +1090,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         args.parameters["verbose"] = -1
     elif args.model == "xgboost":
         args.parameters["verbosity"] = 0
-
-    initial_estimator = models_dict[args.model](**args.parameters)
 
     if args.fine_tune_model:
         args.cv_fold = int(args.cv_fold)
@@ -1108,11 +1106,10 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             )
             estimator, best_params = fine_tune_estimator(args, X, y)
 
-        initial_estimator = clone(estimator)
         logger.info("Using best estimator from grid search")
     else:
         logger.info("Training model without fine-tuning")
-        estimator = clone(initial_estimator)
+        estimator = models_dict[args.model](**args.parameters)
         logger.info("Training model")
         estimator.fit(X_train, y_train)
         logger.info("Training complete")
@@ -1173,7 +1170,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
     if args.cross_validation and test_size > 0:
         results["cv_fold"] = args.cv_fold
-        cv_scores = compute_cv(initial_estimator, X, y, args.cv_fold)
+        cv_scores = compute_cv(estimator, X, y, args.cv_fold)
         results["cv_scores"] = cv_scores
 
     timestamp = None
@@ -1226,7 +1223,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     if args.learning_curve_train_sizes is not None and args.cross_validation:
         logger.info("Computing learning curve")
         learn_curve(
-            initial_estimator,
+            estimator,
             X,
             y,
             sizes=args.learning_curve_train_sizes,
