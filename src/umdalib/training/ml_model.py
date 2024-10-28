@@ -699,7 +699,7 @@ def learn_curve(
     logger.info("Learning curve")
     scoring = "r2"
     train_sizes, train_scores, test_scores = learning_curve(
-        estimator,
+        clone(estimator),
         X,
         y,
         train_sizes=np.linspace(*sizes),
@@ -1100,12 +1100,15 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             estimator, best_params = optuna_optimize(
                 args, X_train, y_train, X_test, y_test, X, y
             )
+
         else:
             logger.info(
                 "Fine-tuning model using traditional grid search method: ",
                 args.grid_search_method,
             )
             estimator, best_params = fine_tune_estimator(args, X, y)
+
+        initial_estimator = clone(estimator)
         logger.info("Using best estimator from grid search")
     else:
         logger.info("Training model without fine-tuning")
