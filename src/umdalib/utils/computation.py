@@ -74,7 +74,7 @@ def compute(pyfile: str, args: dict | str):
             result["computed_time"] = computed_time
             result["warnings"] = [str(warning.message) for warning in warnings_list]
             logger.success(f"Computation completed successfully in {computed_time}")
-            logger.success(f"{result=}")
+            logger.success(f"result = {json.dumps(result, indent=4)}")
             safe_json_dump(result, result_file)
 
         logger.info(f"Finished main.py execution for {pyfile} in {computed_time}")
