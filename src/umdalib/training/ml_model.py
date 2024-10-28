@@ -1137,6 +1137,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     train_stats = get_stats(estimator, X_train, y_train)
 
     results: MLResults = {
+        "test_size": test_size,
         "data_shapes": {
             "X": X.shape,
             "y": y.shape,
