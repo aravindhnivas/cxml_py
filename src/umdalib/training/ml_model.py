@@ -1049,11 +1049,11 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     if args.estimator_file:
         logger.info(f"Loading estimators from {args.estimator_file}")
         loaded = load_model(args.estimator_file, use_joblib=True)
+
         if isinstance(loaded, tuple):
             estimator, yscaler = loaded
         else:
             estimator = loaded
-            yscaler = None
 
         if args.fine_tune_model:
             best_params = None
@@ -1061,14 +1061,15 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             if results_file.exists():
                 with open(results_file, "r") as f:
                     results_data = json.load(f)
-                    best_params = results_data["best_params"]
+                    if "best_params" in results_data:
+                        best_params = results_data["best_params"]
+                        logger.success(
+                            "Best parameters loaded"
+                            + f"\n{json.dumps(best_params, indent=4)}"
+                        )
                     if "seed" in results_data:
                         seed = results_data["seed"]
                         logger.info(f"Seed loaded from results: {seed}")
-                    logger.success(
-                        "Best parameters loaded"
-                        + f"\n{json.dumps(best_params, indent=4)}"
-                    )
 
         logger.success("Estimator loaded successfully")
 
