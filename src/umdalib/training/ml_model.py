@@ -4,7 +4,7 @@ from datetime import datetime
 from multiprocessing import cpu_count
 from pathlib import Path as pt
 from time import perf_counter
-from typing import Any, Callable, Dict, List, Literal, Tuple, TypedDict, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypedDict, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -113,8 +113,8 @@ class Args:
     npartitions: int
     vectors_file: str
     noise_percentage: float
-    ytransformation: str
-    yscaling: str
+    ytransformation: Optional[str]
+    yscaling: Optional[str]
     embedding: str
     pca: bool
     save_pretrained_model: bool
@@ -128,13 +128,14 @@ class Args:
     skip_invalid_y_values: bool
     inverse_scaling: bool
     inverse_transform: bool
-    learning_curve_train_sizes: List[float] | None
+    learning_curve_train_sizes: Optional[List[float]]
     analyse_shapley_values: bool
     optuna_n_trials: int
     optuna_n_warmup_steps: int
     optuna_resume_study: OptunaResumeStudy
     optuna_storage_file: str
-    estimator_file: str | None
+    estimator_file: Optional[str]
+    seed: Optional[int]
 
 
 def linear(x, m, c):
@@ -519,7 +520,7 @@ def custom_cross_validate(
     cv=5,
     scoring=[],
 ):
-    kf = KFold(n_splits=cv)
+    kf = KFold(n_splits=cv, random_state=rng, shuffle=True)
     cv_scores = {"train": {}, "test": {}}
 
     logger.info(f"Cross-validating model with {cv} folds")
@@ -709,6 +710,7 @@ def learn_curve(
         cv=cv,
         scoring=scoring,
         n_jobs=n_jobs,
+        random_state=rng,
     )
 
     max_train_size_for_cv = int(y.size - y.size / cv)
@@ -1031,7 +1033,7 @@ def save_parameters(
 
 
 def compute(args: Args, X: np.ndarray, y: np.ndarray):
-    global pre_trained_file, pre_trained_loc, current_model_name
+    global pre_trained_file, pre_trained_loc, current_model_name, yscaler
 
     current_model_name = args.model
     start_time = perf_counter()
@@ -1045,11 +1047,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         # split data
         logger.info("Splitting data for training and testing")
         X_train, X_test, y_train, y_test = train_test_split(
-            X,
-            y_copy,
-            test_size=test_size,
-            shuffle=True,
-            # random_state=rng
+            X, y_copy, test_size=test_size, shuffle=True, random_state=rng
         )
     else:
         X_train, X_test, y_train, y_test = X, X, y_copy, y_copy
@@ -1398,10 +1396,22 @@ def get_data(args: Args) -> Tuple[np.ndarray, np.ndarray]:
 
 
 def main(args: Args):
-    global n_jobs, backend, skip_invalid_y_values, ytransformation, yscaling, inverse_scaling, inverse_transform, loaded_training_file, pre_trained_file, pre_trained_loc
-    # yscaler, \
-    # boxcox_lambda_param, \
-    # y_transformer, \
+    global \
+        n_jobs, \
+        backend, \
+        skip_invalid_y_values, \
+        ytransformation, \
+        yscaling, \
+        inverse_scaling, \
+        inverse_transform, \
+        loaded_training_file, \
+        pre_trained_file, \
+        pre_trained_loc, \
+        rng
+
+    if args.seed:
+        # rng = np.random.default_rng(int(args.seed))
+        rng = int(args.seed)
 
     pre_trained_file = pt(args.pre_trained_file.strip()).with_suffix(".pkl")
     pre_trained_loc = pre_trained_file.parent
