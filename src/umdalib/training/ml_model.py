@@ -36,6 +36,7 @@ from tqdm import tqdm
 from umdalib.logger import Paths
 from umdalib.training.read_data import read_as_ddf
 from umdalib.training.utils import Yscalers, get_transformed_data
+from umdalib.utils.computation import load_model
 from umdalib.utils.json import safe_json_dump
 
 from .ml_utils.ml_plots import learning_curve_plot, main_plot
@@ -133,6 +134,7 @@ class Args:
     optuna_n_warmup_steps: int
     optuna_resume_study: OptunaResumeStudy
     optuna_storage_file: str
+    estimator_file: str | None
 
 
 def linear(x, m, c):
@@ -1055,81 +1057,88 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     logger.info(f"{X_train.shape=}, {X_test.shape=}")
     logger.info(f"{y_train.shape=}, {y_test.shape=}")
 
-    if (
-        args.model in random_state_supported_models
-        and "random_state" not in args.parameters
-        and rng is not None
-    ):
-        args.parameters["random_state"] = rng
-
-    kernel = None
-    if args.model == "gpr":
-        logger.info("Using Gaussian Process Regressor with custom kernel")
-        logger.warning("checking kernal in parameters: " + "kernel" in args.parameters)
-        if "kernel" in args.parameters and args.parameters["kernel"]:
-            kernel = make_custom_kernels(args.parameters["kernel"])
-            args.parameters["kernel"] = kernel
-            logger.info(
-                f"{args.parameters['kernel']=}, {type(args.parameters['kernel'])=}"
-            )
-
-    if args.model == "catboost":
-        args.parameters["train_dir"] = str(Paths().app_log_dir / "catboost_info")
-        logger.info(f"catboost_info: {args.parameters['train_dir']=}")
-
-    logger.info(f"{models_dict[args.model]=}")
-
-    estimator = None
-
-    if args.parallel_computation and args.model in n_jobs_keyword_available_models:
-        args.parameters["n_jobs"] = n_jobs
-
-    if args.model == "catboost":
-        args.parameters["verbose"] = 0
-    elif args.model == "lgbm":
-        args.parameters["verbose"] = -1
-    elif args.model == "xgboost":
-        args.parameters["verbosity"] = 0
-
-    if args.fine_tune_model:
-        args.cv_fold = int(args.cv_fold)
-        if args.grid_search_method == "Optuna":
-            logger.info("Optimizing hyperparameters using Optuna")
-            estimator, best_params = optuna_optimize(
-                args, X_train, y_train, X_test, y_test, X, y
-            )
-
-        else:
-            logger.info(
-                "Fine-tuning model using traditional grid search method: ",
-                args.grid_search_method,
-            )
-            estimator, best_params = fine_tune_estimator(args, X, y)
-
-        logger.info("Using best estimator from grid search")
+    if args.estimator_file:
+        logger.info(f"Loading estimators from {args.estimator_file}")
+        estimator, yscaler = load_model(args.estimator_file, use_joblib=True)
+        logger.success("Estimator loaded successfully")
     else:
-        logger.info("Training model without fine-tuning")
-        estimator = models_dict[args.model](**args.parameters)
-        logger.info("Training model")
-        estimator.fit(X_train, y_train)
-        logger.info("Training complete")
+        if (
+            args.model in random_state_supported_models
+            and "random_state" not in args.parameters
+            and rng is not None
+        ):
+            args.parameters["random_state"] = rng
 
-    if estimator is None:
-        raise ValueError("Estimator is None")
+        kernel = None
+        if args.model == "gpr":
+            logger.info("Using Gaussian Process Regressor with custom kernel")
+            logger.warning(
+                "checking kernal in parameters: " + "kernel" in args.parameters
+            )
+            if "kernel" in args.parameters and args.parameters["kernel"]:
+                kernel = make_custom_kernels(args.parameters["kernel"])
+                args.parameters["kernel"] = kernel
+                logger.info(
+                    f"{args.parameters['kernel']=}, {type(args.parameters['kernel'])=}"
+                )
 
-    if args.save_pretrained_model:
-        logger.info(f"Saving model to {pre_trained_file}")
-        dump((estimator, yscaler), pre_trained_file)
-        logger.success("Trained model saved")
+        if args.model == "catboost":
+            args.parameters["train_dir"] = str(Paths().app_log_dir / "catboost_info")
+            logger.info(f"catboost_info: {args.parameters['train_dir']=}")
 
-    trained_params = estimator.get_params()
-    if args.model == "catboost":
-        logger.info(f"{estimator.get_all_params()=}")
-        trained_params = trained_params | estimator.get_all_params()
+        logger.info(f"{models_dict[args.model]=}")
 
-    if args.save_pretrained_model:
-        save_parameters(".parameters.user.json", args.parameters)
-        save_parameters(".parameters.trained.json", trained_params)
+        estimator = None
+
+        if args.parallel_computation and args.model in n_jobs_keyword_available_models:
+            args.parameters["n_jobs"] = n_jobs
+
+        if args.model == "catboost":
+            args.parameters["verbose"] = 0
+        elif args.model == "lgbm":
+            args.parameters["verbose"] = -1
+        elif args.model == "xgboost":
+            args.parameters["verbosity"] = 0
+
+        if args.fine_tune_model:
+            args.cv_fold = int(args.cv_fold)
+            if args.grid_search_method == "Optuna":
+                logger.info("Optimizing hyperparameters using Optuna")
+                estimator, best_params = optuna_optimize(
+                    args, X_train, y_train, X_test, y_test, X, y
+                )
+
+            else:
+                logger.info(
+                    "Fine-tuning model using traditional grid search method: ",
+                    args.grid_search_method,
+                )
+                estimator, best_params = fine_tune_estimator(args, X, y)
+
+            logger.info("Using best estimator from grid search")
+        else:
+            logger.info("Training model without fine-tuning")
+            estimator = models_dict[args.model](**args.parameters)
+            logger.info("Training model")
+            estimator.fit(X_train, y_train)
+            logger.info("Training complete")
+
+        if estimator is None:
+            raise ValueError("Estimator is None")
+
+        if args.save_pretrained_model:
+            logger.info(f"Saving model to {pre_trained_file}")
+            dump((estimator, yscaler), pre_trained_file)
+            logger.success("Trained model saved")
+
+        trained_params = estimator.get_params()
+        if args.model == "catboost":
+            logger.info(f"{estimator.get_all_params()=}")
+            trained_params = trained_params | estimator.get_all_params()
+
+        if args.save_pretrained_model:
+            save_parameters(".parameters.user.json", args.parameters)
+            save_parameters(".parameters.trained.json", trained_params)
 
     logger.info("Evaluating model for test data")
     test_stats = get_stats(estimator, X_test, y_test)
