@@ -1059,10 +1059,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         if not results_data:
             raise ValueError("Results file not found")
 
-        if "seed" not in results_data:
-            raise ValueError("Seed not found in results")
-
-        seed = results_data["seed"]
+        seed = int(results_data["seed"])
         logger.info(f"Seed loaded from results: {seed}")
 
         if isinstance(loaded, tuple):
