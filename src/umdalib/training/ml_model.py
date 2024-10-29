@@ -143,7 +143,7 @@ def linear(x, m, c):
 
 
 random_state_supported_models = ["rfr", "gbr", "gpr"]
-rng = None
+seed = None
 
 
 def get_unique_study_name(base_name: str, storage: str) -> str:
@@ -405,7 +405,9 @@ def augment_data(
     """
 
     logger.info(f"Augmenting data with {n_samples} samples")
-    X_boot, y_boot = resample(X, y, n_samples=n_samples, replace=True, random_state=rng)
+    X_boot, y_boot = resample(
+        X, y, n_samples=n_samples, replace=True, random_state=seed
+    )
 
     logger.info(f"Adding noise percentage: {noise_percentage}")
     noise_scale = (noise_percentage / 100) * np.abs(y_boot)
@@ -520,7 +522,7 @@ def custom_cross_validate(
     cv=5,
     scoring=[],
 ):
-    kf = KFold(n_splits=cv, random_state=rng, shuffle=True)
+    kf = KFold(n_splits=cv, random_state=seed, shuffle=True)
     cv_scores = {"train": {}, "test": {}}
 
     logger.info(f"Cross-validating model with {cv} folds")
@@ -710,7 +712,7 @@ def learn_curve(
         cv=cv,
         scoring=scoring,
         n_jobs=n_jobs,
-        random_state=rng,
+        random_state=seed,
     )
 
     max_train_size_for_cv = int(y.size - y.size / cv)
@@ -1033,7 +1035,7 @@ def save_parameters(
 
 
 def compute(args: Args, X: np.ndarray, y: np.ndarray):
-    global pre_trained_file, pre_trained_loc, current_model_name, yscaler
+    global pre_trained_file, pre_trained_loc, current_model_name, yscaler, seed
 
     current_model_name = args.model
     start_time = perf_counter()
@@ -1043,17 +1045,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
     test_size = float(args.test_size)
     y_copy = y.copy()
-    if test_size > 0:
-        # split data
-        logger.info("Splitting data for training and testing")
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y_copy, test_size=test_size, shuffle=True, random_state=rng
-        )
-    else:
-        X_train, X_test, y_train, y_test = X, X, y_copy, y_copy
-
-    logger.info(f"{X_train.shape=}, {X_test.shape=}")
-    logger.info(f"{y_train.shape=}, {y_test.shape=}")
 
     if args.estimator_file:
         logger.info(f"Loading estimators from {args.estimator_file}")
@@ -1066,11 +1057,14 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
         if args.fine_tune_model:
             best_params = None
-            best_params_file = pre_trained_file.with_suffix(".best_params.json")
-            if best_params_file.exists():
-                with open(best_params_file, "r") as f:
-                    best_params_data = json.load(f)
-                    best_params = best_params_data["values"]
+            results_file = pre_trained_file.with_suffix(".results.json")
+            if results_file.exists():
+                with open(results_file, "r") as f:
+                    results_data = json.load(f)
+                    best_params = results_data["best_params"]
+                    if "seed" in results_data:
+                        seed = results_data["seed"]
+                        logger.info(f"Seed loaded from results: {seed}")
                     logger.success(
                         "Best parameters loaded"
                         + f"\n{json.dumps(best_params, indent=4)}"
@@ -1078,13 +1072,28 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
         logger.success("Estimator loaded successfully")
 
+        if test_size > 0:
+            logger.info("Splitting data for training and testing")
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y_copy, test_size=test_size, shuffle=True, random_state=seed
+            )
+        else:
+            X_train, X_test, y_train, y_test = X, X, y_copy, y_copy
     else:
+        if test_size > 0:
+            logger.info("Splitting data for training and testing")
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y_copy, test_size=test_size, shuffle=True, random_state=seed
+            )
+        else:
+            X_train, X_test, y_train, y_test = X, X, y_copy, y_copy
+
         if (
             args.model in random_state_supported_models
             and "random_state" not in args.parameters
-            and rng is not None
+            and seed is not None
         ):
-            args.parameters["random_state"] = rng
+            args.parameters["random_state"] = seed
 
         kernel = None
         if args.model == "gpr":
@@ -1165,6 +1174,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
     results: MLResults = {
         "test_size": test_size,
+        "seed": args.seed,
         "data_shapes": {
             "X": X.shape,
             "y": y.shape,
@@ -1407,11 +1417,12 @@ def main(args: Args):
         loaded_training_file, \
         pre_trained_file, \
         pre_trained_loc, \
-        rng
+        seed
 
     if args.seed:
+        seed = int(args.seed)
         # rng = np.random.default_rng(int(args.seed))
-        rng = int(args.seed)
+        # seed = rng
 
     pre_trained_file = pt(args.pre_trained_file.strip()).with_suffix(".pkl")
     pre_trained_loc = pre_trained_file.parent
