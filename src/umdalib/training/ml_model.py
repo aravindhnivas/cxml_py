@@ -1059,8 +1059,27 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
     if args.estimator_file:
         logger.info(f"Loading estimators from {args.estimator_file}")
-        estimator, yscaler = load_model(args.estimator_file, use_joblib=True)
+        loaded = load_model(args.estimator_file, use_joblib=True)
+        if isinstance(loaded, tuple):
+            estimator, yscaler = loaded
+        else:
+            estimator = loaded
+            yscaler = None
+
+        if args.fine_tune_model:
+            best_params = None
+            best_params_file = pre_trained_file.with_suffix(".best_params.json")
+            if best_params_file.exists():
+                with open(best_params_file, "r") as f:
+                    best_params_data = json.load(f)
+                    best_params = best_params_data["values"]
+                    logger.success(
+                        "Best parameters loaded"
+                        + f"\n{json.dumps(best_params, indent=4)}"
+                    )
+
         logger.success("Estimator loaded successfully")
+
     else:
         if (
             args.model in random_state_supported_models
@@ -1140,6 +1159,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             save_parameters(".parameters.user.json", args.parameters)
             save_parameters(".parameters.trained.json", trained_params)
 
+    # raise NotImplementedError("Training not implemented yet")
     logger.info("Evaluating model for test data")
     test_stats = get_stats(estimator, X_test, y_test)
     logger.info("Evaluating model for train data")
