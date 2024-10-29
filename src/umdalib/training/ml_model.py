@@ -1067,9 +1067,13 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
                             "Best parameters loaded"
                             + f"\n{json.dumps(best_params, indent=4)}"
                         )
+                    else:
+                        logger.warning("Best parameters not found in results file")
                     if "seed" in results_data:
                         seed = results_data["seed"]
                         logger.info(f"Seed loaded from results: {seed}")
+                    else:
+                        logger.warning("Seed not found in results file")
 
         logger.success("Estimator loaded successfully")
 
