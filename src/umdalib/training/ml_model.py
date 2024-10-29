@@ -1160,14 +1160,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         },
     }
 
-    results["bootstrap"] = args.bootstrap
-    if args.bootstrap:
-        results["bootstrap_nsamples"] = args.bootstrap_nsamples
-        results["noise_percentage"] = args.noise_percentage
-
-    # Additional validation step
-    results["cross_validation"] = args.cross_validation
-
     if args.cross_validation and test_size > 0:
         results["cv_fold"] = args.cv_fold
         cv_scores = compute_cv(estimator, X, y, args.cv_fold)
@@ -1190,6 +1182,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     end_time = perf_counter()
     logger.info(f"Training completed in {(end_time - start_time):.2f} s")
     results["time"] = f"{(end_time - start_time):.2f} s"
+    safe_json_dump(results, pre_trained_file.with_suffix(".results.json"))
 
     dat: DataType = {
         "test": {
@@ -1204,9 +1197,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         },
     }
 
-    # if args.save_pretrained_model:
     safe_json_dump(dat, pre_trained_file.with_suffix(".dat.json"))
-    safe_json_dump(results, pre_trained_file.with_suffix(".results.json"))
 
     if args.save_pretrained_model:
         fig = main_plot(dat, results, args.model)
