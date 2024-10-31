@@ -48,6 +48,7 @@ dependencies = [
     "eventlet>=0.37.0",
     "cleanlab>=2.7.0",
     "lightning>=2.4.0",
+    "uncertainties>=3.2.2",
 ]
 
 
@@ -57,7 +58,7 @@ build-backend = "hatchling.build"
 
 [tool.rye]
 managed = true
-dev-dependencies = ['ipykernel']
+dev-dependencies = ['ipykernel', 'ipympl']
 
 [tool.hatch.metadata]
 allow-direct-references = true
