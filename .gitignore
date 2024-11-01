@@ -155,3 +155,4 @@ cython_debug/
 .DS_Store
 src/umdapy/.DS_Store
 scripts/umdapy.spec
+*.png
