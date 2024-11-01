@@ -2,6 +2,7 @@ import json
 from redis import Redis
 from umdalib.utils.computation import compute
 from umdalib.logger import logger
+import traceback
 
 redis_conn = Redis.from_url("redis://localhost:6379/0")
 
@@ -32,11 +33,18 @@ def long_computation(job_id: str, pyfile: str, args: dict | str):
         return result
     except Exception as e:
         error_msg = str(e)
+        error = traceback.format_exc(5)
         logger.error(f"Error in computation for job {job_id}: {error_msg}")
 
         # Publish error event
         publish_event(
-            "job_error", {"job_id": job_id, "error": error_msg, "status": "error"}
+            "job_error",
+            {
+                "job_id": job_id,
+                "error": error,
+                "error_msg": error_msg,
+                "status": "error",
+            },
         )
 
         raise
