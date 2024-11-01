@@ -8,7 +8,7 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 from rdkit import Chem, RDLogger
-from rdkit.Chem import Descriptors
+from rdkit.Chem import Descriptors, rdMolDescriptors
 
 from umdalib.training.read_data import read_as_ddf
 from umdalib.utils.json import safe_json_dump
@@ -17,19 +17,29 @@ from umdalib.logger import logger
 RDLogger.DisableLog("rdApp.*")
 
 
-def is_aromatic(mol):
+def is_aromatic(mol: Chem.Mol):
     """Check if the molecule is aromatic."""
     return any(atom.GetIsAromatic() for atom in mol.GetAtoms())
 
 
-def is_non_cyclic(mol):
+def is_non_cyclic(mol: Chem.Mol):
     """Check if the molecule is non-cyclic."""
     return mol.GetRingInfo().NumRings() == 0
 
 
-def is_cyclic(mol):
+def is_cyclic(mol: Chem.Mol):
     """Check if the molecule is cyclic."""
     return mol.GetRingInfo().NumRings() > 0 and not is_aromatic(mol)
+
+
+def analyze_rings(mol: Chem.Mol):
+    return {
+        "total_rings": rdMolDescriptors.CalcNumRings(mol),
+        "aromatic_rings": rdMolDescriptors.CalcNumAromaticRings(mol),
+        "aliphatic_rings": rdMolDescriptors.CalcNumAliphaticRings(mol),
+        "saturated_rings": rdMolDescriptors.CalcNumSaturatedRings(mol),
+        "heterocycles": rdMolDescriptors.CalcNumHeterocycles(mol),
+    }
 
 
 def categorize_element(atomic_num):
@@ -65,6 +75,7 @@ def analyze_single_molecule(smi):
     if mol is None:
         return None
 
+    rings = analyze_rings(mol)
     return {
         "SMILES": smi,
         "MolecularWeight": Descriptors.ExactMolWt(mol),
@@ -77,7 +88,7 @@ def analyze_single_molecule(smi):
         "ElementCategories": Counter(
             categorize_element(atom.GetAtomicNum()) for atom in mol.GetAtoms()
         ),
-    }
+    } | rings
 
 
 def analyze_molecules(
@@ -126,6 +137,7 @@ def analyze_molecules(
         for i in range(len(original_index))
         if i not in invalid_smiles_indices
     ]
+
     results = results[results != None]  # noqa: E711
     # add first column as index in results array
     df = pd.DataFrame(results.tolist())
@@ -149,14 +161,16 @@ class Args:
         "all", "size_distribution", "structural_distribution", "elemental_distribution"
     ]
     index_column_name: str
+    force: bool
 
 
 def main(args: Args):
     global loc
 
     analysis_file = pt(args.analysis_file)
+    logger.info(f"{args.force=}, {analysis_file.exists()=}, {args.mode=}")
 
-    if analysis_file.exists() or args.mode != "all":
+    if not args.force and (analysis_file.exists() or args.mode != "all"):
         logger.info(f"Analyzing molecules from file... mode: {args.mode}")
 
         loc = analysis_file.parent
@@ -247,9 +261,6 @@ def main(args: Args):
         "smiles_column_name": args.smiles_column_name,
         "index_column_name": args.index_column_name,
     }
-    # with open(loc / "metadata.json", "w") as f:
-    #     json.dump(metadata, f, indent=4)
-    #     logger.success(f"Metadata saved as {loc / 'metadata.json'}")
     safe_json_dump(metadata, loc / "metadata.json")
     return {"analysis_file": str(analysis_file), "metadata": metadata}
 
