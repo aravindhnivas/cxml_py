@@ -12,7 +12,7 @@ from umdalib.training.read_data import read_as_ddf
 from umdalib.utils.computation import load_model
 from umdalib.utils.json import safe_json_dump
 from umdalib.logger import logger
-
+import pandas as pd
 import mapply
 
 mapply.init(n_workers=-1, chunk_size=100, max_chunks_per_worker=10, progressbar=True)
@@ -225,10 +225,6 @@ def main(args: Args):
 
     logger.info(f"{vec_computed.shape=}")
 
-    logger.info(
-        f"Embeddings computed in {(perf_counter() - time):.2f} s and saved to {vectors_file.name}"
-    )
-
     invalid_embedding_indices = [
         i for i, arr in enumerate(vec_computed) if np.all(arr == 0)
     ]
@@ -236,12 +232,19 @@ def main(args: Args):
 
     # \xa0 is a non-breaking space in Latin1 (ISO 8859-1), also known as NBSP in Unicode. It's a character that prevents an automatic line break at its position. In HTML, it's often used to create multiple spaces that are visible.
     invalid_smiles = [smiles.replace("\xa0", "").strip() for smiles in invalid_smiles]
-    invalid_smiles_filename = embedding_loc / f"{vectors_file.stem}_invalid_smiles.smi"
 
-    if len(invalid_smiles) > 0:
-        with open(invalid_smiles_filename, "w") as f:
-            for smiles in invalid_smiles:
-                f.write(smiles + "\n")
+    if len(invalid_embedding_indices) != len(invalid_smiles):
+        raise ValueError("Mismatch in number of invalid indices and SMILES")
+
+    invalid_df = pd.DataFrame(
+        {"InvalidIndex": invalid_embedding_indices, "SMILES": invalid_smiles}
+    )
+    invalid_smiles_filename = vectors_file.with_suffix(".invalid_embeddings.csv")
+    invalid_df.to_csv(invalid_smiles_filename, index=False)
+
+    logger.info(
+        f"Embeddings computed in {(perf_counter() - time):.2f} s and saved to {vectors_file.name}"
+    )
 
     save_obj = {
         "embedder": args.embedding,
