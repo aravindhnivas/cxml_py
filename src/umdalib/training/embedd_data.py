@@ -240,7 +240,7 @@ def main(args: Args):
         else:
             vec_computed = vectors
 
-        logger.info(f"{vec_computed.shape=}\n{vec_computed[0].shape=}")
+        logger.info(f"{vec_computed.shape=}")
         vec_computed = np.vstack(vec_computed)
 
         np.save(vectors_file, vec_computed)
