@@ -250,9 +250,10 @@ def main(args: Args):
 
     invalid_indices_full = ["# Invalid SMILES"]
     invalid_vec_ind: np.ndarray[bool] = np.all(vec_computed == 0, axis=1)
+    invalid_smiles_filename = vectors_file.with_suffix(".invalid_embeddings.csv")
+
     if invalid_vec_ind.sum() > 0:
         invalid_smiles: pd.Series = ddf[args.columnX].loc[invalid_vec_ind]
-        invalid_smiles_filename = vectors_file.with_suffix(".invalid_embeddings.csv")
         invalid_smiles.to_csv(invalid_smiles_filename)
         invalid_indices_full.extend(invalid_smiles.index.values)
 
@@ -284,7 +285,7 @@ def main(args: Args):
         "npartitions": args.npartitions,
         "columnX": args.columnX,
         "data_shape": vec_computed.shape,
-        "invalid_smiles": len(invalid_smiles),
+        # "invalid_smiles": len(invalid_smiles),
         "invalid_smiles_file": str(invalid_smiles_filename),
     }
     safe_json_dump(save_obj, vectors_file.with_suffix(".metadata.json"))
@@ -293,7 +294,7 @@ def main(args: Args):
         "file_mode": {
             "name": vectors_file.name,
             "shape": vec_computed.shape[0],
-            "invalid_smiles": len(invalid_smiles),
+            # "invalid_smiles": len(invalid_smiles),
             "invalid_smiles_file": str(invalid_smiles_filename),
             "saved_file": str(vectors_file),
         }
