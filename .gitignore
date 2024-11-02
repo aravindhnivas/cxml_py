@@ -157,3 +157,4 @@ src/umdapy/.DS_Store
 scripts/umdapy.spec
 *.png
 *.txt
+*.csv
