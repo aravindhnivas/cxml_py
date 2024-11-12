@@ -1,6 +1,6 @@
 [project]
 name = "umdalib"
-version = "2.4.0"
+version = "2.5.0"
 description = "Add your description here"
 authors = [
     { name = "Aravindh Nivas Marimuthu", email = "aravindhnivas@duck.com" },
