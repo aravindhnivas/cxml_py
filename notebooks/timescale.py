@@ -49,9 +49,9 @@ def time_model_training(
 
 # Dictionary of models to test
 models = {
-    "GradientBoosting": GradientBoostingRegressor(),
-    "XGBoost": XGBRegressor(verbosity=0),
+    "GBR": GradientBoostingRegressor(),
     "CatBoost": CatBoostRegressor(verbose=0),
+    "XGBoost": XGBRegressor(verbosity=0),
     "LightGBM": LGBMRegressor(verbose=-1),
 }
 
