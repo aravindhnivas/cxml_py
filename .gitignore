@@ -158,3 +158,4 @@ scripts/umdapy.spec
 *.png
 *.txt
 *.csv
+**/catboost_info/
