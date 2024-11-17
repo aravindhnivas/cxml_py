@@ -9,7 +9,7 @@ import joblib
 from gensim.models import word2vec
 
 from umdalib.logger import Paths, logger
-from umdalib.utils.json import safe_json_dump
+from umdalib.utils.json import convert_to_json_compatible, safe_json_dump
 
 
 def load_model(filepath: str, use_joblib: bool = False):
@@ -73,6 +73,8 @@ def compute(pyfile: str, args: dict | str):
             result["error"] = False
             result["computed_time"] = computed_time
             result["warnings"] = [str(warning.message) for warning in warnings_list]
+
+            result = convert_to_json_compatible(result)
             logger.success(f"Computation completed successfully in {computed_time}")
             logger.success(f"result = {json.dumps(result, indent=4)}")
             safe_json_dump(result, result_file)
