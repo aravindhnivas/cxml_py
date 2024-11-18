@@ -1505,7 +1505,9 @@ def main(args: Args):
     if args.cleanlab:
         logger.info(f"Cleaning data using {args.cleanlab}")
 
-        cleanlab_issue_file = pre_trained_loc / f"label_issues_{args.cleanlab}.csv"
+        cleanlab_issue_file = (
+            processed_vectors_file_dir / f"label_issues_{args.cleanlab}.csv"
+        )
 
         if cleanlab_issue_file.exists():
             logger.info(f"Loading label issues from {cleanlab_issue_file}")
