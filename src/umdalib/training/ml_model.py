@@ -139,6 +139,7 @@ class Args:
     estimator_file: Optional[str]
     seed: Optional[int]
     cleanlab: Optional[str]
+    clean_only_train_data: bool
 
 
 def linear(x, m, c):
@@ -1046,6 +1047,13 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     arguments_file = pre_trained_loc / f"{pre_trained_file.stem}.arguments.json"
     safe_json_dump(args.__dict__, arguments_file)
 
+    if args.cleanlab and not args.clean_only_train_data:
+        logger.info("Cleaning all data")
+        cleanlab_issue_file = (
+            processed_vectors_file_dir / f"label_issues_{args.cleanlab}.csv"
+        )
+        X, y = clean_data(X, y, args.cleanlab, cleanlab_issue_file)
+
     test_size = float(args.test_size)
     y_copy = y.copy()
 
@@ -1131,6 +1139,14 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             args.parameters["verbose"] = -1
         elif args.model == "xgboost":
             args.parameters["verbosity"] = 0
+
+        if args.cleanlab and args.clean_only_train_data:
+            # cleanlab_issue_file = (
+            #     processed_vectors_file_dir
+            #     / f"label_issues_training_data_only_{args.cleanlab}.csv"
+            # )
+            logger.info("Cleaning only training data")
+            X_train, y_train = clean_data(X_train, y_train, args.cleanlab)
 
         if args.fine_tune_model:
             args.cv_fold = int(args.cv_fold)
@@ -1411,6 +1427,35 @@ def get_data(args: Args) -> Tuple[np.ndarray, np.ndarray]:
     return X, y
 
 
+def clean_data(
+    X: np.ndarray, y: np.ndarray, clean_model_name: str, cleanlab_issue_file: pt = None
+):
+    logger.info(f"Cleaning data using {clean_model_name}")
+
+    if cleanlab_issue_file and cleanlab_issue_file.exists():
+        logger.info(f"Loading label issues from {cleanlab_issue_file}")
+        label_issues = pd.read_csv(cleanlab_issue_file)
+    else:
+        logger.info("Running cleanlab to clean data")
+        clean_model = models_dict[clean_model_name]()
+        cl = CleanLearning(clean_model, verbose=True)
+        cl.fit(X, y)
+
+        label_issues = cl.get_label_issues()
+        label_issues.to_csv(cleanlab_issue_file, index=False)
+
+    X_cleaned = X[~label_issues["is_label_issue"]]
+    y_cleaned = y[~label_issues["is_label_issue"]]
+    logger.info("Cleaned data using cleanlab")
+    logger.info(
+        f"X_cleaned shape: {X_cleaned.shape}, y_cleaned shape: {y_cleaned.shape}"
+    )
+    return X_cleaned, y_cleaned
+
+
+processed_vectors_file_dir: pt = None
+
+
 def main(args: Args):
     global \
         n_jobs, \
@@ -1423,7 +1468,8 @@ def main(args: Args):
         loaded_training_file, \
         pre_trained_file, \
         pre_trained_loc, \
-        seed
+        seed, \
+        processed_vectors_file_dir
 
     if args.seed:
         seed = int(args.seed)
@@ -1501,34 +1547,6 @@ def main(args: Args):
     if not y_file.exists():
         np.save(y_file, y)
         logger.info(f"processed y vectors saved to {y_file}")
-
-    if args.cleanlab:
-        logger.info(f"Cleaning data using {args.cleanlab}")
-
-        cleanlab_issue_file = (
-            processed_vectors_file_dir / f"label_issues_{args.cleanlab}.csv"
-        )
-
-        if cleanlab_issue_file.exists():
-            logger.info(f"Loading label issues from {cleanlab_issue_file}")
-            label_issues = pd.read_csv(cleanlab_issue_file)
-        else:
-            logger.info("Running cleanlab to clean data")
-            clean_model = models_dict[args.cleanlab]()
-            cl = CleanLearning(clean_model, verbose=True)
-            cl.fit(X, y)
-
-            label_issues = cl.get_label_issues()
-            label_issues.to_csv(cleanlab_issue_file, index=False)
-
-        X_cleaned = X[~label_issues["is_label_issue"]]
-        y_cleaned = y[~label_issues["is_label_issue"]]
-        logger.info("Cleaned data using cleanlab")
-        logger.info(
-            f"X_cleaned shape: {X_cleaned.shape}, y_cleaned shape: {y_cleaned.shape}"
-        )
-        X = X_cleaned
-        y = y_cleaned
 
     results = None
     if args.parallel_computation:
