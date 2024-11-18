@@ -1511,7 +1511,7 @@ def main(args: Args):
             logger.info(f"Loading label issues from {cleanlab_issue_file}")
             label_issues = pd.read_csv(cleanlab_issue_file)
         else:
-            logger.info(f"Running cleanlab to clean data")
+            logger.info("Running cleanlab to clean data")
             clean_model = models_dict[args.cleanlab]()
             cl = CleanLearning(clean_model, verbose=True)
             cl.fit(X, y)
