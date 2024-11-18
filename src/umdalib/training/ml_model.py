@@ -49,6 +49,8 @@ from .ml_utils.optuna_grids import (
     sklearn_models_names,
 )
 
+from cleanlab.regression.learn import CleanLearning
+
 # from .ml_utils.cleanup import cleanup_temp_files
 # cleanup_temp_files()
 tqdm.pandas()
@@ -136,6 +138,7 @@ class Args:
     optuna_storage_file: str
     estimator_file: Optional[str]
     seed: Optional[int]
+    cleanlab: Optional[str]
 
 
 def linear(x, m, c):
@@ -1498,6 +1501,32 @@ def main(args: Args):
     if not y_file.exists():
         np.save(y_file, y)
         logger.info(f"processed y vectors saved to {y_file}")
+
+    if args.cleanlab:
+        logger.info(f"Cleaning data using {args.cleanlab}")
+
+        cleanlab_issue_file = pre_trained_loc / f"label_issues_{args.cleanlab}.csv"
+
+        if cleanlab_issue_file.exists():
+            logger.info(f"Loading label issues from {cleanlab_issue_file}")
+            label_issues = pd.read_csv(cleanlab_issue_file)
+        else:
+            logger.info(f"Running cleanlab to clean data")
+            clean_model = models_dict[args.cleanlab]()
+            cl = CleanLearning(clean_model, verbose=True)
+            cl.fit(X, y)
+
+            label_issues = cl.get_label_issues()
+            label_issues.to_csv(cleanlab_issue_file, index=False)
+
+        X_cleaned = X[~label_issues["is_label_issue"]]
+        y_cleaned = y[~label_issues["is_label_issue"]]
+        logger.info("Cleaned data using cleanlab")
+        logger.info(
+            f"X_cleaned shape: {X_cleaned.shape}, y_cleaned shape: {y_cleaned.shape}"
+        )
+        X = X_cleaned
+        y = y_cleaned
 
     results = None
     if args.parallel_computation:
