@@ -25,6 +25,7 @@ plots_dir = root_loc / "plots"
 titles = ["MP", "BP", "VP", "CP", "CT"]
 total_counts = [7476, 4915, 398, 777, 819]
 
+embeddings_names = ["Mol2Vec", "VICGAE"]
 embeddings_dirname = ["mol2vec_embeddings", "VICGAE_embeddings"]
 models = ["gbr", "catboost", "xgboost", "lgbm"]
 models_labels = ["GBR", "CatBoost", "XGBoost", "LGBM"]
