@@ -140,6 +140,7 @@ class Args:
     seed: Optional[int]
     cleanlab: Optional[str]
     clean_only_train_data: bool
+    index_col: str
 
 
 def linear(x, m, c):
@@ -1054,6 +1055,17 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
         )
         X, y = clean_data(X, y, args.cleanlab, cleanlab_issue_file)
 
+        cleaned_X_shape = X.shape[0]
+        cleaned_y_shape = y.shape[0]
+        logger.info(f"Data cleaned: {cleaned_X_shape=}, {cleaned_y_shape=}")
+
+        metadata_file = processed_vectors_file_dir / "metadata.json"
+        metadata = json.load(open(metadata_file, "r"))
+        metadata["cleaned_X_shape"] = cleaned_X_shape
+        metadata["cleaned_y_shape"] = cleaned_y_shape
+
+        safe_json_dump(metadata, metadata_file)
+
     test_size = float(args.test_size)
     y_copy = y.copy()
 
@@ -1141,10 +1153,6 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             args.parameters["verbosity"] = 0
 
         if args.cleanlab and args.clean_only_train_data:
-            # cleanlab_issue_file = (
-            #     processed_vectors_file_dir
-            #     / f"label_issues_training_data_only_{args.cleanlab}.csv"
-            # )
             logger.info("Cleaning only training data")
             X_train, y_train = clean_data(X_train, y_train, args.cleanlab)
 
@@ -1329,8 +1337,8 @@ def get_data(args: Args) -> Tuple[np.ndarray, np.ndarray]:
 
     X = np.load(args.vectors_file, allow_pickle=True)
     X = np.array(X, dtype=float)
-
-    logger.info(f"{X.shape=}, {X.dtype=}")
+    original_X_shape = X.shape[0]
+    logger.info(f"{original_X_shape=}")
 
     # load training data from file
     ddf = read_as_ddf(
@@ -1339,6 +1347,8 @@ def get_data(args: Args) -> Tuple[np.ndarray, np.ndarray]:
         args.training_file["key"],
         use_dask=args.use_dask,
     )
+
+    logger.info(f"{ddf.columns=}")
 
     y = None
     if args.use_dask:
@@ -1352,30 +1362,57 @@ def get_data(args: Args) -> Tuple[np.ndarray, np.ndarray]:
     if not isinstance(y, pd.Series):
         y = pd.Series(y)
 
+    original_y_index = y.index.to_list()
+    logger.info(f"{y.index.name=}")
+
     logger.info("Apply the conversion function to handle strings like 188.0 - 189.0")
     y = y.apply(convert_to_float)
-
     invalid_embedding_indices = [i for i, arr in enumerate(X) if np.all(arr == 0)]
     # Initially, mark all as valid
     valid_embedding_mask = np.ones(len(X), dtype=bool)
     # Then, mark invalid indices as False
     valid_embedding_mask[invalid_embedding_indices] = False
 
-    X = X[
-        valid_embedding_mask
-    ]  # Keep only the rows that are marked as True in the valid_embedding_mask
+    # Keep only the rows that are marked as True in the valid_embedding_mask
+    X = X[valid_embedding_mask]
+    validated_X_shape = X.shape[0]
+
     y = y[valid_embedding_mask]
 
     logger.info(f"{X.shape=} after removing invalid X i.e., all zeros")
 
     # Keep track of valid indices
     valid_y_indices = y.notna()
+    if valid_y_indices.sum() == 0:
+        raise ValueError("All y values are invalid")
+
     y = y[valid_y_indices]
     X = X[valid_y_indices]
+
+    final_X_shape = X.shape[0]
+    final_y_index = y.index.to_list()
+    invalid_y_indices = list(set(original_y_index) - set(final_y_index))
+
+    logger.info(f"{final_X_shape=}")
     logger.info(f"{X.shape=} after removing invalid y")
 
-    y = y.values
+    if len(invalid_y_indices) > 0:
+        logger.warning(
+            f"Removed {len(invalid_y_indices)} rows from y due to invalid values"
+        )
+        invalid_y_indices.sort()
+        final_y_removed_index_file = (
+            processed_vectors_file_dir / "invalid_y_indices.txt"
+        )
+        with open(final_y_removed_index_file, "w") as f:
+            f.write("\n".join(map(str, invalid_y_indices)))
+            logger.info(f"Saved invalid y indices to {final_y_removed_index_file}")
+    else:
+        logger.info("No invalid values found in X and y")
+        with open(processed_vectors_file_dir / ".all_valid", "w") as f:
+            f.write("All valid values")
 
+    y = y.values
     y_transformer = None
 
     if ytransformation:
@@ -1424,6 +1461,19 @@ def get_data(args: Args) -> Tuple[np.ndarray, np.ndarray]:
     logger.info(f"{X[0].shape=}\n{y[0]=}")
     logger.info(f"Loaded data: {X.shape=}, {y.shape=}")
 
+    with open(processed_vectors_file_dir / ".data_loaded", "w") as f:
+        f.write("Data loaded")
+
+    metadata = {
+        "original_X_shape": original_X_shape,
+        "validated_X_shape": validated_X_shape,
+        "original_y_index": len(original_y_index),
+        "final_y_index": len(final_y_index),
+        "final_X_shape": final_X_shape,
+    }
+
+    metadata_file = processed_vectors_file_dir / "metadata.json"
+    safe_json_dump(metadata, metadata_file)
     return X, y
 
 
@@ -1532,6 +1582,13 @@ def main(args: Args):
         X_file = processed_vectors_file_dir / "processed.X.npy"
         y_file = processed_vectors_file_dir / "processed.y.npy"
 
+    data_loaded_file = processed_vectors_file_dir / ".data_loaded"
+    if not data_loaded_file.exists():
+        logger.info("Data not loaded yet")
+        X, y = get_data(args)
+
+    # X, y = get_data(args)  # comment/remove this line
+
     if not (yscaling or ytransformation) and X_file.exists() and y_file.exists():
         X = np.load(X_file, allow_pickle=True)
         y = np.load(y_file, allow_pickle=True)
@@ -1541,6 +1598,7 @@ def main(args: Args):
         X, y = get_data(args)
         logger.info(f"{X.shape=}, {y.shape=}")
 
+    # X, y = get_data(args)
     if not X_file.exists():
         np.save(X_file, X)
         logger.info(f"processed X vectors saved to {X_file}")
