@@ -1,11 +1,14 @@
 from pathlib import Path as pt
 
-base_loc1 = pt(
-    "/Users/aravindhnivas/Documents/ML-properties/[PHYSICAL CONSTANTS OF ORGANIC COMPOUNDS]/"
+user_loc = pt("/Users/aravindhnivas")
+# root_loc = user_loc / "Documents/ML-properties"
+root_loc = (
+    user_loc
+    / "Library/CloudStorage/OneDrive-MassachusettsInstituteofTechnology/ML-properties"
 )
-base_loc2 = pt(
-    "/Users/aravindhnivas/Documents/ML-properties/[CRITICAL CONSTANTS OF ORGANIC COMPOUNDS]/"
-)
+
+base_loc1 = root_loc / "[PHYSICAL CONSTANTS OF ORGANIC COMPOUNDS]"
+base_loc2 = root_loc / "[CRITICAL CONSTANTS OF ORGANIC COMPOUNDS]"
 
 processed_data_dirs = [
     base_loc1
@@ -18,10 +21,10 @@ processed_data_dirs = [
     base_loc2 / "Tc_K_processed_data",
 ]
 
-plots_dir = pt("/Users/aravindhnivas/Documents/ML-properties/plots/")
+plots_dir = root_loc / "plots"
 titles = ["MP", "BP", "VP", "CP", "CT"]
 total_counts = [7476, 4915, 398, 777, 819]
 
-embeddings = ["mol2vec_embeddings", "VICGAE_embeddings"]
+embeddings_dirname = ["mol2vec_embeddings", "VICGAE_embeddings"]
 models = ["gbr", "catboost", "xgboost", "lgbm"]
 models_labels = ["GBR", "CatBoost", "XGBoost", "LGBM"]
