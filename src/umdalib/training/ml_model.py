@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypedDic
 import matplotlib.pyplot as plt
 import numpy as np
 import optuna
+import sigfig
 
 # from optuna.visualization import plot_param_importances
 import optuna.visualization as opv
@@ -25,7 +26,6 @@ from sklearn import metrics
 from sklearn.base import clone
 from sklearn.gaussian_process import kernels
 from sklearn.model_selection import (
-    KFold,
     cross_validate,
     learning_curve,
     train_test_split,
@@ -541,12 +541,15 @@ def parse_cv_scores(cross_validated_scores: dict) -> dict:
             ci_lower = mean - 1.96 * std
             ci_upper = mean + 1.96 * std
 
+            sigfig_value = sigfig.round(mean, std, sep="external_brackets")
+
             cv_scores[set_][metric_key] = {
                 "mean": mean,
                 "std": std,
                 "ci_lower": ci_lower,
                 "ci_upper": ci_upper,
                 "scores": scores.tolist(),
+                "sigfig_value": sigfig_value,
             }
 
     return cv_scores
