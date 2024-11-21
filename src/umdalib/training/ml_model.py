@@ -506,104 +506,18 @@ def get_stats(estimator, X_true: np.ndarray, y_val: np.ndarray):
 
 
 def compute_metrics(
-    method: Literal["r2", "mse", "rmse", "mae"], y_true: np.ndarray, y_pred: np.ndarray
+    metric: Literal["r2", "mse", "rmse", "mae"], y_true: np.ndarray, y_pred: np.ndarray
 ) -> float:
-    if method == "r2":
+    if metric == "r2":
         return metrics.r2_score(y_true, y_pred)
-    elif method == "mse":
+    elif metric == "mse":
         return metrics.mean_squared_error(y_true, y_pred)
-    elif method == "rmse":
+    elif metric == "rmse":
         return metrics.root_mean_squared_error(y_true, y_pred)
-    elif method == "mae":
+    elif metric == "mae":
         return metrics.mean_absolute_error(y_true, y_pred)
     else:
-        raise ValueError(f"Invalid method: {method}")
-
-
-def custom_cross_validate(
-    estimator,
-    X,
-    y,
-    cv=5,
-    scoring=[],
-):
-    kf = KFold(n_splits=cv, random_state=seed, shuffle=True)
-    cv_scores = {"train": {}, "test": {}}
-
-    logger.info(f"Cross-validating model with {cv} folds")
-    logger.info(f"Scoring metrics: {scoring}")
-
-    if len(scoring) < 1:
-        raise ValueError("No scoring metrics provided")
-
-    logger.info("Begin cross-validation")
-    counter = 1
-
-    for train_index, test_index in kf.split(X):
-        logger.info(f"Fold {counter}")
-        counter += 1
-
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-
-        estimator_clone = clone(estimator)
-        # Fit the model on the training data for this fold
-        estimator_clone.fit(X_train, y_train)
-
-        # Evaluate the estimator_clone on the test data for this fold
-        y_pred_train = estimator_clone.predict(X_train)
-        y_pred_train, y_train = get_transformed_data_for_stats(y_pred_train, y_train)
-
-        y_pred_test = estimator_clone.predict(X_test)
-        y_pred_test, y_test = get_transformed_data_for_stats(y_pred_test, y_test)
-
-        # Initialize metrics if not already done
-        for metric in scoring:
-            if metric not in cv_scores["train"]:
-                cv_scores["train"][metric] = {"scores": []}
-                cv_scores["test"][metric] = {"scores": []}
-
-            # Compute and store the scores
-            train_score = compute_metrics(metric, y_train, y_pred_train)
-            test_score = compute_metrics(metric, y_test, y_pred_test)
-
-            cv_scores["train"][metric]["scores"].append(train_score)
-            cv_scores["test"][metric]["scores"].append(test_score)
-
-            logger.info(f"{metric=}, {train_score=}, {test_score=}")
-
-    # Calculate mean, std, and confidence intervals after all folds
-    for metric in scoring:
-        train_scores = cv_scores["train"][metric]["scores"]
-        test_scores = cv_scores["test"][metric]["scores"]
-
-        train_mean = np.mean(train_scores)
-        train_std = np.std(train_scores, ddof=1)
-
-        test_mean = np.mean(test_scores)
-        test_std = np.std(test_scores, ddof=1)
-
-        cv_scores["train"][metric].update(
-            {
-                "mean": train_mean,
-                "std": train_std,
-                "ci_lower": train_mean - 1.96 * train_std,
-                "ci_upper": train_mean + 1.96 * train_std,
-                "scores": train_scores,
-            }
-        )
-
-        cv_scores["test"][metric].update(
-            {
-                "mean": test_mean,
-                "std": test_std,
-                "ci_lower": test_mean - 1.96 * test_std,
-                "ci_upper": test_mean + 1.96 * test_std,
-                "scores": test_scores,
-            }
-        )
-
-    return cv_scores
+        raise ValueError(f"Invalid metric: {metric}")
 
 
 def parse_cv_scores(cross_validated_scores: dict) -> dict:
@@ -638,6 +552,35 @@ def parse_cv_scores(cross_validated_scores: dict) -> dict:
     return cv_scores
 
 
+def custom_scorer(y_true, y_pred, metric, transform=False):
+    if not transform:
+        return compute_metrics(metric, y_true, y_pred)
+    y_pred_original, y_true_original = get_transformed_data_for_stats(y_pred, y_true)
+    return compute_metrics(metric, y_true_original, y_pred_original)
+
+
+# Create scorer objects for use with cross_validation
+def make_multi_metric_scorer(transform: bool = False) -> Dict[str, Callable]:
+    def r2_score_transformed(y_true, y_pred):
+        return custom_scorer(y_true, y_pred, "r2", transform)
+
+    def neg_rmse_score_transformed(y_true, y_pred):
+        return -custom_scorer(y_true, y_pred, "rmse", transform)
+
+    def neg_mae_score_transformed(y_true, y_pred):
+        return -custom_scorer(y_true, y_pred, "mae", transform)
+
+    def neg_mse_score_transformed(y_true, y_pred):
+        return -custom_scorer(y_true, y_pred, "mse", transform)
+
+    return {
+        "r2": metrics.make_scorer(r2_score_transformed),
+        "neg_root_mean_squared_error": metrics.make_scorer(neg_rmse_score_transformed),
+        "neg_mean_absolute_error": metrics.make_scorer(neg_mae_score_transformed),
+        "neg_mean_squared_error": metrics.make_scorer(neg_mse_score_transformed),
+    }
+
+
 def compute_cv(
     estimator,
     X: np.ndarray,
@@ -648,41 +591,24 @@ def compute_cv(
 
     estimator = clone(estimator)
     cv_fold = int(cv_fold)
-
-    if yscaler or yscaling:
-        logger.warning(
-            "Using custom cross-validation with y-scaling and y-transformation"
-        )
-        scoring = ["r2", "mse", "rmse", "mae"]
-        logger.info(f"{scoring=}")
-        cv_scores = custom_cross_validate(estimator, X, y, cv=cv_fold, scoring=scoring)
-    else:
-        logger.info(
-            f"Using built-in cross-validation with {cv_fold} folds and n_jobs={n_jobs}"
-        )
-        scoring = [
-            "r2",
-            "neg_mean_squared_error",
-            "neg_root_mean_squared_error",
-            "neg_mean_absolute_error",
-        ]
-
-        logger.info(f"{scoring=}")
-        cross_validated_scores = cross_validate(
-            estimator,
-            X,
-            y,
-            cv=cv_fold,
-            scoring=scoring,
-            n_jobs=n_jobs,
-            return_train_score=True,
-        )
-        cv_scores = parse_cv_scores(cross_validated_scores)
-
+    transform = False
+    if yscaling or ytransformation:
+        transform = True
+    logger.info(f"{yscaler=}, {yscaling=}, {transform=}")
+    scoring = make_multi_metric_scorer(transform)
+    cross_validated_scores = cross_validate(
+        estimator,
+        X,
+        y,
+        cv=cv_fold,
+        n_jobs=n_jobs,
+        return_train_score=True,
+        scoring=scoring,
+    )
+    cv_scores = parse_cv_scores(cross_validated_scores)
     logger.info(f"{cv_scores=}")
-    # raise NotImplementedError("Cross-validation not implemented yet")
-    nfold_cv_scores = {f"{cv_fold}": cv_scores}
 
+    nfold_cv_scores = {f"{cv_fold}": cv_scores}
     cv_scores_savefile = pre_trained_loc / f"{pre_trained_file.stem}.cv_scores.json"
 
     if cv_scores_savefile.exists():
