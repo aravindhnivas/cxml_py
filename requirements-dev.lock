@@ -358,7 +358,7 @@ pyyaml==6.0.2
 pyzmq==26.2.0
     # via ipykernel
     # via jupyter-client
-rdkit==2024.3.5
+rdkit==2024.3.6
     # via umdalib
 redis==5.2.0
     # via redis-sentinel-url

@@ -30,7 +30,7 @@ dependencies = [
     "gensim>=4.3.3",
     "mol2vec @ git+https://github.com/aravindhnivas/mol2vec.git@gensim_v4",
     "astrochem_embedding @ git+https://github.com/aravindhnivas/astrochem_embedding.git@main",
-    "rdkit>=2024.3.5",
+    "rdkit>=2024.3.6",
     "shap>=0.46.0",
     "optuna>=4.0.0",
     "optuna-dashboard>=0.16.2",

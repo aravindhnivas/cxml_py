@@ -321,7 +321,7 @@ pyyaml==6.0.2
     # via lightning
     # via optuna
     # via pytorch-lightning
-rdkit==2024.3.5
+rdkit==2024.3.6
     # via umdalib
 redis==5.2.0
     # via redis-sentinel-url
