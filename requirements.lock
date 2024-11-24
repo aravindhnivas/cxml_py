@@ -31,6 +31,8 @@ asttokens==2.4.1
     # via stack-data
 attrs==24.2.0
     # via aiohttp
+    # via jsonschema
+    # via referencing
 bidict==0.23.1
     # via python-socketio
 blinker==1.8.2
@@ -84,6 +86,8 @@ eventlet==0.37.0
     # via umdalib
 executing==2.1.0
     # via stack-data
+fastjsonschema==2.20.0
+    # via nbformat
 filelock==3.16.1
     # via torch
 flask==3.0.3
@@ -133,8 +137,15 @@ jinja2==3.1.4
 joblib==1.4.2
     # via astrochem-embedding
     # via mol2vec
+    # via pynndescent
     # via scikit-learn
     # via umdalib
+jsonschema==4.23.0
+    # via nbformat
+jsonschema-specifications==2024.10.1
+    # via jsonschema
+jupyter-core==5.7.2
+    # via nbformat
 kaleido==0.2.1
     # via umdalib
 kiwisolver==1.4.7
@@ -149,6 +160,7 @@ lightning-utilities==0.11.8
     # via torchmetrics
 llvmlite==0.43.0
     # via numba
+    # via pynndescent
 locket==1.0.0
     # via distributed
     # via partd
@@ -188,12 +200,16 @@ multipledispatch==1.0.0
 multiprocess==0.70.17
     # via mapply
     # via pathos
+nbformat==5.10.4
+    # via umdalib
 networkx==3.4.2
     # via torch
 numba==0.60.0
     # via dask-ml
+    # via pynndescent
     # via shap
     # via sparse
+    # via umap-learn
     # via umdalib
 numpy==1.26.4
     # via astrochem-embedding
@@ -220,6 +236,7 @@ numpy==1.26.4
     # via statsmodels
     # via tensorboard
     # via torchmetrics
+    # via umap-learn
     # via umdalib
     # via xgboost
 optuna==4.0.0
@@ -273,6 +290,8 @@ pexpect==4.9.0
 pillow==11.0.0
     # via matplotlib
     # via rdkit
+platformdirs==4.3.6
+    # via jupyter-core
 plotly==5.24.1
     # via catboost
 pox==0.3.5
@@ -300,6 +319,8 @@ pyinstaller==6.11.0
     # via umdalib
 pyinstaller-hooks-contrib==2024.9
     # via pyinstaller
+pynndescent==0.5.13
+    # via umap-learn
 pyparsing==3.2.0
     # via matplotlib
 python-dateutil==2.9.0.post0
@@ -330,6 +351,12 @@ redis==5.2.0
     # via umdalib
 redis-sentinel-url==1.0.1
     # via rq-dashboard
+referencing==0.35.1
+    # via jsonschema
+    # via jsonschema-specifications
+rpds-py==0.21.0
+    # via jsonschema
+    # via referencing
 rq==2.0.0
     # via rq-dashboard
     # via umdalib
@@ -345,7 +372,9 @@ scikit-learn==1.5.2
     # via dask-glm
     # via dask-ml
     # via optuna-dashboard
+    # via pynndescent
     # via shap
+    # via umap-learn
     # via umdalib
 scipy==1.13.1
     # via catboost
@@ -353,10 +382,12 @@ scipy==1.13.1
     # via dask-ml
     # via gensim
     # via lightgbm
+    # via pynndescent
     # via scikit-learn
     # via shap
     # via sparse
     # via statsmodels
+    # via umap-learn
     # via umdalib
     # via xgboost
 seaborn==0.13.2
@@ -437,9 +468,12 @@ tqdm==4.66.6
     # via optuna
     # via pytorch-lightning
     # via shap
+    # via umap-learn
 traitlets==5.14.3
     # via ipython
+    # via jupyter-core
     # via matplotlib-inline
+    # via nbformat
 types-python-dateutil==2.9.0.20241003
     # via arrow
 typing-extensions==4.12.2
@@ -451,6 +485,8 @@ typing-extensions==4.12.2
     # via torch
 tzdata==2024.2
     # via pandas
+umap-learn==0.5.7
+    # via umdalib
 uncertainties==3.2.2
     # via umdalib
 urllib3==2.2.3
