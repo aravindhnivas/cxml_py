@@ -1521,19 +1521,16 @@ def main(args: Args):
     if not data_loaded_file.exists():
         logger.info("Data not loaded yet")
         X, y = get_data(args)
-
-    # X, y = get_data(args)  # comment/remove this line
-
-    if not (yscaling or ytransformation) and X_file.exists() and y_file.exists():
-        X = np.load(X_file, allow_pickle=True)
-        y = np.load(y_file, allow_pickle=True)
-        logger.info(f"Loaded processed X vectors from {X_file}")
-        logger.info(f"Loaded processed y vectors from {y_file}")
     else:
-        X, y = get_data(args)
-        logger.info(f"{X.shape=}, {y.shape=}")
+        if not (yscaling or ytransformation) and X_file.exists() and y_file.exists():
+            X = np.load(X_file, allow_pickle=True)
+            y = np.load(y_file, allow_pickle=True)
+            logger.info(f"Loaded processed X vectors from {X_file}")
+            logger.info(f"Loaded processed y vectors from {y_file}")
+        else:
+            X, y = get_data(args)
+            logger.info(f"{X.shape=}, {y.shape=}")
 
-    # X, y = get_data(args)
     if not X_file.exists():
         np.save(X_file, X)
         logger.info(f"processed X vectors saved to {X_file}")
