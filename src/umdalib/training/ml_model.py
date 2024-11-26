@@ -661,7 +661,9 @@ def learn_curve(
         test_std = np.std(cv_test_scores, ddof=1)
         train_mean = np.mean(cv_train_scores)
         train_std = np.std(cv_train_scores, ddof=1)
-
+        train_sigfig_value = sigfig.round(train_mean, train_std, sep="external_brackets")
+        test_sigfig_value = sigfig.round(test_mean, test_std, sep="external_brackets")
+        
         learning_curve_data[f"{train_size}"] = {
             "test": {
                 "mean": test_mean,
@@ -669,6 +671,7 @@ def learn_curve(
                 "scores": cv_test_scores.tolist(),
                 "ci_lower": test_mean - 1.96 * test_std,
                 "ci_upper": test_mean + 1.96 * test_std,
+                "sigfig_value": test_sigfig_value,
             },
             "train": {
                 "mean": train_mean,
@@ -676,6 +679,7 @@ def learn_curve(
                 "scores": cv_train_scores.tolist(),
                 "ci_lower": train_mean - 1.96 * train_std,
                 "ci_upper": train_mean + 1.96 * train_std,
+                "sigfig_value": train_sigfig_value,
             },
         }
 
