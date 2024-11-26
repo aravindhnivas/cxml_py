@@ -661,9 +661,11 @@ def learn_curve(
         test_std = np.std(cv_test_scores, ddof=1)
         train_mean = np.mean(cv_train_scores)
         train_std = np.std(cv_train_scores, ddof=1)
-        train_sigfig_value = sigfig.round(train_mean, train_std, sep="external_brackets")
+        train_sigfig_value = sigfig.round(
+            train_mean, train_std, sep="external_brackets"
+        )
         test_sigfig_value = sigfig.round(test_mean, test_std, sep="external_brackets")
-        
+
         learning_curve_data[f"{train_size}"] = {
             "test": {
                 "mean": test_mean,
