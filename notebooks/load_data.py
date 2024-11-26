@@ -15,12 +15,13 @@ saved_states_1 = [
     "tmp_C_processed_data/analysis_data/filtered/tmpC_topelements_processed_data",
     "tbp_C_processed_data/analysis_data/filtered/tbp_topelements_processed_data",
     "vp_kPa_25C_filtered_ydata_processed_data/analysis_data/filtered/vp_kPa_25C_topelements_processed_data",
-    
 ]
 saved_states_2 = ["Pc_MPa_processed_data", "Tc_K_processed_data"]
 saved_states = saved_states_1 + saved_states_2
 
-processed_data_dirs = [base_loc1 / f for f in saved_states_1] + [base_loc2 / f for f in saved_states_2]
+processed_data_dirs = [base_loc1 / f for f in saved_states_1] + [
+    base_loc2 / f for f in saved_states_2
+]
 embedded_vectors_dir = [d / "embedded_vectors" for d in processed_data_dirs]
 
 # processed_data_dirs = [
@@ -36,6 +37,14 @@ embedded_vectors_dir = [d / "embedded_vectors" for d in processed_data_dirs]
 
 plots_dir = root_loc / "plots"
 titles = ["MP", "BP", "VP", "CP", "CT"]
+property_names = [
+    "Melting Point",
+    "Boiling Point",
+    "Vapor Pressure",
+    "Critical Pressure",
+    "Critical Temperature",
+]
+property_units = ["K", "K", "kPa at 25°C ", "MPa", "K"]
 total_counts = [7476, 4915, 398, 777, 819]
 
 embeddings_names = ["Mol2Vec", "VICGAE"]
