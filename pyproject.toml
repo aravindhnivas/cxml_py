@@ -51,6 +51,7 @@ dependencies = [
     "uncertainties>=3.2.2",
     "umap-learn>=0.5.7",
     "nbformat>=5.10.4",
+    "tables>=3.10.1",
 ]
 
 
