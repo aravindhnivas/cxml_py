@@ -159,3 +159,6 @@ scripts/umdapy.spec
 *.txt
 *.csv
 **/catboost_info/
+*.h5
+*.parquet
+*.pkl
