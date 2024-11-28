@@ -162,3 +162,4 @@ scripts/umdapy.spec
 *.h5
 *.parquet
 *.pkl
+*.npy
