@@ -985,10 +985,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
     if args.cleanlab and not args.clean_only_train_data:
         logger.info("Cleaning all data")
-        cleanlab_issue_file = (
-            processed_vectors_file_dir / f"label_issues_{args.cleanlab}.csv"
-        )
-        X, y = clean_data(X, y, args.cleanlab, cleanlab_issue_file)
+        X, y = clean_data(X, y, args.cleanlab, save=True)
 
         metadata_file = processed_vectors_file_dir / "metadata.json"
         metadata = json.load(open(metadata_file, "r"))
@@ -1043,7 +1040,7 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
 
     if args.cleanlab and args.clean_only_train_data:
         logger.info("Cleaning only training data")
-        X_train, y_train = clean_data(X_train, y_train, args.cleanlab)
+        X_train, y_train = clean_data(X_train, y_train, args.cleanlab, save=False)
 
     if args.fine_tune_model:
         args.cv_fold = int(args.cv_fold)
@@ -1220,16 +1217,18 @@ inverse_scaling = True
 inverse_transform = True
 loaded_training_file: pt = None
 
+final_df: pd.DataFrame = None
+
 
 def get_data(args: Args) -> Tuple[np.ndarray, np.ndarray]:
-    global yscaler, boxcox_lambda_param, y_transformer
+    global yscaler, boxcox_lambda_param, y_transformer, final_df
 
     processed_df_file = processed_vectors_file_dir / "processed_df.parquet"
     if processed_df_file.exists():
         logger.info("Loading processed data")
-        processed_df = pd.read_parquet(processed_df_file)
-        X = processed_df.iloc[:, 2:].to_numpy()
-        y = processed_df["y"].to_numpy()
+        final_df = pd.read_parquet(processed_df_file)
+        X = final_df.iloc[:, 2:].to_numpy()
+        y = final_df["y"].to_numpy()
         logger.success(
             f"Processed data loaded from {processed_df_file}\n{X.shape=}, {y.shape=}"
         )
@@ -1280,7 +1279,7 @@ def get_data(args: Args) -> Tuple[np.ndarray, np.ndarray]:
     final_mask = non_zero_mask & valid_y_mask
 
     # Apply final filtering
-    final_df: pd.DataFrame = data_df[final_mask]
+    final_df = data_df[final_mask]
     final_df.to_parquet(processed_df_file, compression="snappy")
     logger.success(
         f"Processed data saved to {processed_df_file}\n{X.shape=}, {y.shape=}"
@@ -1356,28 +1355,41 @@ def get_data(args: Args) -> Tuple[np.ndarray, np.ndarray]:
 
 
 def clean_data(
-    X: np.ndarray, y: np.ndarray, clean_model_name: str, cleanlab_issue_file: pt = None
-):
+    X: np.ndarray, y: np.ndarray, clean_model_name: str, save: bool = True
+) -> Tuple[np.ndarray, np.ndarray]:
     logger.info(f"Cleaning data using {clean_model_name}")
+    cleanlab_label_issue_file = (
+        processed_vectors_file_dir / f"label_issues_{clean_model_name}.parquet"
+    )
 
-    if cleanlab_issue_file and cleanlab_issue_file.exists():
-        logger.info(f"Loading label issues from {cleanlab_issue_file}")
-        label_issues = pd.read_csv(cleanlab_issue_file)
+    if cleanlab_label_issue_file and cleanlab_label_issue_file.exists():
+        logger.info(f"Loading label issues from {cleanlab_label_issue_file}")
+        label_issues_df = pd.read_parquet(cleanlab_label_issue_file)
     else:
         logger.info("Running cleanlab to clean data")
         clean_model = models_dict[clean_model_name]()
         cl = CleanLearning(clean_model, verbose=True)
         cl.fit(X, y)
 
-        label_issues = cl.get_label_issues()
-        label_issues.to_csv(cleanlab_issue_file, index=False)
+        label_issues_df = cl.get_label_issues()
+        label_issues_df.index = final_df.index
+        if save:
+            label_issues_df.to_parquet(cleanlab_label_issue_file)
 
-    X_cleaned = X[~label_issues["is_label_issue"]]
-    y_cleaned = y[~label_issues["is_label_issue"]]
+        logger.info(
+            "Do indices match?", (label_issues_df.index == final_df.index).all()
+        )
+        logger.info("final_df index shape:", final_df.index.shape)
+        logger.info("label_issues_df index shape:", label_issues_df.index.shape)
+
+    X_cleaned = X[~label_issues_df["is_label_issue"]]
+    y_cleaned = y[~label_issues_df["is_label_issue"]]
+
     logger.info("Cleaned data using cleanlab")
     logger.info(
         f"X_cleaned shape: {X_cleaned.shape}, y_cleaned shape: {y_cleaned.shape}"
     )
+
     return X_cleaned, y_cleaned
 
 
