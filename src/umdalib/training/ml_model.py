@@ -1281,9 +1281,7 @@ def get_data(args: Args) -> Tuple[np.ndarray, np.ndarray]:
     # Apply final filtering
     final_df = data_df[final_mask]
     final_df.to_parquet(processed_df_file, compression="snappy")
-    logger.success(
-        f"Processed data saved to {processed_df_file}\n{X.shape=}, {y.shape=}"
-    )
+    logger.success(f"Processed data saved to {processed_df_file}")
 
     # Print statistics
     logger.info(f"Original number of rows: {len(data_df)}")
