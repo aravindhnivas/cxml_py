@@ -1296,6 +1296,18 @@ def get_data(args: Args) -> Tuple[np.ndarray, np.ndarray]:
         X = final_df.iloc[:, 2:].to_numpy()
         y = final_df["y"].to_numpy()
 
+        X_validated_length = original_length - np.sum(~non_zero_mask)
+        final_length = len(final_df)
+
+        metadata = {
+            "original_length": original_length,
+            "X_validated_length": X_validated_length,
+            "final_length": final_length,
+        }
+
+        metadata_file = processed_vectors_file_dir / "metadata.json"
+        safe_json_dump(metadata, metadata_file)
+
     y_transformer = None
     if ytransformation:
         if ytransformation == "boxcox":
@@ -1337,17 +1349,6 @@ def get_data(args: Args) -> Tuple[np.ndarray, np.ndarray]:
     with open(processed_vectors_file_dir / ".data_loaded", "w") as f:
         f.write("Data loaded")
 
-    X_validated_length = original_length - np.sum(~non_zero_mask)
-    final_length = len(final_df)
-
-    metadata = {
-        "original_length": original_length,
-        "X_validated_length": X_validated_length,
-        "final_length": final_length,
-    }
-
-    metadata_file = processed_vectors_file_dir / "metadata.json"
-    safe_json_dump(metadata, metadata_file)
     return X, y
 
 
