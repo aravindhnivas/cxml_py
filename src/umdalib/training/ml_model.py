@@ -1038,9 +1038,9 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     elif args.model == "xgboost":
         args.parameters["verbosity"] = 0
 
-    if args.cleanlab and args.clean_only_train_data:
-        logger.info("Cleaning only training data")
-        X_train, y_train = clean_data(X_train, y_train, args.cleanlab, save=False)
+    # if args.cleanlab and args.clean_only_train_data:
+    #     logger.info("Cleaning only training data")
+    #     X_train, y_train = clean_data(X_train, y_train, args.cleanlab, save=False)
 
     if args.fine_tune_model:
         args.cv_fold = int(args.cv_fold)
