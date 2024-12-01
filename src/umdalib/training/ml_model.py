@@ -1371,14 +1371,18 @@ def clean_data(
 
         label_issues_df = cl.get_label_issues()
         label_issues_df.index = final_df.index
+
         if save:
             label_issues_df.to_parquet(cleanlab_label_issue_file)
 
-        logger.info(
-            "Do indices match?", (label_issues_df.index == final_df.index).all()
-        )
-        logger.info("final_df index shape:", final_df.index.shape)
-        logger.info("label_issues_df index shape:", label_issues_df.index.shape)
+        indices_match = (label_issues_df.index == final_df.index).all()
+
+        if not indices_match:
+            logger.error("Indices do not match between final_df and label_issues_df")
+            logger.info("final_df index shape:", final_df.index.shape)
+            logger.info("label_issues_df index shape:", label_issues_df.index.shape)
+        else:
+            logger.info("Indices match between final_df and label_issues_df")
 
     X_cleaned = X[~label_issues_df["is_label_issue"]]
     y_cleaned = y[~label_issues_df["is_label_issue"]]
