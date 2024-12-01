@@ -1225,7 +1225,7 @@ def get_data(args: Args) -> Tuple[np.ndarray, np.ndarray]:
 
     processed_df_file = processed_vectors_file_dir / "processed_df.parquet"
     if processed_df_file.exists():
-        logger.info("Loading processed data")
+        logger.info(f"Loading processed data from {processed_df_file}")
         final_df = pd.read_parquet(processed_df_file)
         X = final_df.iloc[:, 2:].to_numpy()
         y = final_df["y"].to_numpy()
