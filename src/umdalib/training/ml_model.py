@@ -1232,72 +1232,71 @@ def get_data(args: Args) -> Tuple[np.ndarray, np.ndarray]:
         logger.success(
             f"Processed data loaded from {processed_df_file}\n{X.shape=}, {y.shape=}"
         )
-        return X, y
+    else:
+        logger.info("Loading data")
+        X = np.load(args.vectors_file, allow_pickle=True)
+        X = np.array(X, dtype=float)
+        original_length = X.shape[0]
 
-    logger.info("Loading data")
+        # stack the arrays (n_samples, n_features)
+        if len(X.shape) == 1:
+            logger.info("Reshaping X")
+            X = np.vstack(X)
 
-    X = np.load(args.vectors_file, allow_pickle=True)
-    X = np.array(X, dtype=float)
-    original_length = X.shape[0]
+        # load training data from file
+        ddf: pd.DataFrame = read_as_ddf(
+            args.training_file["filetype"],
+            args.training_file["filename"],
+            args.training_file["key"],
+            use_dask=args.use_dask,
+            computed=True,
+        )
+        ddf.set_index(args.index_col, inplace=True)
+        logger.info(f"{ddf.columns=}")
 
-    # stack the arrays (n_samples, n_features)
-    if len(X.shape) == 1:
-        logger.info("Reshaping X")
-        X = np.vstack(X)
+        # Create DataFrame with feature columns
+        feature_cols = [str(i) for i in range(X.shape[1])]
+        data_df = pd.DataFrame(X, index=ddf.index, columns=feature_cols)
 
-    # load training data from file
-    ddf = read_as_ddf(
-        args.training_file["filetype"],
-        args.training_file["filename"],
-        args.training_file["key"],
-        use_dask=args.use_dask,
-    )
-    ddf.set_index(args.index_col, inplace=True)
-    logger.info(f"{ddf.columns=}")
+        # Add SMILES and y columns
+        data_df.loc[:, args.training_column_name_X] = ddf[args.training_column_name_X]
+        data_df.loc[:, "y"] = pd.to_numeric(
+            ddf[args.training_column_name_y], errors="coerce"
+        )
 
-    # Create DataFrame with feature columns
-    feature_cols = [str(i) for i in range(X.shape[1])]
-    data_df = pd.DataFrame(X, index=ddf.index, columns=feature_cols)
+        # Reorder columns
+        cols_order = [args.training_column_name_X, "y"] + feature_cols
+        data_df = data_df[cols_order]
 
-    # Add SMILES and y columns
-    data_df.loc[:, args.training_column_name_X] = ddf[args.training_column_name_X]
-    data_df.loc[:, "y"] = pd.to_numeric(
-        ddf[args.training_column_name_y], errors="coerce"
-    )
+        # Filter data efficiently using numpy operations
+        features = data_df.iloc[:, 2:].to_numpy()
+        y_values = data_df["y"].to_numpy()
 
-    # Reorder columns
-    cols_order = [args.training_column_name_X, "y"] + feature_cols
-    data_df = data_df[cols_order]
+        # Create masks
+        non_zero_mask = np.any(features != 0, axis=1)
+        valid_y_mask = ~(np.isnan(y_values) | np.isinf(y_values))
+        final_mask = non_zero_mask & valid_y_mask
 
-    # Filter data efficiently using numpy operations
-    features = data_df.iloc[:, 2:].to_numpy()
-    y_values = data_df["y"].to_numpy()
+        # Apply final filtering
+        final_df = data_df[final_mask]
+        final_df.to_parquet(processed_df_file, compression="snappy")
+        logger.success(f"Processed data saved to {processed_df_file}")
 
-    # Create masks
-    non_zero_mask = np.any(features != 0, axis=1)
-    valid_y_mask = ~(np.isnan(y_values) | np.isinf(y_values))
-    final_mask = non_zero_mask & valid_y_mask
+        # Print statistics
+        logger.info(f"Original number of rows: {len(data_df)}")
+        logger.info(f"Rows removed due to all-zero features: {np.sum(~non_zero_mask)}")
+        logger.info(f"Rows removed due to invalid y values: {np.sum(~valid_y_mask)}")
+        logger.info(f"Final number of rows: {len(final_df)}")
 
-    # Apply final filtering
-    final_df = data_df[final_mask]
-    final_df.to_parquet(processed_df_file, compression="snappy")
-    logger.success(f"Processed data saved to {processed_df_file}")
+        if np.sum(~final_mask) == 0:
+            logger.info("No invalid values found in X and y")
+            with open(processed_vectors_file_dir / ".all_valid", "w") as f:
+                f.write("All valid values")
 
-    # Print statistics
-    logger.info(f"Original number of rows: {len(data_df)}")
-    logger.info(f"Rows removed due to all-zero features: {np.sum(~non_zero_mask)}")
-    logger.info(f"Rows removed due to invalid y values: {np.sum(~valid_y_mask)}")
-    logger.info(f"Final number of rows: {len(final_df)}")
+        X = final_df.iloc[:, 2:].to_numpy()
+        y = final_df["y"].to_numpy()
 
-    if np.sum(~final_mask) == 0:
-        logger.info("No invalid values found in X and y")
-        with open(processed_vectors_file_dir / ".all_valid", "w") as f:
-            f.write("All valid values")
-
-    X = final_df.iloc[:, 2:].to_numpy()
-    y = final_df["y"].to_numpy()
     y_transformer = None
-
     if ytransformation:
         if ytransformation == "boxcox":
             logger.info("Applying boxcox transformation")
