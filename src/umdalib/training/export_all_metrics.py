@@ -109,10 +109,48 @@ def analyze_best_metrics(df: pd.DataFrame):
     model_performance_df = get_best_metrics(df, "model")
     embedder_performance_df = get_best_metrics(df, "Embedder")
 
+    # Model-embedder performance: For each model, find the best performing metric for each embedder
+    # Columns are: model -> embedder -> best_R2, best_MSE, best_RMSE, best_MAE
+    model_embedder_performance = []
+    for model_type in df["model"].unique():
+        for embedder in df["Embedder"].unique():
+            data: pd.DataFrame = df[
+                (df["model"] == model_type) & (df["Embedder"] == embedder)
+            ]
+
+            if len(data) > 0:
+                best_r2_idx = data["R2_value"].apply(lambda x: x.nominal_value).idxmax()
+                best_mse_idx = (
+                    data["MSE_value"].apply(lambda x: x.nominal_value).idxmin()
+                )
+                best_rmse_idx = (
+                    data["RMSE_value"].apply(lambda x: x.nominal_value).idxmin()
+                )
+                best_mae_idx = (
+                    data["MAE_value"].apply(lambda x: x.nominal_value).idxmin()
+                )
+
+                row_data = {
+                    "model": model_type,
+                    "embedder": embedder,
+                    "best_R2": data.loc[best_r2_idx, "R2"],
+                    "R2_mode": data.loc[best_r2_idx, "Mode"],
+                    "best_MSE": data.loc[best_mse_idx, "MSE"],
+                    "MSE_mode": data.loc[best_mse_idx, "Mode"],
+                    "best_RMSE": data.loc[best_rmse_idx, "RMSE"],
+                    "RMSE_mode": data.loc[best_rmse_idx, "Mode"],
+                    "best_MAE": data.loc[best_mae_idx, "MAE"],
+                    "MAE_mode": data.loc[best_mae_idx, "Mode"],
+                }
+                model_embedder_performance.append(row_data)
+
+    model_embedder_performance_df = pd.DataFrame(model_embedder_performance)
+
     return {
         "best_models": best_models,
         "model_performance_df": model_performance_df,
         "embedder_performance_df": embedder_performance_df,
+        "model_embedder_performance_df": model_embedder_performance_df,
     }
 
 
@@ -169,7 +207,6 @@ def main(args: Args):
     best_metrics_loc = metrics_loc / "best_metrics"
     best_metrics_loc.mkdir(exist_ok=True)
 
-    # save best metrics, model and embedder performance to csv
     best_metrics_results["best_models"]["R2"].to_csv(
         best_metrics_loc / "best_models_R2.csv", index=False
     )
@@ -189,6 +226,10 @@ def main(args: Args):
 
     best_metrics_results["embedder_performance_df"].to_csv(
         best_metrics_loc / "embedder_performance.csv"
+    )
+
+    best_metrics_results["model_embedder_performance_df"].to_csv(
+        best_metrics_loc / "model_embedder_performance.csv"
     )
 
     return {
