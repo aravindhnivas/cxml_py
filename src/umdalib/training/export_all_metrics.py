@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Literal
 from umdalib.logger import logger
 from pathlib import Path as pt
 import pandas as pd
@@ -30,12 +31,61 @@ def parse_metric_with_uncertainty(value: str):
     return ufloat(float(value), 0)
 
 
+def get_best_metrics(df: pd.DataFrame, unique_name: Literal["model", "Embedder"]):
+    """Get the best metrics for each model."""
+
+    other_name = "model" if unique_name == "Embedder" else "Embedder"
+
+    model_performance = []
+    for model_type in df[unique_name].unique():
+        model_data = df[df[unique_name] == model_type]
+
+        # For R2 (highest value)
+        best_r2_idx = model_data["R2_value"].apply(lambda x: x.nominal_value).idxmax()
+        best_r2_row = model_data.loc[best_r2_idx]
+
+        # For MSE (lowest value)
+        best_mse_idx = model_data["MSE_value"].apply(lambda x: x.nominal_value).idxmin()
+        best_mse_row = model_data.loc[best_mse_idx]
+
+        # For RMSE (lowest value)
+        best_rmse_idx = (
+            model_data["RMSE_value"].apply(lambda x: x.nominal_value).idxmin()
+        )
+        best_rmse_row = model_data.loc[best_rmse_idx]
+
+        # For MAE (lowest value)
+        best_mae_idx = model_data["MAE_value"].apply(lambda x: x.nominal_value).idxmin()
+        best_mae_row = model_data.loc[best_mae_idx]
+
+        row_data = {
+            unique_name: model_type,
+            "best_R2": best_r2_row["R2"],
+            "best_R2_mode": best_r2_row["Mode"],
+            f"best_R2_{other_name}": best_r2_row[other_name],
+            "best_MSE": best_mse_row["MSE"],
+            "best_MSE_mode": best_mse_row["Mode"],
+            f"best_MSE_{other_name}": best_mse_row[other_name],
+            "best_RMSE": best_rmse_row["RMSE"],
+            "best_RMSE_mode": best_rmse_row["Mode"],
+            f"best_RMSE_{other_name}": best_rmse_row[other_name],
+            "best_MAE": best_mae_row["MAE"],
+            "best_MAE_mode": best_mae_row["Mode"],
+            f"best_MAE_{other_name}": best_mae_row[other_name],
+        }
+        model_performance.append(row_data)
+
+    model_performance_df = pd.DataFrame(model_performance)
+
+    return model_performance_df
+
+
 def analyze_best_metrics(df: pd.DataFrame):
     """Analyze and find best performing models across different metrics."""
     # Convert metrics to ufloat values
     metrics = ["R2", "MSE", "RMSE", "MAE"]
     for metric in metrics:
-        df[f"{metric}_value"] = df[metric].apply(ufloat_fromstr)
+        df[f"{metric}_value"] = df[metric].apply(parse_metric_with_uncertainty)
 
     best_models = {}
     for metric in metrics:
@@ -58,34 +108,13 @@ def analyze_best_metrics(df: pd.DataFrame):
             ["model", "Mode", "Embedder", metric, f"{metric}_value"]
         ]
 
-    # Analyze by model type
-    model_performance = {}
-    for model_type in df["model"].unique():
-        model_data = df[df["model"] == model_type]
-        model_performance[model_type] = {
-            "best_R2": max(model_data["R2_value"], key=lambda x: x.nominal_value),
-            "best_MSE": min(model_data["MSE_value"], key=lambda x: x.nominal_value),
-            "best_RMSE": min(model_data["RMSE_value"], key=lambda x: x.nominal_value),
-            "best_MAE": min(model_data["MAE_value"], key=lambda x: x.nominal_value),
-        }
-
-    # Analyze by embedder
-    embedder_performance = {}
-    for embedder in df["Embedder"].unique():
-        embedder_data = df[df["Embedder"] == embedder]
-        embedder_performance[embedder] = {
-            "best_R2": max(embedder_data["R2_value"], key=lambda x: x.nominal_value),
-            "best_MSE": min(embedder_data["MSE_value"], key=lambda x: x.nominal_value),
-            "best_RMSE": min(
-                embedder_data["RMSE_value"], key=lambda x: x.nominal_value
-            ),
-            "best_MAE": min(embedder_data["MAE_value"], key=lambda x: x.nominal_value),
-        }
+    model_performance_df = get_best_metrics(df, "model")
+    embedder_performance_df = get_best_metrics(df, "Embedder")
 
     return {
         "best_models": best_models,
-        "model_performance": model_performance,
-        "embedder_performance": embedder_performance,
+        "model_performance_df": model_performance_df,
+        "embedder_performance_df": embedder_performance_df,
     }
 
 
@@ -138,20 +167,6 @@ def main(args: Args):
     )
 
     best_metrics_results = analyze_best_metrics(metrics_df)
-    logger.info("Best metrics analysis:")
-    for metric, best_models in best_metrics_results["best_models"].items():
-        logger.info(f"Best models for {metric}:")
-        logger.info(best_models)
-
-    logger.info("Model performance analysis:")
-    for model_type, performance in best_metrics_results["model_performance"].items():
-        logger.info(f"Performance for {model_type}:")
-        logger.info(performance)
-
-    logger.info("Embedder performance analysis:")
-    for embedder, performance in best_metrics_results["embedder_performance"].items():
-        logger.info(f"Performance for {embedder}:")
-        logger.info(performance)
 
     best_metrics_loc = metrics_loc / "best_metrics"
     best_metrics_loc.mkdir(exist_ok=True)
@@ -170,11 +185,11 @@ def main(args: Args):
         best_metrics_loc / "best_models_MAE.csv", index=False
     )
 
-    pd.DataFrame(best_metrics_results["model_performance"]).T.to_csv(
+    best_metrics_results["model_performance_df"].to_csv(
         best_metrics_loc / "model_performance.csv"
     )
 
-    pd.DataFrame(best_metrics_results["embedder_performance"]).T.to_csv(
+    best_metrics_results["embedder_performance_df"].to_csv(
         best_metrics_loc / "embedder_performance.csv"
     )
 
