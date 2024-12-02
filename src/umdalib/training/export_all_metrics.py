@@ -202,7 +202,7 @@ def main(args: Args):
         f"Saved metrics to {metrics_final_csv}. Total rows: {metrics_df.shape[0]}"
     )
 
-    best_metrics_results = analyze_best_metrics(metrics_df)
+    best_metrics_results: dict[str, pd.DataFrame] = analyze_best_metrics(metrics_df)
 
     best_metrics_loc = metrics_loc / "best_metrics"
     best_metrics_loc.mkdir(exist_ok=True)
