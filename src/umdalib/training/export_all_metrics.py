@@ -51,12 +51,12 @@ def main(args: Args):
             ]
             metrics_df = pd.concat([metrics_df, metrics_df_], axis=0)
 
-    metrics_df = metrics_df.reset_index(drop=True)
-    # drop NaN rows
     metrics_df = metrics_df.dropna()
-
-    metrics_df.to_csv(metrics_final_csv, index=False)
-    logger.success("Saved metrics.csv")
+    metrics_df = metrics_df.reset_index(drop=True)
+    metrics_df.to_csv(metrics_final_csv)
+    logger.success(
+        f"Saved metrics to {metrics_final_csv}. Total rows: {metrics_df.shape[0]}"
+    )
 
     return {
         "csv_files": csv_files,
