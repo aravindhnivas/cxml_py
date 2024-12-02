@@ -221,15 +221,15 @@ def main(args: Args):
     )
 
     best_metrics_results["model_performance_df"].to_csv(
-        best_metrics_loc / "model_performance.csv"
+        best_metrics_loc / "model_performance.csv", index=False
     )
 
     best_metrics_results["embedder_performance_df"].to_csv(
-        best_metrics_loc / "embedder_performance.csv"
+        best_metrics_loc / "embedder_performance.csv", index=False
     )
 
     best_metrics_results["model_embedder_performance_df"].to_csv(
-        best_metrics_loc / "model_embedder_performance.csv"
+        best_metrics_loc / "model_embedder_performance.csv", index=False
     )
 
     return {
