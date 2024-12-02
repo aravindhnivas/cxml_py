@@ -104,9 +104,7 @@ def analyze_best_metrics(df: pd.DataFrame):
                 key=lambda x: [v.nominal_value for v in x],
                 ascending=True,
             )
-        best_models[metric] = sorted_df.head(5)[
-            ["model", "Mode", "Embedder", metric, f"{metric}_value"]
-        ]
+        best_models[metric] = sorted_df.head(5)[["model", "Mode", "Embedder", metric]]
 
     model_performance_df = get_best_metrics(df, "model")
     embedder_performance_df = get_best_metrics(df, "Embedder")
