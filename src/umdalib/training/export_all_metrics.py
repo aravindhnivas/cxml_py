@@ -14,7 +14,11 @@ def main(args: Args):
     metrics_loc = pt(args.metrics_loc)
     logger.info(f"Exporting all metrics from {metrics_loc}")
 
-    csv_files = [m.name for m in metrics_loc.iterdir()]
+    csv_files = [
+        m.name
+        for m in metrics_loc.iterdir()
+        if m.name.endswith(".csv") and m.name != "all_metrics.csv"
+    ]
     logger.info(f"Found {len(csv_files)} csv files")
 
     if len(csv_files) == 0:
@@ -24,12 +28,10 @@ def main(args: Args):
             "metrics_final_csv": None,
         }
 
-    metrics_final_csv = metrics_loc / "metrics.csv"
+    metrics_final_csv = metrics_loc / "all_metrics.csv"
     metrics_df: pd.DataFrame = None
 
     for csv in csv_files:
-        if csv == "metrics.csv":
-            continue
         model_name = csv.split("_")[0]
 
         # add a new column for model name
@@ -53,7 +55,7 @@ def main(args: Args):
     # drop NaN rows
     metrics_df = metrics_df.dropna()
 
-    metrics_df.to_csv(metrics_final_csv)
+    metrics_df.to_csv(metrics_final_csv, index=False)
     logger.success("Saved metrics.csv")
 
     return {
