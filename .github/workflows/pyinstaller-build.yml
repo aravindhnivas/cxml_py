@@ -7,17 +7,21 @@ on:
     tags:
       - "v*" # Trigger on version tags
 
+permissions: write-all # Grant all write permissions at workflow level
+
 jobs:
   create_release:
     name: Create Release
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write # Required for creating releases
+      discussions: write # Required for creating releases
     steps:
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }} # Using github.token instead of secrets.GITHUB_TOKEN
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
@@ -101,7 +105,7 @@ jobs:
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.get_release_info.outputs.upload_url }}
           asset_path: ./dist/${{ matrix.OUT_FILE_NAME}}
