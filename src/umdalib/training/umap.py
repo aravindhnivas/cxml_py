@@ -134,45 +134,26 @@ def main(args: Args):
         logger.info(f"Random state: {args.random_state}")
         args.n_jobs = 1
 
-    reduced_embeddings_file = umap_dir / f"[reduced_embeddings]_{save_fname}.npy"
-    if reduced_embeddings_file.exists():
-        logger.info("Loading reduced embeddings...")
-        reduced_embeddings = np.load(reduced_embeddings_file)
-        logger.info(f"Loaded reduced embeddings: {reduced_embeddings.shape}")
-    else:
-        logger.info("Performing UMAP...")
-        reducer = UMAP(
-            n_neighbors=args.n_neighbors,
-            min_dist=args.min_dist,
-            n_components=args.n_components,
-            n_jobs=args.n_jobs,
-            random_state=args.random_state,
-        )
-        reduced_embeddings = reducer.fit_transform(embeddings)
-        logger.info(reduced_embeddings.shape)
-        np.save(reduced_embeddings_file, reduced_embeddings)
-        args_file = umap_dir / f"{save_fname}_umap_args.json"
-        safe_json_dump(args.__dict__, umap_dir / args_file)
+    logger.info("Performing UMAP...")
+    reducer = UMAP(
+        n_neighbors=args.n_neighbors,
+        min_dist=args.min_dist,
+        n_components=args.n_components,
+        n_jobs=args.n_jobs,
+        random_state=args.random_state,
+    )
 
-    save_fname += f"_eps_{args.dbscan_eps}_min_samples_{args.dbscan_min_samples}"
-    # cluster_analysis_file = umap_dir / f"[cluster_analysis]_{save_fname}.json"
-    labels_file = umap_dir / f"[labels]_{save_fname}.npy"
+    reduced_embeddings = reducer.fit_transform(embeddings)
+    logger.info(reduced_embeddings.shape)
 
-    if labels_file.exists():
-        logger.info("Loading cluster analysis...")
-        # cluster_analysis = json.load(open(cluster_analysis_file, "r"))
-        labels = np.load(labels_file)
-    else:
-        logger.info("Analyzing chemical clusters...")
-        analyzer = ChemicalClusterAnalyzer()
-        labels, cluster_analysis = analyzer.analyze_cluster_chemistry(
-            reduced_embeddings,
-            smiles_list,
-            eps=args.dbscan_eps,
-            min_samples=args.dbscan_min_samples,
-        )
-        np.save(labels_file, labels)
-        # safe_json_dump(cluster_analysis, cluster_analysis_file)
+    logger.info("Analyzing chemical clusters...")
+    analyzer = ChemicalClusterAnalyzer()
+    labels, cluster_analysis = analyzer.analyze_cluster_chemistry(
+        reduced_embeddings,
+        smiles_list,
+        eps=args.dbscan_eps,
+        min_samples=args.dbscan_min_samples,
+    )
 
     umap_df = pd.DataFrame(
         {
