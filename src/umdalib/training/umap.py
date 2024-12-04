@@ -38,7 +38,18 @@ class Args:
     random_state: Optional[int]
 
 
-# umap_dir: pt = None
+def validate_args(args: Args) -> Args:
+    args.n_neighbors = int(args.n_neighbors)
+    args.min_dist = float(args.min_dist)
+    args.n_components = int(args.n_components)
+    args.n_jobs = int(args.n_jobs)
+    args.scale_embedding = bool(args.scale_embedding)
+    args.label_issues_file = args.label_issues_file or None
+    args.dbscan_eps = float(args.dbscan_eps)
+    args.dbscan_min_samples = int(args.dbscan_min_samples)
+    args.random_state = args.random_state or None
+
+    return args
 
 
 def get_save_fname(args: Args) -> str:
@@ -62,8 +73,7 @@ def get_save_fname(args: Args) -> str:
 
 
 def main(args: Args):
-    # global umap_dir
-
+    args = validate_args(args)
     processed_df_file = pt(args.processed_df_file)
     umap_dir = processed_df_file.parent / "umap"
     umap_dir.mkdir(exist_ok=True)
