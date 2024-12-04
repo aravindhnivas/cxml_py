@@ -28,7 +28,7 @@ class Args:
     umap_metric: str
     n_jobs: int
     scale_embedding: bool
-    use_cleaned_data: bool
+    label_issues_file: Optional[str]
     processed_df_file: str
     columnX: str
     dbscan_eps: float
@@ -52,6 +52,12 @@ def main(args: Args):
     # return
     df = pd.read_parquet(processed_df_file)
 
+    if args.label_issues_file:
+        label_issues_df = pd.read_parquet(args.label_issues_file)
+        logger.info(f"Label issues: {label_issues_df.shape}")
+
+        df = df[~label_issues_df["is_label_issue"]]
+
     smiles_list = df[args.columnX].to_list()
     logger.info(len(smiles_list))
 
@@ -59,7 +65,7 @@ def main(args: Args):
     y = df["y"].to_numpy()
     logger.info(f"X shape: {embeddings.shape}, y shape: {y.shape}")
 
-    if args.use_cleaned_data:
+    if args.scale_embedding:
         # Scale embeddings
         logger.info("Scaling embeddings...")
         scaler = StandardScaler()
