@@ -102,7 +102,9 @@ def main(args: Args):
             "y": y,
         }
     )
-    umap_df.to_parquet(umap_dir / "umap_df.parquet")
+
+    umap_df_file = umap_dir / "umap_df.parquet"
+    umap_df.to_parquet(umap_df_file)
     logger.success(f"UMAP embeddings saved to {umap_dir}")
 
     plot_figure_static(
@@ -119,8 +121,14 @@ def main(args: Args):
         cluster_analysis_df.loc[cluster_id, "Min"] = cluster_data["y"].min()
         cluster_analysis_df.loc[cluster_id, "Max"] = cluster_data["y"].max()
 
-    cluster_analysis_df.to_parquet(umap_dir / "cluster_analysis.parquet")
+    cluster_analysis_file = umap_dir / "cluster_analysis.parquet"
+    cluster_analysis_df.to_parquet(cluster_analysis_file)
     logger.success(f"Cluster analysis saved to {umap_dir}")
+
+    return {
+        "cluster_analysis_file": cluster_analysis_file,
+        "umap_df_file": umap_df_file,
+    }
 
 
 class ChemicalClusterAnalyzer:
