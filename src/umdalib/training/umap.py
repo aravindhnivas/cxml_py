@@ -55,8 +55,8 @@ def validate_args(args: Args) -> Args:
 def get_save_fname(args: Args) -> str:
     save_fname = pt(args.training_filename).stem
 
-    if args.label_issues_file:
-        save_fname += "_cleaned"
+    # if args.label_issues_file:
+    #     save_fname += "_cleaned"
 
     if args.scale_embedding:
         save_fname += "_scaled"
@@ -76,6 +76,12 @@ def main(args: Args):
     args = validate_args(args)
     processed_df_file = pt(args.processed_df_file)
     umap_dir = processed_df_file.parent / "umap"
+
+    # label_issues_file containes the issues with the labels
+    # if it exists, the umap_dir is changed to umap/cleaned to store the cleaned data
+    if args.label_issues_file:
+        label_issues_file = pt(args.label_issues_file)
+        umap_dir = umap_dir / f"cleaned_{label_issues_file.stem}"
     umap_dir.mkdir(exist_ok=True)
 
     save_fname = get_save_fname(args)
