@@ -29,6 +29,7 @@ class Args:
     umap_metric: str
     n_jobs: int
     scale_embedding: bool
+    annotate_clusters: bool
     label_issues_file: Optional[str]
     processed_df_file: str
     columnX: str
@@ -44,6 +45,7 @@ def validate_args(args: Args) -> Args:
     args.n_components = int(args.n_components)
     args.n_jobs = int(args.n_jobs)
     args.scale_embedding = bool(args.scale_embedding)
+    args.annotate_clusters = bool(args.annotate_clusters)
     args.label_issues_file = args.label_issues_file or None
     args.dbscan_eps = float(args.dbscan_eps)
     args.dbscan_min_samples = int(args.dbscan_min_samples)
@@ -88,18 +90,48 @@ def main(args: Args):
     fig_file = umap_dir / f"[figure]_{save_fname}.pdf"
     umap_df_file = umap_dir / f"[umap_df]_{save_fname}.parquet"
 
-    if umap_df_file.exists():
-        logger.info("Loading UMAP dataframe...")
-        umap_df = pd.read_parquet(umap_df_file)
-        fig = plot_figure_static(
+    def savefig(umap_df: pd.DataFrame):
+        fig, ax = plot_figure_static(
             umap_df,
             fig_size=(12, 8),
             point_size=50,
             alpha=0.6,
         )
+        if args.annotate_clusters:
+            ax = annotate_clusters(umap_df, ax)
+
+        # Add statistics annotation
+        clusters = umap_df["Cluster"].unique()
+        n_clusters = len([c for c in clusters if c != -1])
+        stats_text = (
+            "UMAP Parameters:\n"
+            f"n_neighbors: {args.n_neighbors}\n"
+            f"min_dist: {args.min_dist}\n"
+            f"n_components: {args.n_components}\n"
+            f"DBSCAN Parameters (N={n_clusters}):\n"
+            f"eps: {args.dbscan_eps}\n"
+            f"min_samples: {args.dbscan_min_samples}"
+        )
+
+        # Position the text box in figure coords
+        props = dict(boxstyle="round", facecolor="white", alpha=0.8)
+        ax.text(
+            1.15,
+            0.98,
+            stats_text,
+            transform=ax.transAxes,
+            fontsize=10,
+            verticalalignment="top",
+            bbox=props,
+        )
 
         fig.savefig(fig_file, dpi=300, bbox_inches="tight")
         logger.success(f"Property visualization saved to: {fig_file}")
+
+    if umap_df_file.exists():
+        logger.info("Loading UMAP dataframe...")
+        umap_df = pd.read_parquet(umap_df_file)
+        savefig(umap_df)
         return {
             "umap_df_file": umap_df_file,
         }
@@ -168,16 +200,7 @@ def main(args: Args):
 
     umap_df.to_parquet(umap_df_file)
     logger.success(f"UMAP embeddings saved to {umap_dir}")
-
-    fig = plot_figure_static(
-        umap_df,
-        fig_size=(12, 8),
-        point_size=50,
-        alpha=0.6,
-    )
-
-    fig.savefig(fig_file, dpi=300, bbox_inches="tight")
-    logger.success(f"Property visualization saved to: {fig_file}")
+    savefig(umap_df)
 
     # cluster_analysis_stats_df = pd.DataFrame(cluster_analysis).T
     # cluster_analysis_stats_df_file = (
@@ -305,12 +328,64 @@ class ChemicalClusterAnalyzer:
         return labels, cluster_analysis
 
 
+def annotate_clusters(umap_df: pd.DataFrame, ax: plt.Axes) -> plt.Axes:
+    # Define distinct colors for clusters
+    cluster_colors = plt.cm.tab20(np.linspace(0, 1, len(umap_df["Cluster"].unique())))
+
+    # Add cluster annotations
+    for idx, cluster_id in enumerate(sorted(umap_df["Cluster"].unique())):
+        if cluster_id == -1:  # Skip noise points
+            continue
+
+        # Get points for this cluster
+        cluster_points: pd.DataFrame = umap_df[umap_df["Cluster"] == cluster_id]
+
+        # Calculate cluster center
+        center_x = cluster_points["UMAP1"].mean()
+        center_y = cluster_points["UMAP2"].mean()
+
+        # Calculate cluster radius
+        radius_x = (cluster_points["UMAP1"].max() - cluster_points["UMAP1"].min()) / 2
+        radius_y = (cluster_points["UMAP2"].max() - cluster_points["UMAP2"].min()) / 2
+        radius = max(radius_x, radius_y)
+
+        # Get color for this cluster
+        cluster_color = cluster_colors[idx]
+
+        # Draw circle around cluster with thicker line
+        circle = plt.Circle(
+            (center_x, center_y),
+            radius,
+            fill=False,
+            linestyle="-",  # Solid line instead of dashed
+            color=cluster_color,
+            alpha=0.8,
+            linewidth=2,
+        )
+        ax.add_patch(circle)
+
+        # Add cluster label with matching color
+        mean_y = cluster_points["y"].mean()
+        ax.annotate(
+            f"Cluster {cluster_id}\n(mean: {mean_y:.1f})",
+            (center_x, center_y),
+            xytext=(10, 10),
+            textcoords="offset points",
+            bbox=dict(
+                facecolor="white", edgecolor=cluster_color, alpha=0.9, boxstyle="round"
+            ),
+            fontsize=8,
+            color=cluster_color,
+        )
+    return ax
+
+
 def plot_figure_static(
     df_plot: pd.DataFrame,
     fig_size: tuple = (12, 8),
     point_size: int = 50,
     alpha: float = 0.6,
-) -> plt.Figure:
+) -> Tuple[plt.Figure, plt.Axes]:
     """
     Create a static visualization of UMAP embeddings colored by molecular property using seaborn.
     """
@@ -347,6 +422,7 @@ def plot_figure_static(
     #     fontsize=14,
     #     pad=20,
     # )
+
     ax.set_xlabel("UMAP1", fontsize=12)
     ax.set_ylabel("UMAP2", fontsize=12)
 
@@ -390,4 +466,4 @@ def plot_figure_static(
     #                 #    bbox=dict(facecolor='white', alpha=0.7, edgecolor='none')
     #                    )
     plt.tight_layout()
-    return fig
+    return fig, ax
