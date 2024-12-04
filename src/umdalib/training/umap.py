@@ -1,3 +1,4 @@
+import json
 import warnings
 from collections import Counter
 from dataclasses import dataclass
@@ -37,26 +38,69 @@ class Args:
     random_state: Optional[int]
 
 
-umap_dir: pt = None
+# umap_dir: pt = None
+
+
+def get_save_fname(args: Args) -> str:
+    save_fname = pt(args.training_filename).stem
+
+    if args.label_issues_file:
+        save_fname += "_cleaned"
+
+    if args.scale_embedding:
+        save_fname += "_scaled"
+
+    if args.random_state is not None:
+        save_fname += f"_random_state_{args.random_state}"
+
+    save_fname += f"_umap_{args.n_neighbors}_{args.min_dist}_{args.n_components}"
+    save_fname += (
+        f"_cluster_eps_{args.dbscan_eps}_min_samples_{args.dbscan_min_samples}"
+    )
+
+    return save_fname
 
 
 def main(args: Args):
-    global umap_dir
+    # global umap_dir
 
     processed_df_file = pt(args.processed_df_file)
     umap_dir = processed_df_file.parent / "umap"
     umap_dir.mkdir(exist_ok=True)
 
-    safe_json_dump(args.__dict__, umap_dir / "umap_args.json")
+    save_fname = get_save_fname(args)
+    fig_file = umap_dir / f"[figure]_{save_fname}.pdf"
+    umap_df_file = umap_dir / f"[umap_df]_{save_fname}.parquet"
 
-    # return
+    if umap_df_file.exists():
+        logger.info("Loading UMAP dataframe...")
+        umap_df = pd.read_parquet(umap_df_file)
+        fig = plot_figure_static(
+            umap_df,
+            fig_size=(12, 8),
+            point_size=50,
+            alpha=0.6,
+        )
+
+        fig.savefig(fig_file, dpi=300, bbox_inches="tight")
+        logger.success(f"Property visualization saved to: {fig_file}")
+        return {
+            "umap_df_file": umap_df_file,
+        }
+
+    logger.info(f"Processing UMAP for {processed_df_file}")
     df = pd.read_parquet(processed_df_file)
+    logger.info(f"Loaded df: {df.shape}")
 
     if args.label_issues_file:
         label_issues_df = pd.read_parquet(args.label_issues_file)
         logger.info(f"Label issues: {label_issues_df.shape}")
 
-        df = df[~label_issues_df["is_label_issue"]]
+        cleaned_label_df = label_issues_df[~label_issues_df["is_label_issue"]]
+        cleaned_df = df.loc[cleaned_label_df.index]
+        if (cleaned_df.index == cleaned_label_df.index).all():
+            df = cleaned_df
+            logger.info(f"Cleaned df: {df.shape}")
 
     smiles_list = df[args.columnX].to_list()
     logger.info(len(smiles_list))
@@ -66,37 +110,53 @@ def main(args: Args):
     logger.info(f"X shape: {embeddings.shape}, y shape: {y.shape}")
 
     if args.scale_embedding:
-        # Scale embeddings
         logger.info("Scaling embeddings...")
         scaler = StandardScaler()
         embeddings = scaler.fit_transform(embeddings)
 
-    # Perform UMAP
-    logger.info("Performing UMAP...")
     if args.random_state is not None:
         logger.info(f"Random state: {args.random_state}")
         args.n_jobs = 1
 
-    reducer = UMAP(
-        n_neighbors=args.n_neighbors,
-        min_dist=args.min_dist,
-        n_components=args.n_components,
-        n_jobs=args.n_jobs,
-        random_state=args.random_state,
-    )
+    reduced_embeddings_file = umap_dir / f"[reduced_embeddings]_{save_fname}.npy"
+    if reduced_embeddings_file.exists():
+        logger.info("Loading reduced embeddings...")
+        reduced_embeddings = np.load(reduced_embeddings_file)
+        logger.info(f"Loaded reduced embeddings: {reduced_embeddings.shape}")
+    else:
+        logger.info("Performing UMAP...")
+        reducer = UMAP(
+            n_neighbors=args.n_neighbors,
+            min_dist=args.min_dist,
+            n_components=args.n_components,
+            n_jobs=args.n_jobs,
+            random_state=args.random_state,
+        )
+        reduced_embeddings = reducer.fit_transform(embeddings)
+        logger.info(reduced_embeddings.shape)
+        np.save(reduced_embeddings_file, reduced_embeddings)
+        args_file = umap_dir / f"{save_fname}_umap_args.json"
+        safe_json_dump(args.__dict__, umap_dir / args_file)
 
-    reduced_embeddings = reducer.fit_transform(embeddings)
-    logger.info(reduced_embeddings.shape)
+    save_fname += f"_eps_{args.dbscan_eps}_min_samples_{args.dbscan_min_samples}"
+    # cluster_analysis_file = umap_dir / f"[cluster_analysis]_{save_fname}.json"
+    labels_file = umap_dir / f"[labels]_{save_fname}.npy"
 
-    logger.info("Analyzing chemical clusters...")
-
-    analyzer = ChemicalClusterAnalyzer()
-    labels, cluster_analysis = analyzer.analyze_cluster_chemistry(
-        reduced_embeddings,
-        smiles_list,
-        eps=args.dbscan_eps,
-        min_samples=args.dbscan_min_samples,
-    )
+    if labels_file.exists():
+        logger.info("Loading cluster analysis...")
+        # cluster_analysis = json.load(open(cluster_analysis_file, "r"))
+        labels = np.load(labels_file)
+    else:
+        logger.info("Analyzing chemical clusters...")
+        analyzer = ChemicalClusterAnalyzer()
+        labels, cluster_analysis = analyzer.analyze_cluster_chemistry(
+            reduced_embeddings,
+            smiles_list,
+            eps=args.dbscan_eps,
+            min_samples=args.dbscan_min_samples,
+        )
+        np.save(labels_file, labels)
+        # safe_json_dump(cluster_analysis, cluster_analysis_file)
 
     umap_df = pd.DataFrame(
         {
@@ -109,30 +169,37 @@ def main(args: Args):
         }
     )
 
-    umap_df_file = umap_dir / "umap_df.parquet"
     umap_df.to_parquet(umap_df_file)
     logger.success(f"UMAP embeddings saved to {umap_dir}")
 
-    plot_figure_static(
-        umap_df, args.training_filename, fig_size=(12, 8), point_size=50, alpha=0.6
+    fig = plot_figure_static(
+        umap_df,
+        fig_size=(12, 8),
+        point_size=50,
+        alpha=0.6,
     )
 
-    cluster_analysis_df = pd.DataFrame(cluster_analysis).T
-    for cluster_id in sorted(set(labels)):
-        if cluster_id == -1:
-            continue
-        cluster_data: pd.DataFrame = umap_df[umap_df["Cluster"] == cluster_id]
-        cluster_analysis_df.loc[cluster_id, "Mean"] = cluster_data["y"].mean()
-        cluster_analysis_df.loc[cluster_id, "Std"] = cluster_data["y"].std()
-        cluster_analysis_df.loc[cluster_id, "Min"] = cluster_data["y"].min()
-        cluster_analysis_df.loc[cluster_id, "Max"] = cluster_data["y"].max()
+    fig.savefig(fig_file, dpi=300, bbox_inches="tight")
+    logger.success(f"Property visualization saved to: {fig_file}")
 
-    cluster_analysis_file = umap_dir / "cluster_analysis.parquet"
-    cluster_analysis_df.to_parquet(cluster_analysis_file)
-    logger.success(f"Cluster analysis saved to {umap_dir}")
+    # cluster_analysis_stats_df = pd.DataFrame(cluster_analysis).T
+    # cluster_analysis_stats_df_file = (
+    #     umap_dir / f"[cluster_analysis_stats_df]_{save_fname}.parquet"
+    # )
+    # if not cluster_analysis_stats_df_file.exists():
+    #     for cluster_id in sorted(set(labels)):
+    #         if cluster_id == -1:
+    #             continue
+    #         cluster_data: pd.DataFrame = umap_df[umap_df["Cluster"] == cluster_id]
+    #         cluster_analysis_stats_df.loc[cluster_id, "Mean"] = cluster_data["y"].mean()
+    #         cluster_analysis_stats_df.loc[cluster_id, "Std"] = cluster_data["y"].std()
+    #         cluster_analysis_stats_df.loc[cluster_id, "Min"] = cluster_data["y"].min()
+    #         cluster_analysis_stats_df.loc[cluster_id, "Max"] = cluster_data["y"].max()
+
+    #     cluster_analysis_stats_df.to_parquet(cluster_analysis_file)
+    #     logger.success(f"Cluster analysis saved to {umap_dir}")
 
     return {
-        "cluster_analysis_file": cluster_analysis_file,
         "umap_df_file": umap_df_file,
     }
 
@@ -243,7 +310,6 @@ class ChemicalClusterAnalyzer:
 
 def plot_figure_static(
     df_plot: pd.DataFrame,
-    fname: str,
     fig_size: tuple = (12, 8),
     point_size: int = 50,
     alpha: float = 0.6,
@@ -327,10 +393,4 @@ def plot_figure_static(
     #                 #    bbox=dict(facecolor='white', alpha=0.7, edgecolor='none')
     #                    )
     plt.tight_layout()
-
-    save_path = umap_dir / f"{fname}_umap_property_static"
-    plt.savefig(save_path.with_suffix(".pdf"), dpi=300, bbox_inches="tight")
-    # plt.savefig(save_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
-    logger.success(f"Property visualization saved to: {save_path}")
-
     return fig
