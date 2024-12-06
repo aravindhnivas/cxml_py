@@ -44,7 +44,7 @@ property_names = [
     "Critical Pressure",
     "Critical Temperature",
 ]
-property_units = ["K", "K", "kPa at 25°C ", "MPa", "K"]
+property_units = ["C", "C", "kPa at 25°C ", "MPa", "K"]
 total_counts = [7476, 4915, 398, 777, 819]
 
 embeddings_names = ["Mol2Vec", "VICGAE"]
