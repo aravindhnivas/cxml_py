@@ -93,6 +93,15 @@ def handle_worker_message(message):
         logger.error(traceback.format_exc())
 
 
+def publish_event(event_type, payload):
+    """Publish event to Redis channel"""
+    try:
+        message = {"event": event_type, "payload": payload}
+        redis_conn.publish("job_channel", json.dumps(message))
+    except Exception as e:
+        logger.error(f"Error publishing event: {str(e)}")
+
+
 def pubsub_listener():
     """Listen for messages from workers"""
     pubsub = redis_conn.pubsub()
@@ -148,16 +157,35 @@ def get_job_status(job_id):
 def get_job_result(job_id):
     job = Job.fetch(job_id, connection=redis_conn)
     if job.is_finished:
-        return jsonify({"result": job.result}), 200
+        return jsonify({"message": "Job completed", "result": job.result}), 200
     else:
         return jsonify({"message": "Job not completed yet"}), 202
 
 
 @app.route("/cancel_job/<job_id>", methods=["POST"])
 def cancel_job(job_id):
-    job = Job.fetch(job_id, connection=redis_conn)
-    job.cancel()
-    return jsonify({"message": "Job cancelled"}), 200
+    try:
+        # Set a cancellation flag in Redis
+        redis_conn.set(f"job_cancelled_{job_id}", "1")
+
+        # Cancel the RQ job
+        job = Job.fetch(job_id, connection=redis_conn)
+        job.cancel()
+
+        # Publish cancellation event
+        publish_event(
+            "job_cancelled",
+            {
+                "job_id": job_id,
+                "status": "cancelled",
+                "message": "Job cancellation requested",
+            },
+        )
+
+        return jsonify({"message": "Job cancellation requested"}), 200
+        # return jsonify({"message": "Job cancelled"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.errorhandler(Exception)
@@ -192,43 +220,3 @@ def run_compute():
     except Exception as e:
         logger.error(f"Error enqueueing job: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
-
-# class MyClass(object):
-#     @logger.catch
-#     def __init__(self, **kwargs):
-#         for key, value in kwargs.items():
-#             setattr(self, key, value)
-
-# Module cache
-# module_cache = {}
-
-
-# def preload_modules():
-#     """Preload frequently used modules."""
-#     frequently_used_modules = [
-#         # Add your frequently used module names here
-#         "training.read_data",
-#         "training.check_duplicates_on_x_column",
-#         "training.embedd_data",
-#         "training.ml_prediction",
-#     ]
-#     for module_name in frequently_used_modules:
-#         try:
-#             module = import_module(f"umdalib.{module_name}")
-#             module_cache[module_name] = module
-#             logger.info(f"Preloaded module: {module_name}")
-#         except ImportError as e:
-#             logger.error(f"Failed to preload module {module_name}: {e}")
-
-
-# def warm_up():
-#     """Perform warm-up tasks."""
-#     logger.info("Starting warm-up phase...")
-#     preload_modules()
-#     # Add any other initialization tasks here
-#     logger.info("Warm-up phase completed.")
-
-
-# # Start warm-up in a separate thread
-# threading.Thread(target=warm_up, daemon=True).start()
