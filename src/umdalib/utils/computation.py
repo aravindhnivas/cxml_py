@@ -84,4 +84,4 @@ def compute(pyfile: str, args: dict | str):
     except Exception:
         error = traceback.format_exc(5)
         logger.error(error)
-        raise
+        raise Exception(error)

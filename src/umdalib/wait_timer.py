@@ -12,6 +12,7 @@ def main(args: Args):
     wait_time = int(args.wait_time)
 
     logger.info(f"Starting to sleep for {wait_time}s!")
+    # raise Exception("Intentional error!")
     sleep(wait_time)
     logger.info("Finished sleeping!")
 

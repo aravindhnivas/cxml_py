@@ -4,8 +4,6 @@ from umdalib.utils.computation import compute
 from umdalib.logger import logger
 import traceback
 import multiprocessing
-import signal
-from functools import partial
 
 redis_conn = Redis.from_url("redis://localhost:6379/0")
 
@@ -42,23 +40,9 @@ def long_computation(job_id: str, pyfile: str, args: dict | str):
         )
         process.start()
 
-        # # Perform computation
-        # result = compute(pyfile, args)
-
-        # Publish result
-        # publish_event(
-        #     "job_result", {"job_id": job_id, "result": result, "status": "completed"}
-        # )
-
-        # return result
-
         # Monitor for cancellation
         while process.is_alive():
             if redis_conn.get(f"job_cancelled_{job_id}"):
-                # Force terminate the process
-                # process.terminate()
-                # process.join()
-
                 # More graceful termination
                 process.terminate()
                 grace_period = 5  # seconds
@@ -84,6 +68,8 @@ def long_computation(job_id: str, pyfile: str, args: dict | str):
         # Get result if process completed normally
         if not redis_conn.get(f"job_cancelled_{job_id}"):
             result = result_queue.get()
+            if isinstance(result, Exception):
+                raise result
             publish_event(
                 "job_result",
                 {"job_id": job_id, "result": result, "status": "completed"},
