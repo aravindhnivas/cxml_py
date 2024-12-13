@@ -29,11 +29,11 @@ def apply_filters_to_df(
 ) -> bool:
     # Filter based on atomic number
     if min_atomic_number:
-        if row[COLUMN_ATOMS] < int(min_atomic_number):
+        if int(row[COLUMN_ATOMS]) < int(min_atomic_number):
             return False
 
     if max_atomic_number:
-        if row[COLUMN_ATOMS] > int(max_atomic_number):
+        if int(row[COLUMN_ATOMS]) > int(max_atomic_number):
             return False
 
     # Filter based on elements
@@ -199,8 +199,9 @@ def main(args: Args):
 
     analysis_dir = analysis_file.parent
     metadata_file = analysis_dir / "metadata.json"
+    logger.info(f"Metadata file: {metadata_file}")
     data = json.loads(metadata_file.read_text())
-    logger.info(data)
+    logger.info(f"Metadata: {data}")
 
     filename = pt(data["filename"])
     filtered_dir = (
