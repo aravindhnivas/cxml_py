@@ -17,6 +17,13 @@ saved_states_1 = [
     "vp_kPa_25C_filtered_ydata_processed_data/analysis_data/filtered/vp_kPa_25C_topelements_processed_data",
 ]
 saved_states_2 = ["Pc_MPa_processed_data", "Tc_K_processed_data"]
+names = [
+    "tmpC_topelements",
+    "tbp_topelements",
+    "vp_kPa_25C_topelements",
+    "Pc_MPa",
+    "Tc_K",
+]
 saved_states = saved_states_1 + saved_states_2
 
 processed_data_dirs = [base_loc1 / f for f in saved_states_1] + [
