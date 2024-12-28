@@ -163,3 +163,4 @@ scripts/umdapy.spec
 *.parquet
 *.pkl
 *.npy
+*.pdf
