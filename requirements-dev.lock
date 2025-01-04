@@ -79,6 +79,8 @@ dask-glm==0.3.2
     # via dask-ml
 dask-ml==2024.4.4
     # via umdalib
+dbcv @ git+https://github.com/FelSiq/DBCV.git@13c3896ef78d12f1e3e1cbd394f2db9a09637ffd
+    # via umdalib
 debugpy==1.8.7
     # via ipykernel
 decorator==5.1.1
@@ -214,6 +216,7 @@ matplotlib-inline==0.1.7
 mol2vec @ git+https://github.com/aravindhnivas/mol2vec.git@6e8924c3a3512e4ceb83419515948d925b225d90
     # via umdalib
 mpmath==1.3.0
+    # via dbcv
     # via sympy
 msgpack==1.1.0
     # via blosc2
@@ -253,6 +256,7 @@ numpy==1.26.4
     # via contourpy
     # via dask
     # via dask-ml
+    # via dbcv
     # via gensim
     # via h5py
     # via ipympl
@@ -420,6 +424,7 @@ scikit-learn==1.5.2
     # via cleanlab
     # via dask-glm
     # via dask-ml
+    # via dbcv
     # via optuna-dashboard
     # via pynndescent
     # via shap
@@ -429,6 +434,7 @@ scipy==1.13.1
     # via catboost
     # via dask-glm
     # via dask-ml
+    # via dbcv
     # via gensim
     # via lightgbm
     # via pynndescent
