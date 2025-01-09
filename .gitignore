@@ -164,3 +164,4 @@ scripts/umdapy.spec
 *.pkl
 *.npy
 *.pdf
+*.db
