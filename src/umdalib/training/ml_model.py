@@ -17,7 +17,8 @@ import optuna.visualization.matplotlib as opm
 import pandas as pd
 import plotly.io as pio
 import shap
-from dask.diagnostics import ProgressBar
+
+# from dask.diagnostics import ProgressBar
 from joblib import dump, parallel_config
 from loguru import logger
 from optuna.importance import get_param_importances
@@ -36,7 +37,8 @@ from tqdm import tqdm
 from umdalib.logger import Paths
 from umdalib.training.read_data import read_as_ddf
 from umdalib.training.utils import Yscalers, get_transformed_data
-from umdalib.utils.computation import load_model
+
+# from umdalib.utils.computation import load_model
 from umdalib.utils.json import safe_json_dump
 
 from .ml_utils.ml_plots import learning_curve_plot, main_plot
