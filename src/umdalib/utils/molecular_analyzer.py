@@ -30,7 +30,7 @@ class MoleculeAnalyzer:
         results = {}
         results["num_atoms"] = self.mol.GetNumAtoms()
         results["num_bonds"] = self.mol.GetNumBonds()
-        results["molecular_weight"] = Descriptors.MolWt(self.mol)
+        results["molecular_weight"] = f"{Descriptors.MolWt(self.mol):.4f}"
 
         self.results["basic_properties"] = results
 
