@@ -237,8 +237,8 @@ class MoleculeAnalyzer:
 
         if total_atoms_in_heterocycles > 0:
             results["percent_heteroatoms_in_heterocycles"] = (
-                heteroatom_count / total_atoms_in_heterocycles
-            ) * 100
+                f"{(heteroatom_count / total_atoms_in_heterocycles) * 100:.2f} %"
+            )
         else:
             results["percent_heteroatoms_in_heterocycles"] = 0.0
 
