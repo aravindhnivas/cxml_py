@@ -51,6 +51,7 @@ def main(args: Args):
             processes.append(process)
             logger.info(f"Started worker {i+1}")
 
+        logger.info("Redis worker running")
         # Monitor and restart workers if they die
         while True:
             for i, process in enumerate(processes):
@@ -62,6 +63,7 @@ def main(args: Args):
                         name=f"Worker-{i}",
                     )
                     processes[i].start()
+                break
 
             time.sleep(5)  # Check every 5 seconds
 
@@ -70,6 +72,15 @@ def main(args: Args):
         for process in processes:
             process.terminate()
             process.join(timeout=1)
+
+    finally:
+        for process in processes:
+            if process.is_alive():
+                process.terminate()
+                process.join(timeout=1)
+        logger.info("All workers shut down.")
+        logger.info("Redis worker stopped")
+        sys.exit(0)
 
 
 if __name__ == "__main__":
