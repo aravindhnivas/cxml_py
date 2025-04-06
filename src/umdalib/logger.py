@@ -4,7 +4,7 @@ from pathlib import Path as pt
 from platform import system
 from loguru import logger
 
-BUNDLE_IDENTIFIER = "com.umdaui.dev"
+BUNDLE_IDENTIFIER = "com.chemxploreml.dev"
 
 
 class Paths:
@@ -34,11 +34,12 @@ class Paths:
         return self.get_temp_dir()
 
 
-logfile = Paths().app_log_dir / "umdapy_server.log"
+logfile = Paths().app_log_dir / "python_backend.log"
 logger.info(f"Logging to {logfile}")
 
 logger.add(
     logfile,
     rotation="10 MB",
-    compression="zip",
+    # compression="zip",
+    retention="10 days",
 )
