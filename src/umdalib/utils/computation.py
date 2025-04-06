@@ -48,9 +48,9 @@ def compute(pyfile: str, args: dict | str):
         args = MyClass(**args)
 
         result_file = log_dir / f"{pyfile}.json"
-        if result_file.exists():
-            logger.warning(f"Removing existing file: {result_file}")
-            result_file.unlink()
+        # if result_file.exists():
+        #     logger.warning(f"Removing existing file: {result_file}")
+        #     result_file.unlink()
 
         with warnings.catch_warnings(record=True) as warnings_list:
             pyfunction = import_module(f"umdalib.{pyfile}")
