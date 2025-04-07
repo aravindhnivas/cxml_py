@@ -17,14 +17,14 @@ if os.getenv("OBJC_DISABLE_INITIALIZE_FORK_SAFETY") != "YES":
     sys.exit()
 
 
-def create_worker(redis_url: str, listen: list[str] = ["default"]):
+def create_worker(
+    redis_url: str, listen: list[str] = ["default"], worker_name: str = "worker"
+):
     conn = Redis.from_url(redis_url)
     queues = [Queue(name, connection=conn) for name in listen]
-    worker = Worker(queues, connection=conn)
+    worker = Worker(queues, connection=conn, name=worker_name)
+    logger.info(f"Starting Redis worker: {worker_name}")
     worker.work(with_scheduler=True)
-    # with connections.Connection(conn):
-    #     worker = Worker(map(Queue, listen), connection=conn)
-    #     worker.work(with_scheduler=True)
 
 
 class Args:
@@ -37,8 +37,24 @@ def main(args: Args):
     redis_url = f"redis://localhost:{args.port}"
     logger.info(f"Connecting to Redis at {redis_url} and listening to {listen}")
 
-    # ncpus = multiprocessing.cpu_count()
-    # num_workers = max(2, ncpus // 2)
+    # Run the worker in the main process
+    logger.info("Starting Redis worker in main process")
+    try:
+        logger.info("Redis worker running")
+        create_worker(redis_url, listen)
+        # run_worker_in_subprocess(redis_url, listen)
+    except KeyboardInterrupt:
+        logger.warning("Redis worker interrupted. Shutting down...")
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+    finally:
+        logger.info("Redis worker stopped")
+        sys.exit(0)
+
+
+def run_worker_in_subprocess(redis_url: str, listen: list[str]):
+    ncpus = multiprocessing.cpu_count()
+    num_workers = max(2, ncpus // 2)
     num_workers = 1
     processes: list[multiprocessing.Process] = []
 
