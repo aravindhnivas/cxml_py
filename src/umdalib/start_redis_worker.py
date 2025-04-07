@@ -28,13 +28,13 @@ def create_worker(redis_url: str, listen: list[str] = ["default"]):
 
 
 class Args:
-    redis_port: int = 6379
+    port: int = 6379
     listen: list[str] = ["default"]
 
 
 def main(args: Args):
     listen = args.listen
-    redis_url = f"redis://localhost:{args.redis_port}"
+    redis_url = f"redis://localhost:{args.port}"
     logger.info(f"Connecting to Redis at {redis_url} and listening to {listen}")
 
     # ncpus = multiprocessing.cpu_count()
