@@ -376,7 +376,7 @@ referencing==0.35.1
 rpds-py==0.21.0
     # via jsonschema
     # via referencing
-rq==2.0.0
+rq==2.3.1
     # via rq-dashboard
     # via umdalib
 rq-dashboard==0.8.2.2
