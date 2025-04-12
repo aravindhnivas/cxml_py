@@ -9,6 +9,7 @@ from sklearn.preprocessing import StandardScaler
 import phate
 import trimap
 from umdalib.logger import logger
+from pathlib import Path as pt
 
 
 @dataclass
@@ -30,6 +31,8 @@ class Args:
     ] = "PCA"
     embedder_name: str = "mol2vec"
     scaling: bool = True
+    save_diagnostics: bool = True
+    diagnostics_file: str = "dr_diagnostics.json"
 
 
 def parge_args(args_dict: dict) -> Args:
@@ -45,6 +48,36 @@ def parge_args(args_dict: dict) -> Args:
         else:
             raise ValueError(f"Missing required field: {field.name}")
     return Args(**kwargs)
+
+
+def save_diagnostics_to_json(
+    method: str, reducer, reduced: np.ndarray, diagnostics_file: str
+):
+    diagnostics = {
+        "method": method,
+        "reduced_shape": list(reduced.shape),
+    }
+
+    if method in ["PCA", "FactorAnalysis"]:
+        if hasattr(reducer, "explained_variance_ratio_"):
+            diagnostics["explained_variance_ratio"] = (
+                reducer.explained_variance_ratio_.tolist()
+            )
+            diagnostics["cumulative_variance"] = np.cumsum(
+                reducer.explained_variance_ratio_
+            ).tolist()
+    elif method in ["KernelPCA"]:
+        if hasattr(reducer, "lambdas_"):
+            diagnostics["kernel_eigenvalues"] = reducer.lambdas_.tolist()
+    elif method in ["t-SNE", "UMAP", "PHATE", "ISOMAP", "LaplacianEigenmaps", "TriMap"]:
+        # Generic notes
+        diagnostics["info"] = (
+            f"{method} does not provide variance info. Saved 2D shape only."
+        )
+
+    with open(diagnostics_file, "w") as f:
+        json.dump(diagnostics, f, indent=4)
+    logger.info(f"Saved diagnostics to {diagnostics_file}")
 
 
 def main(args: Args):
@@ -94,3 +127,12 @@ def main(args: Args):
 
     np.save(args.dr_savefile, reduced)
     logger.info(f"Saved reduced data to {args.dr_savefile}")
+
+    save_diagnostics_file = (
+        pt(args.dr_savefile).parent
+        / f"{args.method}_configs"
+        / f"{args.method}_diagnostics.json"
+    )
+    logger.info(f"Saving diagnostics to {save_diagnostics_file}")
+    if args.save_diagnostics:
+        save_diagnostics_to_json(args.method, reducer, reduced, save_diagnostics_file)
