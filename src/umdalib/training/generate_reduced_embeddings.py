@@ -14,8 +14,8 @@ from umdalib.logger import logger
 @dataclass
 class Args:
     params: dict
-    processed_df_file: str
-    dr_file: str
+    vector_file: str
+    dr_savefile: str
     embedder_loc: str
     method: Literal["PCA", "UMAP", "t-SNE"] = "PCA"
     embedder_name: str = "mol2vec"
@@ -42,16 +42,13 @@ def main(args: Args):
     args = parge_args(args.__dict__)
     logger.info(json.dumps(args.__dict__, indent=4))
 
-    logger.info(f"Loading embeddings from {args.processed_df_file}")
+    logger.info(f"Loading embeddings from {args.vector_file}")
 
     # return
 
     # Load data
-    processed_df = pd.read_parquet(args.processed_df_file)
-    X = processed_df.iloc[:, 2:].to_numpy()
-    # y = processed_df["y"].to_numpy()
+    X: np.ndarray = np.load(args.vector_file, allow_pickle=True)
     logger.info(f"{X.shape=}")
-    # Load embedder (if needed for future extensions)
 
     logger.info(f"Applying {args.method} with parameters: {args.params}")
 
@@ -72,10 +69,6 @@ def main(args: Args):
 
     reduced = reducer.fit_transform(X)
     logger.info(f"{reduced.shape=}")
-    # reduced = reducer.fit_transform(X)
 
-    # Save output
-    save_path = pt(args.dr_file)
-    np.save(save_path, reduced)
-
-    logger.info(f"Saved reduced data to {args.dr_file}")
+    np.save(args.dr_savefile, reduced)
+    logger.info(f"Saved reduced data to {args.dr_savefile}")
