@@ -23,6 +23,8 @@ alembic==1.13.3
 altgraph==0.17.4
     # via macholib
     # via pyinstaller
+annoy==1.17.3
+    # via trimap
 appnope==0.1.4
     # via ipykernel
 arrow==1.3.0
@@ -85,6 +87,11 @@ debugpy==1.8.7
     # via ipykernel
 decorator==5.1.1
     # via ipython
+    # via scprep
+deprecated==1.2.18
+    # via graphtools
+    # via phate
+    # via tasklogger
 dill==0.3.9
     # via multiprocess
     # via pathos
@@ -120,9 +127,14 @@ fsspec==2024.10.0
     # via lightning
     # via pytorch-lightning
     # via torch
+future==1.0.0
+    # via graphtools
+    # via phate
 gensim==4.3.3
     # via mol2vec
     # via umdalib
+graphtools==1.5.3
+    # via phate
 graphviz==0.20.3
     # via catboost
 greenlet==3.1.1
@@ -208,6 +220,7 @@ matplotlib==3.9.2
     # via catboost
     # via ipympl
     # via mol2vec
+    # via phate
     # via seaborn
     # via umdalib
 matplotlib-inline==0.1.7
@@ -243,6 +256,7 @@ numba==0.60.0
     # via pynndescent
     # via shap
     # via sparse
+    # via trimap
     # via umap-learn
     # via umdalib
 numexpr==2.10.2
@@ -258,6 +272,7 @@ numpy==1.26.4
     # via dask-ml
     # via dbcv
     # via gensim
+    # via graphtools
     # via h5py
     # via ipympl
     # via lightgbm
@@ -268,9 +283,13 @@ numpy==1.26.4
     # via optuna
     # via pandas
     # via patsy
+    # via phate
+    # via pygsp
     # via rdkit
+    # via s-gd2
     # via scikit-learn
     # via scipy
+    # via scprep
     # via seaborn
     # via shap
     # via sparse
@@ -303,6 +322,7 @@ packaging==24.1
     # via pyinstaller
     # via pyinstaller-hooks-contrib
     # via pytorch-lightning
+    # via scprep
     # via shap
     # via statsmodels
     # via tables
@@ -317,6 +337,7 @@ pandas==2.2.3
     # via dask-ml
     # via mapply
     # via mol2vec
+    # via scprep
     # via seaborn
     # via shap
     # via statsmodels
@@ -331,6 +352,8 @@ patsy==0.5.6
     # via statsmodels
 pexpect==4.9.0
     # via ipython
+phate==1.0.11
+    # via umdalib
 pillow==11.0.0
     # via ipympl
     # via matplotlib
@@ -364,6 +387,8 @@ pyarrow==18.0.0
     # via dask-expr
 pygments==2.18.0
     # via ipython
+pygsp==0.5.1
+    # via graphtools
 pyinstaller==6.11.0
     # via umdalib
 pyinstaller-hooks-contrib==2024.9
@@ -419,15 +444,21 @@ ruamel-yaml==0.18.6
     # via astrochem-embedding
 ruamel-yaml-clib==0.2.12
     # via ruamel-yaml
+s-gd2==1.8.1
+    # via phate
 scikit-learn==1.5.2
     # via astrochem-embedding
     # via cleanlab
     # via dask-glm
     # via dask-ml
     # via dbcv
+    # via graphtools
     # via optuna-dashboard
+    # via phate
     # via pynndescent
+    # via scprep
     # via shap
+    # via trimap
     # via umap-learn
     # via umdalib
 scipy==1.13.1
@@ -436,15 +467,21 @@ scipy==1.13.1
     # via dask-ml
     # via dbcv
     # via gensim
+    # via graphtools
     # via lightgbm
+    # via phate
+    # via pygsp
     # via pynndescent
     # via scikit-learn
+    # via scprep
     # via shap
     # via sparse
     # via statsmodels
     # via umap-learn
     # via umdalib
     # via xgboost
+scprep==1.1.0
+    # via phate
 seaborn==0.13.2
     # via mol2vec
     # via umdalib
@@ -489,6 +526,9 @@ sympy==1.13.1
     # via torch
 tables==3.10.1
     # via umdalib
+tasklogger==1.2.0
+    # via graphtools
+    # via phate
 tblib==3.0.0
     # via distributed
 tenacity==9.0.0
@@ -538,6 +578,8 @@ traitlets==5.14.3
     # via jupyter-core
     # via matplotlib-inline
     # via nbformat
+trimap==1.1.4
+    # via umdalib
 types-python-dateutil==2.9.0.20241003
     # via arrow
 typing-extensions==4.12.2
@@ -566,6 +608,7 @@ werkzeug==3.0.6
 widgetsnbextension==4.0.13
     # via ipywidgets
 wrapt==1.16.0
+    # via deprecated
     # via smart-open
 wsproto==1.2.0
     # via simple-websocket

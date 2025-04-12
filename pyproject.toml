@@ -53,6 +53,8 @@ dependencies = [
     "nbformat>=5.10.4",
     "tables>=3.10.1",
     "dbcv @ git+https://github.com/FelSiq/DBCV.git@main",
+    "phate>=1.0.11",
+    "trimap>=1.1.4",
 ]
 
 

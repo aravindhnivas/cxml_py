@@ -1,13 +1,13 @@
 from dataclasses import dataclass, fields
 import json
-from pathlib import Path as pt
 from typing import Literal
 import numpy as np
-import pandas as pd
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, KernelPCA, FactorAnalysis
 import umap
-from sklearn.manifold import TSNE
+from sklearn.manifold import TSNE, Isomap, SpectralEmbedding
 from sklearn.preprocessing import StandardScaler
+import phate
+import trimap
 from umdalib.logger import logger
 
 
@@ -17,7 +17,17 @@ class Args:
     vector_file: str
     dr_savefile: str
     embedder_loc: str
-    method: Literal["PCA", "UMAP", "t-SNE"] = "PCA"
+    method: Literal[
+        "PCA",
+        "UMAP",
+        "t-SNE",
+        "KernelPCA",
+        "PHATE",
+        "ISOMAP",
+        "LaplacianEigenmaps",
+        "TriMap",
+        "FactorAnalysis",
+    ] = "PCA"
     embedder_name: str = "mol2vec"
     scaling: bool = True
 
@@ -59,6 +69,18 @@ def main(args: Args):
         reducer = umap.UMAP(**args.params)
     elif args.method == "t-SNE":
         reducer = TSNE(**args.params)
+    elif args.method == "KernelPCA":
+        reducer = KernelPCA(**args.params)
+    elif args.method == "PHATE":
+        reducer = phate.PHATE(**args.params)
+    elif args.method == "ISOMAP":
+        reducer = Isomap(**args.params)
+    elif args.method == "LaplacianEigenmaps":
+        reducer = SpectralEmbedding(**args.params)
+    elif args.method == "TriMap":
+        reducer = trimap.TRIMAP(**args.params)
+    elif args.method == "FactorAnalysis":
+        reducer = FactorAnalysis(**args.params)
     else:
         logger.error(f"Unsupported method: {args.method}")
         raise ValueError(f"Unsupported method: {args.method}")
