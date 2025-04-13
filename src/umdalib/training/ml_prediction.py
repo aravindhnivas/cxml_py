@@ -49,24 +49,39 @@ def load_model():
 
 
 def predict_from_file(
-    prediction_file: pt, smi_to_vector, embedder_model, estimator, scaler
+    prediction_file: pt,
+    vectors_file: pt,
+    smi_to_vector,
+    embedder_model,
+    estimator,
+    scaler,
 ):
+    if not prediction_file.exists():
+        raise ValueError(f"Prediction file not found: {prediction_file}")
+
     logger.info(f"Reading test file: {prediction_file}")
-    data = pd.read_csv(prediction_file)
-    logger.info(f"Data shape: {data.shape}")
 
-    columns = data.columns.tolist()
-    if len(columns) == 0:
-        raise ValueError(
-            "Test file should have at least one column with header name SMILES"
+    # smiles = np.loadtxt(prediction_file, dtype=str, delimiter="\n")
+    with open(prediction_file, "r") as f:
+        smiles = f.read().splitlines()
+
+    logger.info(f"Read {len(smiles)} SMILES from {prediction_file}")
+
+    if len(smiles) == 0:
+        raise ValueError("No valid SMILES found in test file")
+
+    X = np.array([smi_to_vector(smi, embedder_model) for smi in smiles])
+    logger.info(f"{X.shape=}")
+
+    if "_with" in vectors_file.stem:
+        dr_pipeline = joblib.load(
+            vectors_file.parent / "dr_pipelines" / f"{vectors_file.stem}.joblib"
         )
+        X: np.ndarray = dr_pipeline.transform([X])
+        X = np.squeeze(X)
+        logger.info(f"Transformed X shape: {X.shape=}")
+        logger.info(f"{X.shape=}")
 
-    if columns[0] != "SMILES":
-        raise ValueError("Test file should have a column header named 'SMILES'")
-
-    smiles = data["SMILES"].tolist()
-    X = [smi_to_vector(smi, embedder_model) for smi in smiles]
-    logger.info(f"X shape: {len(X)}")
     if len(X) == 0:
         raise ValueError("No valid SMILES found in test file")
 
@@ -78,6 +93,8 @@ def predict_from_file(
         ).flatten()
 
     predicted_value = predicted_value.tolist()
+
+    data = pd.DataFrame({"SMILES": smiles})
     data["predicted_value"] = predicted_value
     savefile = (
         prediction_file.parent
@@ -138,8 +155,14 @@ def main(args: Args):
     logger.info(f"Loaded scaler: {scaler}")
 
     if args.prediction_file:
+        prediction_file = pt(args.prediction_file)
         return predict_from_file(
-            pt(args.prediction_file), smi_to_vector, embedder_model, estimator, scaler
+            prediction_file,
+            vectors_file,
+            smi_to_vector,
+            embedder_model,
+            estimator,
+            scaler,
         )
 
     logger.info(f"Loading smi: {args.smiles}")
@@ -147,7 +170,6 @@ def main(args: Args):
     logger.info(f"{X.shape=}")
 
     if "_with" in vectors_file.stem:
-        # load dimensionality reduction pipeline
         dr_pipeline = joblib.load(
             vectors_file.parent / "dr_pipelines" / f"{vectors_file.stem}.joblib"
         )
