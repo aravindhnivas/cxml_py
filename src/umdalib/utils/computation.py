@@ -12,27 +12,6 @@ from umdalib.logger import Paths, logger
 from umdalib.utils.json import convert_to_json_compatible, safe_json_dump
 
 
-def load_embedder(embedder_name: str, embedder_loc: str, use_joblib: bool = False):
-    if not embedder_loc:
-        raise Exception("Embedder location not provided")
-
-    logger.info(f"Loading model from {embedder_loc}")
-    if not pt(embedder_loc).exists():
-        logger.error(f"Model file not found: {embedder_loc}")
-        raise FileNotFoundError(f"Model file not found: {embedder_loc}")
-    logger.info(f"Model loaded from {embedder_loc}")
-
-    if use_joblib:
-        return joblib.load(embedder_loc)
-
-    if embedder_name == "mol2vec":
-        return word2vec.Word2Vec.load(str(embedder_loc))
-    elif embedder_name == "VICGAE":
-        return joblib.load(embedder_loc)
-    else:
-        raise Exception(f"Unsupported embedder: {embedder_name}")
-
-
 def load_model(filepath: str, use_joblib: bool = False):
     logger.info(f"Loading model from {filepath}")
     if not pt(filepath).exists():

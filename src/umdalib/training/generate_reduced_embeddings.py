@@ -1,8 +1,10 @@
 from dataclasses import dataclass, fields
 import json
 from typing import Literal
+import joblib
 import numpy as np
 from sklearn.decomposition import PCA, KernelPCA, FactorAnalysis
+from sklearn.pipeline import Pipeline
 import umap
 from sklearn.manifold import TSNE, Isomap, SpectralEmbedding
 from sklearn.preprocessing import StandardScaler
@@ -83,7 +85,7 @@ def save_diagnostics_to_json(
 def main(args: Args):
     logger.info("Starting dimensionality reduction pipeline")
     args = parge_args(args.__dict__)
-    logger.info(json.dumps(args.__dict__, indent=4))
+    # logger.info(json.dumps(args.__dict__, indent=4))
 
     logger.info(f"Loading embeddings from {args.vector_file}")
 
@@ -118,21 +120,40 @@ def main(args: Args):
         logger.error(f"Unsupported method: {args.method}")
         raise ValueError(f"Unsupported method: {args.method}")
 
-    if args.scaling:
-        scalar = StandardScaler()
-        X = scalar.fit_transform(X)
+    # if args.scaling:
+    #     scalar = StandardScaler()
+    #     X = scalar.fit_transform(X)
 
-    reduced = reducer.fit_transform(X)
+    # reduced = reducer.fit_transform(X)
+
+    steps = []
+    if args.scaling:
+        steps.append(("scaler", StandardScaler()))
+
+    # Add the DR method
+    steps.append(("reducer", reducer))
+    pipeline = Pipeline(steps)
+
+    reduced = pipeline.fit_transform(X)
     logger.info(f"{reduced.shape=}")
 
     np.save(args.dr_savefile, reduced)
     logger.info(f"Saved reduced data to {args.dr_savefile}")
 
+    dr_savefile = pt(args.dr_savefile)
+    # save_loc = dr_savefile.parent / args.method.lower()
+
+    pipeline_loc = dr_savefile.parent / "dr_pipelines"
+    pipeline_loc.mkdir(parents=True, exist_ok=True)
+
+    joblib.dump(pipeline, pipeline_loc / f"{dr_savefile.stem}.joblib")
+    logger.info("Saved DR pipeline to dr_pipeline.joblib")
+
     save_diagnostics_file = (
-        pt(args.dr_savefile).parent
-        / f"{args.method}_configs"
-        / f"{args.method}_diagnostics.json"
+        dr_savefile.parent / "dr_diagnostics" / f"{dr_savefile.stem}.diagnostics.json"
     )
+
+    save_diagnostics_file.parent.mkdir(parents=True, exist_ok=True)
     logger.info(f"Saving diagnostics to {save_diagnostics_file}")
     if args.save_diagnostics:
         save_diagnostics_to_json(args.method, reducer, reduced, save_diagnostics_file)

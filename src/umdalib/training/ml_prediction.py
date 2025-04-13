@@ -6,8 +6,10 @@ import numpy as np
 import pandas as pd
 from joblib import load
 
-from umdalib.training.embedd_data import get_smi_to_vec
+from umdalib.training.embedd_data import smi_to_vec_dict
 from umdalib.logger import logger
+import joblib
+from gensim.models import word2vec
 
 
 @dataclass
@@ -15,6 +17,29 @@ class Args:
     smiles: str
     pretrained_model_file: str
     prediction_file: str
+    embedder_name: str
+    embedder_loc: str
+
+
+def load_embedder(embedder_name: str, embedder_loc: str, use_joblib: bool = False):
+    if not embedder_loc:
+        raise Exception("Embedder location not provided")
+
+    logger.info(f"Loading model from {embedder_loc}")
+    if not pt(embedder_loc).exists():
+        logger.error(f"Model file not found: {embedder_loc}")
+        raise FileNotFoundError(f"Model file not found: {embedder_loc}")
+    logger.info(f"Model loaded from {embedder_loc}")
+
+    if use_joblib:
+        return joblib.load(embedder_loc)
+
+    if embedder_name == "mol2vec":
+        return word2vec.Word2Vec.load(str(embedder_loc))
+    elif embedder_name == "VICGAE":
+        return joblib.load(embedder_loc)
+    else:
+        raise Exception(f"Unsupported embedder: {embedder_name}")
 
 
 def load_model():
@@ -23,7 +48,9 @@ def load_model():
     return load(pretrained_model_file)
 
 
-def predict_from_file(prediction_file: pt, smi_to_vector, model, estimator, scaler):
+def predict_from_file(
+    prediction_file: pt, smi_to_vector, embedder_model, estimator, scaler
+):
     logger.info(f"Reading test file: {prediction_file}")
     data = pd.read_csv(prediction_file)
     logger.info(f"Data shape: {data.shape}")
@@ -38,7 +65,7 @@ def predict_from_file(prediction_file: pt, smi_to_vector, model, estimator, scal
         raise ValueError("Test file should have a column header named 'SMILES'")
 
     smiles = data["SMILES"].tolist()
-    X = [smi_to_vector(smi, model) for smi in smiles]
+    X = [smi_to_vector(smi, embedder_model) for smi in smiles]
     logger.info(f"X shape: {len(X)}")
     if len(X) == 0:
         raise ValueError("No valid SMILES found in test file")
@@ -83,31 +110,22 @@ def main(args: Args):
             f"Arguments: {arguments} from {arguments_file} for {pretrained_model_file} loaded"
         )
 
-    vectors_file = pt(arguments["vectors_file"])
-    vectors_metadata_file = vectors_file.parent / f"{vectors_file.stem}.metadata.json"
-    if not vectors_metadata_file.exists():
-        raise ValueError(f"Vectors metadata file not found: {vectors_metadata_file}")
+    if not arguments:
+        raise ValueError(f"{arguments_file=} is invalid or empty")
 
-    vectors_metadata = None
-    with open(vectors_metadata_file, "r") as f:
-        vectors_metadata = json.load(f)
-        logger.info(
-            f"Vectors metadata: {vectors_metadata} loaded from {vectors_metadata_file}"
-        )
+    vectors_file = arguments.get("vectors_file")
+    if not vectors_file:
+        raise ValueError(f"{vectors_file=} is invalid or empty")
 
-    if not vectors_metadata:
-        raise ValueError(f"Vectors metadata not found in {vectors_metadata_file}")
-
-    # logger.info(f"Parsing SMILES: {args.smiles}")
+    vectors_file = pt(vectors_file)
 
     predicted_value = None
     estimator = None
 
-    smi_to_vector, model = get_smi_to_vec(
-        vectors_metadata["embedder"],
-        vectors_metadata["pre_trained_embedder_location"],
-        vectors_metadata["PCA_location"],
+    embedder_model = load_embedder(
+        embedder_name=args.embedder_name, embedder_loc=args.embedder_loc
     )
+    smi_to_vector = smi_to_vec_dict[args.embedder_name]
 
     logger.info(f"Loading estimator from {pretrained_model_file}")
     estimator, scaler = load_model()
@@ -121,11 +139,23 @@ def main(args: Args):
 
     if args.prediction_file:
         return predict_from_file(
-            pt(args.prediction_file), smi_to_vector, model, estimator, scaler
+            pt(args.prediction_file), smi_to_vector, embedder_model, estimator, scaler
         )
 
-    X = smi_to_vector(args.smiles, model)
-    logger.info(f"X: {X}")
+    logger.info(f"Loading smi: {args.smiles}")
+    X = smi_to_vector(args.smiles, embedder_model)
+    logger.info(f"{X.shape=}")
+
+    if "_with" in vectors_file.stem:
+        # load dimensionality reduction pipeline
+        dr_pipeline = joblib.load(
+            vectors_file.parent / "dr_pipelines" / f"{vectors_file.stem}.joblib"
+        )
+        X: np.ndarray = dr_pipeline.transform([X])
+        X = np.squeeze(X)
+        logger.info(f"Transformed X shape: {X.shape=}")
+        logger.info(f"{X.shape=}")
+
     predicted_value: np.ndarray = estimator.predict([X])
 
     if scaler:
