@@ -77,7 +77,7 @@ def predict_from_file(
         dr_pipeline = joblib.load(
             vectors_file.parent / "dr_pipelines" / f"{vectors_file.stem}.joblib"
         )
-        X: np.ndarray = dr_pipeline.transform([X])
+        X: np.ndarray = dr_pipeline.transform(X)
         X = np.squeeze(X)
         logger.info(f"Transformed X shape: {X.shape=}")
         logger.info(f"{X.shape=}")
