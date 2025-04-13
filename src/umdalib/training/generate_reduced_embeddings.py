@@ -120,12 +120,6 @@ def main(args: Args):
         logger.error(f"Unsupported method: {args.method}")
         raise ValueError(f"Unsupported method: {args.method}")
 
-    # if args.scaling:
-    #     scalar = StandardScaler()
-    #     X = scalar.fit_transform(X)
-
-    # reduced = reducer.fit_transform(X)
-
     steps = []
     if args.scaling:
         steps.append(("scaler", StandardScaler()))
