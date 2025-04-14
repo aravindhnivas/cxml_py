@@ -97,6 +97,10 @@ def main(args: Args):
     X: np.ndarray = np.load(args.vector_file, allow_pickle=True)
     logger.info(f"{X.shape=}")
 
+    # remove all-zero rows
+    X = X[~np.all(X == 0, axis=1)]
+    logger.info(f"Removed all-zero rows: {X.shape=}")
+
     logger.info(f"Applying {args.method} with parameters: {args.params}")
 
     # Apply dimensionality reduction
