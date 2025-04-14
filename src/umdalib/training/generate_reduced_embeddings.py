@@ -139,7 +139,12 @@ def main(args: Args):
         reduced.shape[1]
     )  # Set the reduced vector to zero if the original vector is zero
     logger.info(f"Reduced data shape: {reduced.shape}")
-    logger.info(f"{reduced[zero_vec_ind][0]=}")
+    if zero_vec_ind.any():
+        logger.info(
+            f"First reduced vector for all-zero input: {reduced[zero_vec_ind][0]}"
+        )
+    else:
+        logger.info("No all-zero vectors found in the original embedding.")
 
     np.save(args.dr_savefile, reduced)
     logger.info(f"Saved reduced data to {args.dr_savefile}")
