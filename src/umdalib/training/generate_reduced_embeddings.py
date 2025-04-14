@@ -41,6 +41,7 @@ class Args:
     diagnostics_file: str = "dr_diagnostics.json"
 
 
+# Making the PHATE transformer compatible with sklearn
 class PHATETransformer(BaseEstimator, TransformerMixin):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
@@ -148,15 +149,6 @@ def main(args: Args):
     steps.append(("reducer", reducer))
     pipeline = Pipeline(steps)
     reduced = pipeline.fit_transform(X)
-
-    # if args.method == "PHATE":
-    #     if args.scaling:
-    #         X = StandardScaler().fit_transform(X)
-    #     reduced = reducer.fit_transform(X)
-    # else:
-    #     steps.append(("reducer", reducer))
-    #     pipeline = Pipeline(steps)
-    #     reduced = pipeline.fit_transform(X)
 
     # zeroing out the reduced vector if the original vector is zero i.e., invalid embedding
     zero_vec_ind: np.ndarray[bool] = np.all(X == 0, axis=1)
