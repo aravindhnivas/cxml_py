@@ -13,6 +13,8 @@ import trimap
 from umdalib.logger import logger
 from pathlib import Path as pt
 
+from umdalib.utils.json import safe_json_dump
+
 
 @dataclass
 class Args:
@@ -135,6 +137,19 @@ def main(args: Args):
     logger.info(f"Saved reduced data to {args.dr_savefile}")
 
     dr_savefile = pt(args.dr_savefile)
+    # invalid_smiles = []
+    invalid_vec_ind: np.ndarray[bool] = np.all(reduced == 0, axis=1)
+    invalid_smiles = []
+
+    if invalid_vec_ind.sum() > 0:
+        invalid_smiles = reduced[invalid_vec_ind]
+
+    save_obj = {
+        "data_shape": reduced.shape,
+        "invalid_smiles": len(invalid_smiles),
+    }
+    safe_json_dump(save_obj, dr_savefile.with_suffix(".metadata.json"))
+
     # save_loc = dr_savefile.parent / args.method.lower()
 
     pipeline_loc = dr_savefile.parent / "dr_pipelines"
