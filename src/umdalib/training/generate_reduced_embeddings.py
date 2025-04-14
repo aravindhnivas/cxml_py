@@ -15,6 +15,8 @@ from pathlib import Path as pt
 
 from umdalib.utils.json import safe_json_dump
 
+from sklearn.base import BaseEstimator, TransformerMixin
+
 
 @dataclass
 class Args:
@@ -37,6 +39,20 @@ class Args:
     scaling: bool = True
     save_diagnostics: bool = True
     diagnostics_file: str = "dr_diagnostics.json"
+
+
+class PHATETransformer(BaseEstimator, TransformerMixin):
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self.phate = None
+
+    def fit(self, X, y=None):
+        self.phate = phate.PHATE(**self.kwargs)
+        self.phate.fit(X)
+        return self
+
+    def transform(self, X):
+        return self.phate.transform(X)
 
 
 def parge_args(args_dict: dict) -> Args:
@@ -110,7 +126,8 @@ def main(args: Args):
     elif args.method == "KernelPCA":
         reducer = KernelPCA(**args.params)
     elif args.method == "PHATE":
-        reducer = phate.PHATE(**args.params)
+        # reducer = phate.PHATE(**args.params)
+        reducer = PHATETransformer(**args.params)
     elif args.method == "ISOMAP":
         reducer = Isomap(**args.params)
     elif args.method == "LaplacianEigenmaps":
@@ -130,8 +147,16 @@ def main(args: Args):
     # Add the DR method
     steps.append(("reducer", reducer))
     pipeline = Pipeline(steps)
-
     reduced = pipeline.fit_transform(X)
+
+    # if args.method == "PHATE":
+    #     if args.scaling:
+    #         X = StandardScaler().fit_transform(X)
+    #     reduced = reducer.fit_transform(X)
+    # else:
+    #     steps.append(("reducer", reducer))
+    #     pipeline = Pipeline(steps)
+    #     reduced = pipeline.fit_transform(X)
 
     # zeroing out the reduced vector if the original vector is zero i.e., invalid embedding
     zero_vec_ind: np.ndarray[bool] = np.all(X == 0, axis=1)
