@@ -95,6 +95,7 @@ def main(args: Args):
 
     # Load data
     X: np.ndarray = np.load(args.vector_file, allow_pickle=True)
+
     logger.info(f"{X.shape=}")
 
     logger.info(f"Applying {args.method} with parameters: {args.params}")
@@ -131,7 +132,14 @@ def main(args: Args):
     pipeline = Pipeline(steps)
 
     reduced = pipeline.fit_transform(X)
-    logger.info(f"{reduced.shape=}")
+
+    # zeroing out the reduced vector if the original vector is zero i.e., invalid embedding
+    zero_vec_ind: np.ndarray[bool] = np.all(X == 0, axis=1)
+    reduced[zero_vec_ind] = np.zeros(
+        reduced.shape[1]
+    )  # Set the reduced vector to zero if the original vector is zero
+    logger.info(f"Reduced data shape: {reduced.shape}")
+    logger.info(f"{reduced[zero_vec_ind][0]=}")
 
     np.save(args.dr_savefile, reduced)
     logger.info(f"Saved reduced data to {args.dr_savefile}")
