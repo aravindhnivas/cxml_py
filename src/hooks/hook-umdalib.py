@@ -12,6 +12,7 @@ hiddenimports = [
     "umdalib.server",
     "umdalib.getVersion",
     "umdalib.training",
+    "umdalib.embedder",
     "umdalib.start_redis_worker",
     "astrochem_embedding",
 ]
