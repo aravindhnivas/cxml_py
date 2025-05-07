@@ -47,6 +47,10 @@ bottle==0.13.2
     # via optuna-dashboard
 catboost==1.2.7
     # via umdalib
+certifi==2025.4.26
+    # via requests
+charset-normalizer==3.4.2
+    # via requests
 cleanlab==2.7.0
     # via umdalib
 click==8.1.7
@@ -107,7 +111,9 @@ executing==2.1.0
 fastjsonschema==2.20.0
     # via nbformat
 filelock==3.16.1
+    # via huggingface-hub
     # via torch
+    # via transformers
 flask==3.0.3
     # via flask-cors
     # via flask-socketio
@@ -124,6 +130,7 @@ frozenlist==1.5.0
     # via aiosignal
 fsspec==2024.10.0
     # via dask
+    # via huggingface-hub
     # via lightning
     # via pytorch-lightning
     # via torch
@@ -145,7 +152,11 @@ h11==0.14.0
     # via wsproto
 h5py==3.12.1
     # via umdalib
+huggingface-hub==0.30.2
+    # via tokenizers
+    # via transformers
 idna==3.10
+    # via requests
     # via yarl
 ipykernel==6.29.5
 ipympl==0.9.4
@@ -297,6 +308,7 @@ numpy==1.26.4
     # via tables
     # via tensorboard
     # via torchmetrics
+    # via transformers
     # via umap-learn
     # via umdalib
     # via xgboost
@@ -312,6 +324,7 @@ packaging==24.1
     # via dask
     # via dask-ml
     # via distributed
+    # via huggingface-hub
     # via ipykernel
     # via lightning
     # via lightning-utilities
@@ -328,6 +341,7 @@ packaging==24.1
     # via tables
     # via tensorboard
     # via torchmetrics
+    # via transformers
 pandas==2.2.3
     # via astrochem-embedding
     # via catboost
@@ -391,8 +405,9 @@ pygsp==0.5.1
     # via graphtools
 pyinstaller==6.11.0
     # via umdalib
-pyinstaller-hooks-contrib==2024.9
+pyinstaller-hooks-contrib==2025.4
     # via pyinstaller
+    # via umdalib
 pynndescent==0.5.13
     # via umap-learn
 pyparsing==3.2.0
@@ -414,9 +429,11 @@ pytz==2024.2
 pyyaml==6.0.2
     # via dask
     # via distributed
+    # via huggingface-hub
     # via lightning
     # via optuna
     # via pytorch-lightning
+    # via transformers
 pyzmq==26.2.0
     # via ipykernel
     # via jupyter-client
@@ -432,6 +449,11 @@ redis-sentinel-url==1.0.1
 referencing==0.35.1
     # via jsonschema
     # via jsonschema-specifications
+regex==2024.11.6
+    # via transformers
+requests==2.32.3
+    # via huggingface-hub
+    # via transformers
 rpds-py==0.21.0
     # via jsonschema
     # via referencing
@@ -446,6 +468,8 @@ ruamel-yaml-clib==0.2.12
     # via ruamel-yaml
 s-gd2==1.8.1
     # via phate
+safetensors==0.5.3
+    # via transformers
 scikit-learn==1.5.2
     # via astrochem-embedding
     # via cleanlab
@@ -541,6 +565,8 @@ termcolor==2.5.0
     # via cleanlab
 threadpoolctl==3.5.0
     # via scikit-learn
+tokenizers==0.21.1
+    # via transformers
 toolz==1.0.0
     # via dask
     # via distributed
@@ -561,12 +587,14 @@ tornado==6.4.1
     # via jupyter-client
 tqdm==4.66.6
     # via cleanlab
+    # via huggingface-hub
     # via lightning
     # via mapply
     # via mol2vec
     # via optuna
     # via pytorch-lightning
     # via shap
+    # via transformers
     # via umap-learn
 traitlets==5.14.3
     # via comm
@@ -578,12 +606,15 @@ traitlets==5.14.3
     # via jupyter-core
     # via matplotlib-inline
     # via nbformat
+transformers==4.51.3
+    # via umdalib
 trimap==1.1.4
     # via umdalib
 types-python-dateutil==2.9.0.20241003
     # via arrow
 typing-extensions==4.12.2
     # via alembic
+    # via huggingface-hub
     # via lightning
     # via lightning-utilities
     # via pytorch-lightning
@@ -598,6 +629,7 @@ uncertainties==3.2.2
     # via umdalib
 urllib3==2.2.3
     # via distributed
+    # via requests
 waitress==3.0.1
     # via umdalib
 wcwidth==0.2.13
