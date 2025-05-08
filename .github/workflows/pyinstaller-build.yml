@@ -45,11 +45,19 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            TARGET: macos
+            TARGET: macos aarch64
             CMD_BUILD: >
               pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name umdapy --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import umdalib --paths src/ src/main.py
-            ZIP_IT: cd dist && zip -r9 umdapy-darwin.zip umdapy/
-            OUT_FILE_NAME: umdapy-darwin.zip
+            ZIP_IT: cd dist && zip -r9 umdapy-darwin-aarch64.zip umdapy/
+            OUT_FILE_NAME: umdapy-darwin-aarch64.zip
+            ASSET_MIME: application/zip
+
+          - os: macos-13
+            TARGET: macos x86_64
+            CMD_BUILD: >
+              pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name umdapy --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import umdalib --paths src/ src/main.py
+            ZIP_IT: cd dist && zip -r9 umdapy-darwin-x86_64.zip umdapy/
+            OUT_FILE_NAME: umdapy-darwin-x86_64.zip
             ASSET_MIME: application/zip
 
           - os: windows-latest
