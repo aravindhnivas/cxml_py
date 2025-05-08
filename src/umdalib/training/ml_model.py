@@ -25,8 +25,10 @@ from optuna.importance import get_param_importances
 from scipy.optimize import curve_fit
 from sklearn import metrics
 from sklearn.base import clone
+from sklearn.preprocessing import StandardScaler
 from sklearn.gaussian_process import kernels
 from sklearn.model_selection import (
+    KFold,
     cross_validate,
     learning_curve,
     train_test_split,
@@ -151,6 +153,25 @@ def linear(x, m, c):
 
 random_state_supported_models = ["rfr", "gbr", "gpr"]
 seed = None
+
+
+def calculate_leverage(X_train, X_test) -> np.ndarray:
+    """Compute leverage for test samples using the hat matrix."""
+    X_train = np.hstack((np.ones((X_train.shape[0], 1)), X_train))
+    X_test = np.hstack((np.ones((X_test.shape[0], 1)), X_test))
+    XTX_inv = np.linalg.pinv(X_train.T @ X_train)
+    hat_diag = np.einsum("ij,jk,ki->i", X_test, XTX_inv, X_test.T)
+    return hat_diag
+
+
+def calculate_mahalanobis_distance(X_train, X_test) -> np.ndarray:
+    """Compute Mahalanobis distances for test samples from training distribution."""
+    mean_vec = np.mean(X_train, axis=0)
+    cov_mat = np.cov(X_train, rowvar=False)
+    inv_cov_mat = np.linalg.pinv(cov_mat)
+    diff = X_test - mean_vec
+    md = np.einsum("ij,jk,ik->i", diff, inv_cov_mat, diff)
+    return md
 
 
 def get_unique_study_name(base_name: str, storage: str) -> str:
@@ -510,6 +531,9 @@ def get_stats(estimator, X_true: np.ndarray, y_val: np.ndarray):
 def compute_metrics(
     metric: Literal["r2", "mse", "rmse", "mae"], y_true: np.ndarray, y_pred: np.ndarray
 ) -> float:
+    if metric not in ["r2", "mse", "rmse", "mae"]:
+        raise ValueError(f"Invalid metric: {metric}")
+
     if metric == "r2":
         return metrics.r2_score(y_true, y_pred)
     elif metric == "mse":
@@ -518,8 +542,6 @@ def compute_metrics(
         return metrics.root_mean_squared_error(y_true, y_pred)
     elif metric == "mae":
         return metrics.mean_absolute_error(y_true, y_pred)
-    else:
-        raise ValueError(f"Invalid metric: {metric}")
 
 
 def parse_cv_scores(cross_validated_scores: dict) -> dict:
@@ -1089,6 +1111,45 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     test_stats = get_stats(estimator, X_test, y_test)
     logger.info("Evaluating model for train data")
     train_stats = get_stats(estimator, X_train, y_train)
+
+    # --- Applicability Domain Analysis ---
+    logger.info("Starting Applicability Domain Analysis")
+    AD_scaler = StandardScaler()
+    X_train_scaled = AD_scaler.fit_transform(X_train)
+    X_test_scaled = AD_scaler.transform(X_test)
+
+    # Leverage
+    leverage_scores = calculate_leverage(X_train_scaled, X_test_scaled)
+    leverage_threshold = 3 * (X_train_scaled.shape[1] / X_train_scaled.shape[0])
+    outside_leverage = leverage_scores > leverage_threshold
+    logger.info(
+        f"Outside AD (Leverage): {np.sum(outside_leverage)} / {len(outside_leverage)}"
+    )
+
+    # Mahalanobis
+    mahalanobis_scores = calculate_mahalanobis_distance(X_train_scaled, X_test_scaled)
+    mahalanobis_threshold = np.percentile(mahalanobis_scores, 95)
+    outside_mahalanobis = mahalanobis_scores > mahalanobis_threshold
+    logger.info(
+        f"Outside AD (Mahalanobis): {np.sum(outside_mahalanobis)} / {len(outside_mahalanobis)}"
+    )
+
+    # save leverage and mahalanobis scores to file
+    leverage_scores_file = pre_trained_file.with_suffix(".leverage_scores.json")
+    mahalanobis_scores_file = pre_trained_file.with_suffix(".mahalanobis_scores.json")
+    leverage_scores_dict = {
+        "scores": leverage_scores.tolist(),
+        "threshold": leverage_threshold,
+        "outside": outside_leverage.tolist(),
+    }
+    mahalanobis_scores_dict = {
+        "scores": mahalanobis_scores.tolist(),
+        "threshold": mahalanobis_threshold,
+        "outside": outside_mahalanobis.tolist(),
+    }
+    safe_json_dump(leverage_scores_dict, leverage_scores_file)
+    safe_json_dump(mahalanobis_scores_dict, mahalanobis_scores_file)
+    logger.success("Applicability Domain Analysis complete")
 
     results: MLResults = {
         "test_size": test_size,
