@@ -11,6 +11,8 @@ try {
 }
 
 
+const start_time = new Date()
+
 const maindir = path.resolve("../src")
 const mainfile = path.join(maindir, 'main.py')
 
@@ -32,7 +34,7 @@ const py = spawn("pyinstaller", args)
 py.stdout.on('data', (data) => console.log(data.toString('utf8')))
 py.stderr.on('data', (data) => console.log(data.toString('utf8')))
 py.on('close', async () => {
-    console.log('pyinstaller done')
-    await $`cd dist && zip -r9 umdapy-darwin.zip umdapy/`
+    console.log('Pyinstaller done in', new Date() - start_time, 'ms')
+    // await $`cd dist && zip -r9 umdapy-darwin.zip umdapy/`
 })
 py.on('error', (err) => console.log('error occured', err))
