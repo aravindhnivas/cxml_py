@@ -165,3 +165,4 @@ scripts/umdapy.spec
 *.npy
 *.pdf
 *.db
+scripts/pyinstaller.out
