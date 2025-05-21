@@ -11,9 +11,11 @@ dask = site_pkgs / "dask/dask.yaml"
 hiddenimports = [
     "umdalib.server",
     "umdalib.getVersion",
-    "umdalib.training",
-    "umdalib.embedder",
     "umdalib.molecule_analysis",
+    "umdalib.load_file",
+    "umdalib.vectorize_molecules",
+    "umdalib.dimensionality_reduction",
+    "umdalib.ml_training",
     "umdalib.start_redis_worker",
     "astrochem_embedding",
 ]

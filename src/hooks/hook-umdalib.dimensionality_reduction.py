@@ -1,9 +1,9 @@
-from umdalib import training
+from umdalib import dimensionality_reduction
 from pathlib import Path as pt
 
-loc = pt(training.__file__).parent
+loc = pt(dimensionality_reduction.__file__).parent
 hiddenimports = [
-    f"umdalib.training.{file.stem}"
+    f"umdalib.dimensionality_reduction.{file.stem}"
     for file in loc.glob("*.py")
     if file.stem != "__init__"
 ]

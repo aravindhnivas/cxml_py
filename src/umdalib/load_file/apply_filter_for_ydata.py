@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path as pt
-from umdalib.training.read_data import read_as_ddf
+from umdalib.load_file.read_data import read_as_ddf
 
 
 @dataclass

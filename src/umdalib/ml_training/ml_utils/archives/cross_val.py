@@ -5,7 +5,7 @@ from sklearn.model_selection import cross_val_score, KFold
 from sklearn.svm import SVR
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
-from umdalib.training.utils import Yscalers, get_transformed_data
+from umdalib.ml_training.utils import Yscalers, get_transformed_data
 
 
 class FlexibleYTransformer(BaseEstimator, TransformerMixin):

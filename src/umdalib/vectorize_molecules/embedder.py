@@ -1,18 +1,16 @@
 from dataclasses import dataclass
 from pathlib import Path as pt
 from time import perf_counter
-from typing import Callable, Literal, List, Union
-
+from typing import Literal, Union
 import numpy as np
 from dask import array as da
 from dask.diagnostics import ProgressBar
-from mol2vec import features
-from rdkit import Chem
-from umdalib.training.read_data import read_as_ddf
-from umdalib.utils.computation import load_model
+from umdalib.load_file.read_data import read_as_ddf
 from umdalib.utils.json import safe_json_dump
 from umdalib.logger import logger
 import pandas as pd
+
+from umdalib.vectorize_molecules.vectorizer import get_smi_to_vec
 import mapply
 
 mapply.init(n_workers=-1, chunk_size=100, max_chunks_per_worker=10, progressbar=True)
@@ -40,145 +38,37 @@ class Args:
     npartitions: int
     columnX: str
     columnY: str
-    embedding: Literal["VICGAE", "mol2vec"]
+    embedding: Literal[
+        "VICGAE", "mol2vec", "ChemBERTa-zinc-base-v1", "MoLFormer-XL-both-10pct"
+    ]
     pretrained_model_location: str
     test_mode: bool
     test_smiles: str
-    PCA_pipeline_location: str
     embedd_savefile: str
     vectors_file: str
     use_dask: bool
     index_col: str
 
 
-def VICGAE2vec(smi: str, model):
-    # global invalid_smiles
-    smi = str(smi).replace("\xa0", "")
-    if smi == "nan":
-        # invalid_smiles.append(smi)
-        return np.zeros(32)
-    try:
-        return model.embed_smiles(smi).numpy().reshape(-1)
-    except Exception as _:
-        # invalid_smiles.append(smi)
-        return np.zeros(32)
-
-
-# invalid_smiles = []
 test_mode = False
-
-
-def mol2vec(smi: str, model, radius=1) -> List[np.ndarray]:
-    """
-    Given a model, convert a SMILES string into the corresponding
-    NumPy vector.
-    """
-
-    # global invalid_smiles
-    smi = str(smi).replace("\xa0", "")
-    if test_mode:
-        logger.info(f"{smi=}")
-    if smi == "nan":
-        # invalid_smiles.append(smi)
-        return np.zeros(model.vector_size)
-
-    # Molecule from SMILES will break on "bad" SMILES; this tries
-    # to get around sanitization (which takes a while) if it can
-    try:
-        mol = Chem.MolFromSmiles(smi, sanitize=False)
-        if test_mode:
-            logger.info(f"{mol=}")
-        # if not mol:
-        #     invalid_smiles.append(str(smi))
-
-        mol.UpdatePropertyCache(strict=False)
-        Chem.GetSymmSSSR(mol)
-        # generate a sentence from rdkit molecule
-        sentence = features.mol2alt_sentence(mol, radius)
-        # generate vector embedding from sentence and model
-        vector = features.sentences2vec([sentence], model)
-        if test_mode:
-            logger.info(f"{vector.shape=}")
-
-        vector = vector.reshape(-1)
-        if len(vector) == 1:
-            # return np.zeros(model.vector_size)
-            logger.error(f"Vector length is {len(vector)} for {smi}")
-            raise ValueError(f"Invalid embedding: {smi}")
-        return vector
-
-    except Exception as _:
-        # if smi not in invalid_smiles and isinstance(smi, str):
-        #     invalid_smiles.append(smi)
-        return np.zeros(model.vector_size)
-
-
-smi_to_vec_dict: dict[str, Callable] = {
-    "VICGAE": VICGAE2vec,
-    "mol2vec": mol2vec,
-}
-
-embedding: str = "mol2vec"
-PCA_pipeline_location: str = None
-
-
-def get_smi_to_vec_after_pca(smi: str, model):
-    fn = smi_to_vec_dict[embedding]
-    vector = fn(smi, model)
-
-    pipeline_model = load_model(PCA_pipeline_location, use_joblib=True)
-    for step in pipeline_model.steps:
-        vector = step[1].transform(vector)
-
-    return vector
-
-
-def get_smi_to_vec(embedder, pretrained_file, pca_file=None):
-    global embedding, PCA_pipeline_location
-    embedding = embedder
-
-    if embedding == "mol2vec":
-        model = load_model(pretrained_file)
-        logger.info(f"Loaded mol2vec model with {model.vector_size} dimensions")
-    elif embedding == "VICGAE":
-        model = load_model(pretrained_file, use_joblib=True)
-        logger.info("Loaded VICGAE model")
-
-    PCA_pipeline_location = pca_file
-    smi_to_vector = None
-    if pca_file:
-        logger.info(f"Using PCA pipeline from {pca_file}")
-        smi_to_vector = get_smi_to_vec_after_pca
-    else:
-        smi_to_vector = smi_to_vec_dict[embedding]
-
-    logger.warning(f"{smi_to_vector=}")
-    if not callable(smi_to_vector):
-        raise ValueError(f"Unknown embedding model: {embedding}")
-
-    return smi_to_vector, model
 
 
 def main(args: Args):
     logger.info(f"{args=}")
 
-    global embedding, PCA_pipeline_location, test_mode
+    global test_mode
 
     test_mode = args.test_mode
 
     smi_to_vector, model = get_smi_to_vec(
-        args.embedding, args.pretrained_model_location, args.PCA_pipeline_location
+        args.embedding, args.pretrained_model_location
     )
 
     if test_mode:
         logger.info(f"Testing with {args.test_smiles}")
 
         vec: np.ndarray = smi_to_vector(args.test_smiles, model)
-
-        if PCA_pipeline_location:
-            if args.use_dask and isinstance(vec, da.Array):
-                vec = vec.compute()
-
+        vec = vec.squeeze()
         logger.info(f"{vec.shape=}\n")
 
         return {
@@ -212,10 +102,11 @@ def main(args: Args):
         )
     else:
         # for some reason, mapply is not faster with mol2vec embeddings
-        if args.embedding == "mol2vec":
-            vectors = ddf[args.columnX].apply(smi_to_vector, args=(model,))
-        else:
-            vectors = ddf[args.columnX].mapply(smi_to_vector, args=(model,))
+        # if args.embedding == "mol2vec":
+        #     vectors = ddf[args.columnX].apply(smi_to_vector, args=(model,))
+        # else:
+        #     vectors = ddf[args.columnX].mapply(smi_to_vector, args=(model,))
+        vectors = smi_to_vector(ddf[args.columnX], model)
 
     if vectors is None:
         raise ValueError(f"Unknown embedding model: {args.embedding}")
@@ -285,7 +176,6 @@ def main(args: Args):
     save_obj = {
         "embedder": args.embedding,
         "pre_trained_embedder_location": args.pretrained_model_location,
-        "PCA_location": args.PCA_pipeline_location,
         "filename": args.filename,
         "filetype": args.filetype,
         "key": args.key,

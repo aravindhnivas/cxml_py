@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from umdalib.logger import logger
-from umdalib.training.read_data import read_as_ddf
+from umdalib.load_file.read_data import read_as_ddf
 
 
 @dataclass
@@ -21,7 +21,7 @@ def main(args: Args):
         use_dask=args.use_dask,
         computed=True,
     )
-
+    # return {}
     if args.index_column_name in training_df.columns:
         training_df.set_index(args.index_column_name, inplace=True)
         training_df.to_csv(args.filename, index=True)

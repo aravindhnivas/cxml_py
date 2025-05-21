@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from joblib import load
 
-from umdalib.training.embedd_data import smi_to_vec_dict
+from umdalib.ml_training.embedd_data import smi_to_vec_dict
 from umdalib.logger import logger
 import joblib
 from gensim.models import word2vec

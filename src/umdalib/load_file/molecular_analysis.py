@@ -10,7 +10,7 @@ import pandas as pd
 from rdkit import Chem, RDLogger
 from rdkit.Chem import Descriptors, rdMolDescriptors
 
-from umdalib.training.read_data import read_as_ddf
+from umdalib.load_file.read_data import read_as_ddf
 from umdalib.utils.json import safe_json_dump
 from umdalib.logger import logger
 

@@ -28,7 +28,6 @@ from sklearn.base import clone
 from sklearn.preprocessing import StandardScaler
 from sklearn.gaussian_process import kernels
 from sklearn.model_selection import (
-    KFold,
     cross_validate,
     learning_curve,
     train_test_split,
@@ -37,8 +36,8 @@ from sklearn.utils import resample
 from tqdm import tqdm
 
 from umdalib.logger import Paths
-from umdalib.training.read_data import read_as_ddf
-from umdalib.training.utils import Yscalers, get_transformed_data
+from umdalib.load_file.read_data import read_as_ddf
+from umdalib.ml_training.utils import Yscalers, get_transformed_data
 
 # from umdalib.utils.computation import load_model
 from umdalib.utils.json import safe_json_dump
