@@ -91,3 +91,53 @@ For support, please open an issue in the GitHub repository or contact <aravindhn
 - [Kelvin Lee's UMDA repository](https://github.com/laserkelvin/umda) for the mol2vec implementation.
 - [Kelvin Lee's astrochem_embedding repository](https://github.com/laserkelvin/astrochem_embedding) for the VICGAE implementation.
 - The ML pipeline is inspired by K. Lee's [Machine Learning of Interstellar Chemical Inventories](https://iopscience.iop.org/article/10.3847/2041-8213/ac194b) paper.
+
+I would like to thank the authors and maintainers of the following libraries for their invaluable contributions:
+
+### Core Scientific Computing
+
+- [NumPy](https://numpy.org/) - Array computing and linear algebra
+- [SciPy](https://scipy.org/) - Scientific computing and optimization
+- [Pandas](https://pandas.pydata.org/) - Data manipulation and analysis
+- [Dask](https://dask.org/) - Parallel computing and task scheduling
+
+### Machine Learning
+
+- [Scikit-learn](https://scikit-learn.org/) - Machine learning algorithms
+- [XGBoost](https://xgboost.readthedocs.io/en/stable/) - Gradient boosting framework
+- [LightGBM](https://lightgbm.readthedocs.io/en/stable/) - Light gradient boosting machine
+- [CatBoost](https://catboost.ai/) - Gradient boosting on decision trees
+- [Optuna](https://optuna.org/) - Hyperparameter optimization
+- [SHAP](https://shap.readthedocs.io/en/latest/) - Model interpretability
+- [CleanLab](https://docs.cleanlab.ai/stable/index.html) - Data quality and label error detection
+
+### Deep Learning
+
+- [PyTorch](https://pytorch.org/) - Deep learning framework
+- [PyTorch Lightning](https://pytorch-lightning.readthedocs.io/en/stable/) - Deep learning training framework
+- [Transformers](https://huggingface.co/docs/transformers/index) - State-of-the-art NLP
+
+### Chemical Informatics
+
+- [RDKit](https://www.rdkit.org/) - Cheminformatics and machine learning
+- [SELFIES](https://github.com/aspuru-guzik-group/selfies) - String-based molecular representation
+
+### Visualization
+
+- [Matplotlib](https://matplotlib.org/) - Plotting library
+- [Seaborn](https://seaborn.pydata.org/) - Statistical data visualization
+- [PHATE](https://phate.readthedocs.io/en/stable/) - Dimensionality reduction
+- [UMAP](https://umap-learn.readthedocs.io/en/latest/) - Uniform Manifold Approximation
+- [TriMap](https://github.com/eamid/trimap) - Dimensionality reduction
+
+### Web and API
+
+- [Flask](https://flask.palletsprojects.com/en/stable/) - Web framework
+- [Redis](https://redis.io/) - In-memory data store
+- [RQ](https://rq.readthedocs.io/en/stable/) - Task queue
+- [Flask-SocketIO](https://flask-socketio.readthedocs.io/en/latest/) - WebSocket support
+
+### Development Tools
+
+- [Rye](https://rye.astral.sh/) - Python package manager
+- [PyInstaller](https://pyinstaller.org/) - Application packaging
