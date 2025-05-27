@@ -1,4 +1,4 @@
-import umdalib.server as server
+import cxml_lib.server as server
 
 
 class Args:

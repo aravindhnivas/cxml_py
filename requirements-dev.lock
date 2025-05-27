@@ -10,15 +10,15 @@
 #   universal: false
 
 -e file:.
-absl-py==2.1.0
+absl-py==2.3.0
     # via tensorboard
-aiohappyeyeballs==2.4.3
+aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.10.10
+aiohttp==3.12.2
     # via fsspec
-aiosignal==1.3.1
+aiosignal==1.3.2
     # via aiohttp
-alembic==1.13.3
+alembic==1.16.1
     # via optuna
 altgraph==0.17.4
     # via macholib
@@ -30,36 +30,36 @@ appnope==0.1.4
 arrow==1.3.0
     # via rq-dashboard
 astrochem-embedding @ git+https://github.com/aravindhnivas/astrochem_embedding.git@618411489faf687f34c345d8aedeb0405cbf0ad0
-    # via umdalib
-asttokens==2.4.1
+    # via cxml-lib
+asttokens==3.0.0
     # via stack-data
-attrs==24.2.0
+attrs==25.3.0
     # via aiohttp
     # via jsonschema
     # via referencing
 bidict==0.23.1
     # via python-socketio
-blinker==1.8.2
+blinker==1.9.0
     # via flask
-blosc2==2.7.1
+blosc2==3.3.4
     # via tables
-bottle==0.13.2
+bottle==0.13.3
     # via optuna-dashboard
-catboost==1.2.7
-    # via umdalib
+catboost==1.2.8
+    # via cxml-lib
 certifi==2025.4.26
     # via requests
 charset-normalizer==3.4.2
     # via requests
-cleanlab==2.7.0
-    # via umdalib
-click==8.1.7
+cleanlab==2.7.1
+    # via cxml-lib
+click==8.2.1
     # via astrochem-embedding
     # via dask
     # via distributed
     # via flask
     # via rq
-cloudpickle==3.1.0
+cloudpickle==3.1.1
     # via dask
     # via dask-glm
     # via distributed
@@ -69,66 +69,63 @@ colorlog==6.9.0
 comm==0.2.2
     # via ipykernel
     # via ipywidgets
-contourpy==1.3.0
+contourpy==1.3.2
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
-dask==2024.10.0
-    # via dask-expr
+dask==2025.5.1
+    # via cxml-lib
     # via dask-glm
     # via dask-ml
     # via distributed
-    # via umdalib
-dask-expr==1.1.16
-    # via dask
 dask-glm==0.3.2
     # via dask-ml
-dask-ml==2024.4.4
-    # via umdalib
+dask-ml==2025.1.0
+    # via cxml-lib
 dbcv @ git+https://github.com/FelSiq/DBCV.git@13c3896ef78d12f1e3e1cbd394f2db9a09637ffd
-    # via umdalib
-debugpy==1.8.7
+    # via cxml-lib
+debugpy==1.8.14
     # via ipykernel
-decorator==5.1.1
+decorator==5.2.1
     # via ipython
     # via scprep
 deprecated==1.2.18
     # via graphtools
     # via phate
     # via tasklogger
-dill==0.3.9
+dill==0.4.0
     # via multiprocess
     # via pathos
-distributed==2024.10.0
+distributed==2025.5.1
     # via dask-glm
     # via dask-ml
 dnspython==2.7.0
     # via eventlet
-eventlet==0.37.0
-    # via umdalib
-executing==2.1.0
+eventlet==0.40.0
+    # via cxml-lib
+executing==2.2.0
     # via stack-data
-fastjsonschema==2.20.0
+fastjsonschema==2.21.1
     # via nbformat
-filelock==3.16.1
+filelock==3.18.0
     # via huggingface-hub
     # via torch
     # via transformers
-flask==3.0.3
+flask==3.1.1
+    # via cxml-lib
     # via flask-cors
     # via flask-socketio
     # via rq-dashboard
-    # via umdalib
-flask-cors==5.0.0
-    # via umdalib
-flask-socketio==5.4.1
-    # via umdalib
-fonttools==4.54.1
+flask-cors==6.0.0
+    # via cxml-lib
+flask-socketio==5.5.1
+    # via cxml-lib
+fonttools==4.58.0
     # via matplotlib
-frozenlist==1.5.0
+frozenlist==1.6.0
     # via aiohttp
     # via aiosignal
-fsspec==2024.10.0
+fsspec==2025.5.1
     # via dask
     # via huggingface-hub
     # via lightning
@@ -138,138 +135,143 @@ future==1.0.0
     # via graphtools
     # via phate
 gensim==4.3.3
+    # via cxml-lib
     # via mol2vec
-    # via umdalib
 graphtools==1.5.3
     # via phate
 graphviz==0.20.3
     # via catboost
-greenlet==3.1.1
+greenlet==3.2.2
     # via eventlet
-grpcio==1.67.1
+grpcio==1.71.0
     # via tensorboard
-h11==0.14.0
+h11==0.16.0
     # via wsproto
-h5py==3.12.1
-    # via umdalib
-huggingface-hub==0.30.2
+h5py==3.13.0
+    # via cxml-lib
+hf-xet==1.1.2
+    # via huggingface-hub
+huggingface-hub==0.32.2
     # via tokenizers
     # via transformers
 idna==3.10
     # via requests
     # via yarl
 ipykernel==6.29.5
-ipympl==0.9.4
-ipython==8.29.0
+ipympl==0.9.7
+ipython==9.2.0
     # via ipykernel
     # via ipympl
     # via ipywidgets
     # via mol2vec
-ipython-genutils==0.2.0
-    # via ipympl
-ipywidgets==8.1.5
+ipython-pygments-lexers==1.1.1
+    # via ipython
+ipywidgets==8.1.7
     # via ipympl
 itsdangerous==2.2.0
     # via flask
-jedi==0.19.1
+jedi==0.19.2
     # via ipython
-jinja2==3.1.4
+jinja2==3.1.6
     # via distributed
     # via flask
     # via torch
-joblib==1.4.2
+joblib==1.5.1
     # via astrochem-embedding
+    # via cxml-lib
     # via mol2vec
     # via pynndescent
     # via scikit-learn
-    # via umdalib
-jsonschema==4.23.0
+jsonschema==4.24.0
     # via nbformat
-jsonschema-specifications==2024.10.1
+jsonschema-specifications==2025.4.1
     # via jsonschema
 jupyter-client==8.6.3
     # via ipykernel
-jupyter-core==5.7.2
+jupyter-core==5.8.1
     # via ipykernel
     # via jupyter-client
     # via nbformat
-jupyterlab-widgets==3.0.13
+jupyterlab-widgets==3.0.15
     # via ipywidgets
 kaleido==0.2.1
-    # via umdalib
-kiwisolver==1.4.7
+    # via cxml-lib
+kiwisolver==1.4.8
     # via matplotlib
-lightgbm==4.5.0
-    # via umdalib
-lightning==2.4.0
-    # via umdalib
-lightning-utilities==0.11.8
+lightgbm==4.6.0
+    # via cxml-lib
+lightning==2.5.1.post0
+    # via cxml-lib
+lightning-utilities==0.14.3
     # via lightning
     # via pytorch-lightning
     # via torchmetrics
-llvmlite==0.43.0
+llvmlite==0.44.0
     # via numba
     # via pynndescent
 locket==1.0.0
     # via distributed
     # via partd
-loguru==0.7.2
-    # via umdalib
+loguru==0.7.3
+    # via cxml-lib
 macholib==1.16.3
     # via pyinstaller
-mako==1.3.6
+mako==1.3.10
     # via alembic
-mapply==0.1.27
-    # via umdalib
-markdown==3.7
+mapply==0.1.28
+    # via cxml-lib
+markdown==3.8
     # via tensorboard
 markupsafe==3.0.2
+    # via flask
     # via jinja2
     # via mako
     # via werkzeug
-matplotlib==3.9.2
+matplotlib==3.10.3
     # via catboost
+    # via cxml-lib
     # via ipympl
     # via mol2vec
     # via phate
     # via seaborn
-    # via umdalib
 matplotlib-inline==0.1.7
     # via ipykernel
     # via ipython
 mol2vec @ git+https://github.com/aravindhnivas/mol2vec.git@6e8924c3a3512e4ceb83419515948d925b225d90
-    # via umdalib
+    # via cxml-lib
 mpmath==1.3.0
     # via dbcv
     # via sympy
 msgpack==1.1.0
     # via blosc2
     # via distributed
-multidict==6.1.0
+multidict==6.4.4
     # via aiohttp
     # via yarl
 multipledispatch==1.0.0
     # via dask-glm
     # via dask-ml
-multiprocess==0.70.17
+multiprocess==0.70.18
     # via mapply
     # via pathos
+narwhals==1.41.0
+    # via plotly
 nbformat==5.10.4
-    # via umdalib
-ndindex==1.9.2
+    # via cxml-lib
+ndindex==1.10.0
     # via blosc2
 nest-asyncio==1.6.0
     # via ipykernel
 networkx==3.4.2
     # via torch
-numba==0.60.0
+numba==0.61.2
+    # via cxml-lib
     # via dask-ml
     # via pynndescent
     # via shap
     # via sparse
     # via trimap
     # via umap-learn
-    # via umdalib
 numexpr==2.10.2
     # via blosc2
     # via tables
@@ -279,6 +281,7 @@ numpy==1.26.4
     # via catboost
     # via cleanlab
     # via contourpy
+    # via cxml-lib
     # via dask
     # via dask-ml
     # via dbcv
@@ -310,17 +313,16 @@ numpy==1.26.4
     # via torchmetrics
     # via transformers
     # via umap-learn
-    # via umdalib
     # via xgboost
-optuna==4.0.0
+optuna==4.3.0
+    # via cxml-lib
     # via optuna-dashboard
     # via optuna-integration
-    # via umdalib
-optuna-dashboard==0.16.2
-    # via umdalib
-optuna-integration==4.0.0
-    # via umdalib
-packaging==24.1
+optuna-dashboard==0.18.0
+    # via cxml-lib
+optuna-integration==4.3.0
+    # via cxml-lib
+packaging==24.2
     # via dask
     # via dask-ml
     # via distributed
@@ -346,8 +348,8 @@ pandas==2.2.3
     # via astrochem-embedding
     # via catboost
     # via cleanlab
+    # via cxml-lib
     # via dask
-    # via dask-expr
     # via dask-ml
     # via mapply
     # via mol2vec
@@ -355,38 +357,39 @@ pandas==2.2.3
     # via seaborn
     # via shap
     # via statsmodels
-    # via umdalib
 parso==0.8.4
     # via jedi
 partd==1.4.2
     # via dask
-pathos==0.3.3
+pathos==0.3.4
     # via mapply
-patsy==0.5.6
+patsy==1.0.1
     # via statsmodels
 pexpect==4.9.0
     # via ipython
 phate==1.0.11
-    # via umdalib
-pillow==11.0.0
+    # via cxml-lib
+pillow==11.2.1
     # via ipympl
     # via matplotlib
     # via rdkit
-platformdirs==4.3.6
+platformdirs==4.3.8
+    # via blosc2
     # via jupyter-core
-plotly==5.24.1
+plotly==6.1.1
     # via catboost
-pox==0.3.5
+pox==0.3.6
     # via pathos
-ppft==1.7.6.9
+ppft==1.7.7
     # via pathos
-prompt-toolkit==3.0.48
+prompt-toolkit==3.0.51
     # via ipython
-propcache==0.2.0
+propcache==0.3.1
+    # via aiohttp
     # via yarl
-protobuf==5.28.3
+protobuf==6.31.0
     # via tensorboard
-psutil==6.1.0
+psutil==7.0.0
     # via distributed
     # via ipykernel
     # via mapply
@@ -397,34 +400,35 @@ pure-eval==0.2.3
 py-cpuinfo==9.0.0
     # via blosc2
     # via tables
-pyarrow==18.0.0
-    # via dask-expr
-pygments==2.18.0
+pyarrow==20.0.0
+    # via dask
+pygments==2.19.1
     # via ipython
+    # via ipython-pygments-lexers
 pygsp==0.5.1
     # via graphtools
-pyinstaller==6.11.0
-    # via umdalib
+pyinstaller==6.13.0
+    # via cxml-lib
 pyinstaller-hooks-contrib==2025.4
+    # via cxml-lib
     # via pyinstaller
-    # via umdalib
 pynndescent==0.5.13
     # via umap-learn
-pyparsing==3.2.0
+pyparsing==3.2.3
     # via matplotlib
 python-dateutil==2.9.0.post0
     # via arrow
     # via jupyter-client
     # via matplotlib
     # via pandas
-python-engineio==4.10.1
+python-engineio==4.12.1
     # via python-socketio
-python-socketio==5.11.4
+python-socketio==5.13.0
     # via flask-socketio
-pytorch-lightning==2.4.0
+pytorch-lightning==2.5.1.post0
     # via astrochem-embedding
     # via lightning
-pytz==2024.2
+pytz==2025.2
     # via pandas
 pyyaml==6.0.2
     # via dask
@@ -434,35 +438,36 @@ pyyaml==6.0.2
     # via optuna
     # via pytorch-lightning
     # via transformers
-pyzmq==26.2.0
+pyzmq==26.4.0
     # via ipykernel
     # via jupyter-client
-rdkit==2024.3.6
-    # via umdalib
-redis==5.2.0
+rdkit==2025.3.2
+    # via cxml-lib
+redis==6.1.0
+    # via cxml-lib
     # via redis-sentinel-url
     # via rq
     # via rq-dashboard
-    # via umdalib
 redis-sentinel-url==1.0.1
     # via rq-dashboard
-referencing==0.35.1
+referencing==0.36.2
     # via jsonschema
     # via jsonschema-specifications
 regex==2024.11.6
     # via transformers
 requests==2.32.3
+    # via blosc2
     # via huggingface-hub
     # via transformers
-rpds-py==0.21.0
+rpds-py==0.25.1
     # via jsonschema
     # via referencing
-rq==2.3.1
+rq==2.3.3
+    # via cxml-lib
     # via rq-dashboard
-    # via umdalib
 rq-dashboard==0.8.2.2
-    # via umdalib
-ruamel-yaml==0.18.6
+    # via cxml-lib
+ruamel-yaml==0.18.11
     # via astrochem-embedding
 ruamel-yaml-clib==0.2.12
     # via ruamel-yaml
@@ -470,9 +475,10 @@ s-gd2==1.8.1
     # via phate
 safetensors==0.5.3
     # via transformers
-scikit-learn==1.5.2
+scikit-learn==1.6.1
     # via astrochem-embedding
     # via cleanlab
+    # via cxml-lib
     # via dask-glm
     # via dask-ml
     # via dbcv
@@ -484,9 +490,9 @@ scikit-learn==1.5.2
     # via shap
     # via trimap
     # via umap-learn
-    # via umdalib
 scipy==1.13.1
     # via catboost
+    # via cxml-lib
     # via dask-glm
     # via dask-ml
     # via dbcv
@@ -499,71 +505,65 @@ scipy==1.13.1
     # via scikit-learn
     # via scprep
     # via shap
-    # via sparse
     # via statsmodels
     # via umap-learn
-    # via umdalib
     # via xgboost
 scprep==1.1.0
     # via phate
 seaborn==0.13.2
+    # via cxml-lib
     # via mol2vec
-    # via umdalib
-selfies==2.1.2
+selfies==2.2.0
     # via astrochem-embedding
-    # via umdalib
-setuptools==75.3.0
+    # via cxml-lib
+setuptools==80.9.0
     # via lightning-utilities
     # via pyinstaller
     # via pyinstaller-hooks-contrib
     # via tensorboard
     # via torch
-shap==0.46.0
-    # via umdalib
-sigfig==1.3.17
-    # via umdalib
+shap==0.47.2
+    # via cxml-lib
+sigfig==1.3.19
+    # via cxml-lib
 simple-websocket==1.1.0
     # via python-engineio
-six==1.16.0
-    # via asttokens
+six==1.17.0
     # via catboost
-    # via patsy
     # via python-dateutil
     # via tensorboard
 slicer==0.0.8
     # via shap
-smart-open==7.0.5
+smart-open==7.1.0
     # via gensim
 sortedcontainers==2.4.0
     # via distributed
     # via sigfig
-sparse==0.15.4
+sparse==0.17.0
     # via dask-glm
-sqlalchemy==2.0.36
+sqlalchemy==2.0.41
     # via alembic
     # via optuna
 stack-data==0.6.3
     # via ipython
 statsmodels==0.14.4
-    # via umdalib
-sympy==1.13.1
+    # via cxml-lib
+sympy==1.14.0
     # via torch
-tables==3.10.1
-    # via umdalib
+tables==3.10.2
+    # via cxml-lib
 tasklogger==1.2.0
     # via graphtools
     # via phate
-tblib==3.0.0
+tblib==3.1.0
     # via distributed
-tenacity==9.0.0
-    # via plotly
-tensorboard==2.18.0
+tensorboard==2.19.0
     # via astrochem-embedding
 tensorboard-data-server==0.7.2
     # via tensorboard
-termcolor==2.5.0
+termcolor==3.1.0
     # via cleanlab
-threadpoolctl==3.5.0
+threadpoolctl==3.6.0
     # via scikit-learn
 tokenizers==0.21.1
     # via transformers
@@ -571,21 +571,21 @@ toolz==1.0.0
     # via dask
     # via distributed
     # via partd
-torch==2.5.1
+torch==2.7.0
     # via astrochem-embedding
     # via lightning
     # via pytorch-lightning
     # via torchmetrics
 torchinfo==1.8.0
     # via astrochem-embedding
-torchmetrics==1.5.1
+torchmetrics==1.7.1
     # via lightning
     # via pytorch-lightning
-tornado==6.4.1
+tornado==6.5.1
     # via distributed
     # via ipykernel
     # via jupyter-client
-tqdm==4.66.6
+tqdm==4.67.1
     # via cleanlab
     # via huggingface-hub
     # via lightning
@@ -606,47 +606,50 @@ traitlets==5.14.3
     # via jupyter-core
     # via matplotlib-inline
     # via nbformat
-transformers==4.51.3
-    # via umdalib
+transformers==4.52.3
+    # via cxml-lib
 trimap==1.1.4
-    # via umdalib
-types-python-dateutil==2.9.0.20241003
+    # via cxml-lib
+types-python-dateutil==2.9.0.20250516
     # via arrow
-typing-extensions==4.12.2
+typing-extensions==4.13.2
     # via alembic
     # via huggingface-hub
     # via lightning
     # via lightning-utilities
     # via pytorch-lightning
+    # via referencing
+    # via shap
     # via sqlalchemy
     # via tables
     # via torch
-tzdata==2024.2
+tzdata==2025.2
     # via pandas
 umap-learn==0.5.7
-    # via umdalib
-uncertainties==3.2.2
-    # via umdalib
-urllib3==2.2.3
+    # via cxml-lib
+uncertainties==3.2.3
+    # via cxml-lib
+urllib3==2.4.0
     # via distributed
     # via requests
-waitress==3.0.1
-    # via umdalib
+waitress==3.0.2
+    # via cxml-lib
 wcwidth==0.2.13
     # via prompt-toolkit
-werkzeug==3.0.6
+werkzeug==3.1.3
     # via flask
+    # via flask-cors
     # via tensorboard
-widgetsnbextension==4.0.13
+widgetsnbextension==4.0.14
     # via ipywidgets
-wrapt==1.16.0
+wrapt==1.17.2
     # via deprecated
     # via smart-open
 wsproto==1.2.0
     # via simple-websocket
-xgboost==2.1.2
-    # via umdalib
-yarl==1.17.1
+xgboost==3.0.2
+    # via cxml-lib
+yarl==1.20.0
     # via aiohttp
 zict==3.0.0
     # via distributed

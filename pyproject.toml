@@ -1,9 +1,9 @@
 [project]
-name = "umdalib"
+name = "cxml_lib"
 version = "3.4.0"
-description = "Add your description here"
+description = "Python backend for ChemXploreML package"
 authors = [
-    { name = "Aravindh Nivas Marimuthu", email = "aravindhnivas@duck.com" },
+    { name = "Aravindh Nivas Marimuthu", email = "aravindhnivas28@gmail.com" },
 ]
 readme = "README.md"
 license = { text = "MIT" }
@@ -72,5 +72,5 @@ dev-dependencies = ['ipykernel', 'ipympl']
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/umdalib"]
+packages = ["src/cxml_lib"]
 exclude = ["tests", "docs", "*.pyc", "*.pyo"]

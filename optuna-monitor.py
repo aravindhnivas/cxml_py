@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from waitress import serve
 from optuna.storages import RDBStorage
 from optuna_dashboard import wsgi
-from umdalib.logger import Paths
+from cxml_lib.logger import Paths
 
 
 @dataclass

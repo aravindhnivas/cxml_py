@@ -1,1 +1,1 @@
-hiddenimports = ["umdalib"]
+hiddenimports = ["cxml_lib"]
