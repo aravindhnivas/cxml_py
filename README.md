@@ -90,4 +90,4 @@ For support, please open an issue in the GitHub repository or contact <aravindhn
 
 - [Kelvin Lee's UMDA repository](https://github.com/laserkelvin/umda) for the mol2vec implementation.
 - [Kelvin Lee's astrochem_embedding repository](https://github.com/laserkelvin/astrochem_embedding) for the VICGAE implementation.
-- The ML pipeline is inspired by K. Lee's UMDA repository.
+- The ML pipeline is inspired by K. Lee's [Machine Learning of Interstellar Chemical Inventories](https://iopscience.iop.org/article/10.3847/2041-8213/ac194b) paper.
