@@ -85,3 +85,9 @@ Marimuthu, A. N.; McGuire, B. A. Machine Learning Pipeline for Molecular Propert
 ## Support
 
 For support, please open an issue in the GitHub repository or contact <aravindhnivas28@gmail.com>.
+
+## Acknowledgments
+
+- [Kelvin Lee's UMDA repository](https://github.com/laserkelvin/umda) for the mol2vec implementation.
+- [Kelvin Lee's astrochem_embedding repository](https://github.com/laserkelvin/astrochem_embedding) for the VICGAE implementation.
+- The ML pipeline is inspired by K. Lee's UMDA repository.
