@@ -57,6 +57,7 @@ dependencies = [
     "trimap>=1.1.4",
     "transformers>=4.51.3",
     "pyinstaller-hooks-contrib>=2025.4",
+    "pre-commit>=4.2.0",
 ]
 
 
