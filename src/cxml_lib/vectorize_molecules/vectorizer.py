@@ -31,21 +31,23 @@ def VICGAE2vec(df: pd.Series | str, model):
     return df.mapply(func).to_numpy()
 
 
+"""
+mol2vec is inspired and derived from Kelvin Lee's UMDA repository:
+https://github.com/laserkelvin/umda/blob/a95cc1c1eb98a1ff64b37a4c6ed92f9546d0215b/umda/smi_vec.py
+"""
+
+
 def mol2vec(df: pd.Series | str, model, radius=1) -> List[np.ndarray]:
     def func(smi: str):
         smi = str(smi).replace("\xa0", "")
         if smi == "nan":
             return np.zeros(model.vector_size)
 
-        # Molecule from SMILES will break on "bad" SMILES; this tries
-        # to get around sanitization (which takes a while) if it can
         try:
             mol = Chem.MolFromSmiles(smi, sanitize=False)
             mol.UpdatePropertyCache(strict=False)
             Chem.GetSymmSSSR(mol)
-            # generate a sentence from rdkit molecule
             sentence = features.mol2alt_sentence(mol, radius)
-            # generate vector embedding from sentence and model
             vector = features.sentences2vec([sentence], model)
             vector = vector.reshape(-1)
             if len(vector) == 1:
