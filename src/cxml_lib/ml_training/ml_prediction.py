@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from joblib import load
 
-from cxml_lib.ml_training.embedd_data import smi_to_vec_dict
+from cxml_lib.vectorize_molecules.embedder import get_smi_to_vec
 from cxml_lib.logger import logger
 import joblib
 from gensim.models import word2vec
@@ -142,7 +142,9 @@ def main(args: Args):
     embedder_model = load_embedder(
         embedder_name=args.embedder_name, embedder_loc=args.embedder_loc
     )
-    smi_to_vector = smi_to_vec_dict[args.embedder_name]
+    smi_to_vector, embedder_model = get_smi_to_vec(
+        args.embedder_name, args.embedder_loc
+    )
 
     logger.info(f"Loading estimator from {pretrained_model_file}")
     estimator, scaler = load_model()
