@@ -1,6 +1,6 @@
 [project]
 name = "cxml_lib"
-version = "3.4.0"
+version = "4.0.0"
 description = "Python backend for ChemXploreML package"
 authors = [
     { name = "Aravindh Nivas Marimuthu", email = "aravindhnivas28@gmail.com" },
