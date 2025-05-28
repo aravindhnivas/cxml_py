@@ -2,6 +2,8 @@
 
 This repository contains the Python backend for the ChemXploreML desktop application, which implements the machine learning framework described in the paper: [Machine Learning Pipeline for Molecular Property Prediction Using ChemXploreML](https://pubs.acs.org/doi/full/10.1021/acs.jcim.5c00516).
 
+Please visit the [Documentation](https://aravindhnivas.github.io/ChemXploreML-docs/) to download the desktop application. To access the desktop application source code, please visit the [ChemXploreML](https://github.com/aravindhnivas/ChemXploreML) repository.
+
 ## Overview
 
 ChemXploreML is a powerful machine learning framework designed for chemical space exploration and molecular property prediction. This Python backend provides the core functionality for:
@@ -57,11 +59,9 @@ source .venv/bin/activate
 cxml_py/
 ├── src/
 │   └── cxml_lib/        # Core library code
-├── scripts/             # Utility scripts
-├── tests/              # Test suite
 ├── pyproject.toml      # Project configuration
 ├── requirements.lock   # Locked dependencies
-└── README.md          # This file
+└── README.md           # This file
 ```
 
 ## Contributing
