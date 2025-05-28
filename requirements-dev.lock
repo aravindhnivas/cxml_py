@@ -125,7 +125,7 @@ flask-cors==6.0.0
     # via cxml-lib
 flask-socketio==5.5.1
     # via cxml-lib
-fonttools==4.58.0
+fonttools==4.58.1
     # via matplotlib
 frozenlist==1.6.0
     # via aiohttp
@@ -386,7 +386,7 @@ platformdirs==4.3.8
     # via blosc2
     # via jupyter-core
     # via virtualenv
-plotly==6.1.1
+plotly==6.1.2
     # via catboost
 pox==0.3.6
     # via pathos
@@ -456,7 +456,7 @@ pyzmq==26.4.0
     # via jupyter-client
 rdkit==2025.3.2
     # via cxml-lib
-redis==6.1.0
+redis==6.2.0
     # via cxml-lib
     # via redis-sentinel-url
     # via rq
