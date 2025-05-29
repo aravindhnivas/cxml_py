@@ -46,7 +46,7 @@ py.stderr.pipe(fs.createWriteStream(stderr_file))
 py.on('close', async () => {
     const time_in_ms = new Date() - start_time
     const time_in_minutes = time_in_ms / 60000
-    console.log(`Pyinstaller done in ${time_in_minutes} minutes`)
+    console.log(`Pyinstaller done in ${Number(time_in_minutes).toFixed(2)} minutes`)
     // await $`cd dist && zip -r9 cxml_py-darwin.zip cxml_py/`
 })
 py.on('error', (err) => console.log('error occured', err))
