@@ -208,32 +208,29 @@ def main(args: Args) -> Dict[str, Any]:
         - optimized_pdb: PDB format string of the optimized molecule, or None if optimization failed
         - error: Error message if optimization failed, None otherwise
     """
-    try:
-        args = parse_args(args.__dict__, Args)
-        if args.config is None:
-            args.config = OptimizationConfig()
 
-        logger.info(f"Starting molecule optimization for SMILES: {args.smiles}")
+    args = parse_args(args.__dict__, Args)
 
-        # Validate input
-        is_valid, error = validate_smiles(args.smiles)
-        if not is_valid:
-            logger.error(f"Input validation failed: {error}")
-            return {"optimized_pdb": None, "error": error}
+    if args.config is None:
+        args.config = OptimizationConfig()
 
-        # Perform optimization
-        optimized_pdb, error = smiles_to_pdb_string(args.smiles, args.config)
+    logger.info(f"Starting molecule optimization for SMILES: {args.smiles}")
 
-        if error:
-            logger.error(f"Optimization failed: {error}")
-        else:
-            logger.info("Successfully optimized molecule structure")
+    # Validate input
+    is_valid, error = validate_smiles(args.smiles)
+    if not is_valid:
+        logger.error(f"Input validation failed: {error}")
+        return {"optimized_pdb": None, "error": error}
 
-        return {
-            "optimized_pdb": optimized_pdb,
-            "error": error,
-        }
-    except Exception as e:
-        error_msg = f"Unexpected error in main function: {str(e)}"
-        logger.error(error_msg)
-        return {"optimized_pdb": None, "error": error_msg}
+    # Perform optimization
+    optimized_pdb, error = smiles_to_pdb_string(args.smiles, args.config)
+
+    if error:
+        logger.error(f"Optimization failed: {error}")
+    else:
+        logger.info("Successfully optimized molecule structure")
+
+    return {
+        "optimized_pdb": optimized_pdb,
+        "error": error,
+    }
