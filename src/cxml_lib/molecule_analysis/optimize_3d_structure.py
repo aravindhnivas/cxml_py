@@ -220,13 +220,14 @@ def main(args: Args) -> Dict[str, Any]:
     is_valid, error = validate_smiles(args.smiles)
     if not is_valid:
         logger.error(f"Input validation failed: {error}")
-        return {"optimized_pdb": None, "error": error}
+        raise ValueError(f"Input validation failed: {error}")
 
     # Perform optimization
     optimized_pdb, error = smiles_to_pdb_string(args.smiles, args.config)
 
     if error:
         logger.error(f"Optimization failed: {error}")
+        raise ValueError(f"Optimization failed: {error}")
     else:
         logger.info("Successfully optimized molecule structure")
 
