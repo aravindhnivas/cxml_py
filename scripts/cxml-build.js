@@ -34,7 +34,9 @@ const py = spawn("pyinstaller", args)
 py.stdout.on('data', (data) => console.log(data.toString('utf8')))
 py.stderr.on('data', (data) => console.log(data.toString('utf8')))
 py.on('close', async () => {
-    console.log('Pyinstaller done in', new Date() - start_time, 'ms')
+    const time_in_ms = new Date() - start_time
+    const time_in_minutes = time_in_ms / 60000
+    console.log(`Pyinstaller done in ${time_in_minutes} minutes`)
     // await $`cd dist && zip -r9 cxml_py-darwin.zip cxml_py/`
 })
 py.on('error', (err) => console.log('error occured', err))
