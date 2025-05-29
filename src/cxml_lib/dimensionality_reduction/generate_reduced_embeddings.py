@@ -1,4 +1,4 @@
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 import json
 from typing import Literal
 import joblib
@@ -12,9 +12,8 @@ import phate
 import trimap
 from cxml_lib.logger import logger
 from pathlib import Path as pt
-
+from cxml_lib.utils import parse_args
 from cxml_lib.utils.json import safe_json_dump
-
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
@@ -56,21 +55,6 @@ class PHATETransformer(BaseEstimator, TransformerMixin):
         return self.phate.transform(X)
 
 
-def parge_args(args_dict: dict) -> Args:
-    # Build kwargs using defaults where necessary
-    kwargs = {}
-    for field in fields(Args):
-        if field.name in args_dict:
-            kwargs[field.name] = args_dict[field.name]
-        elif field.default is not field.default_factory:  # default value exists
-            kwargs[field.name] = field.default
-        elif field.default_factory is not None:  # default factory (rare case)
-            kwargs[field.name] = field.default_factory()
-        else:
-            raise ValueError(f"Missing required field: {field.name}")
-    return Args(**kwargs)
-
-
 def save_diagnostics_to_json(
     method: str, reducer, reduced: np.ndarray, diagnostics_file: str
 ):
@@ -103,7 +87,7 @@ def save_diagnostics_to_json(
 
 def main(args: Args):
     logger.info("Starting dimensionality reduction pipeline")
-    args = parge_args(args.__dict__)
+    args = parse_args(args.__dict__, Args)
     # logger.info(json.dumps(args.__dict__, indent=4))
 
     logger.info(f"Loading embeddings from {args.vector_file}")
