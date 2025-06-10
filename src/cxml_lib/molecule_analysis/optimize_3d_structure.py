@@ -213,7 +213,10 @@ def main(args: Args) -> Dict[str, Any]:
 
     if args.config is None:
         args.config = OptimizationConfig()
+    else:
+        args.config = OptimizationConfig(**args.config)
 
+    logger.info(f"args: {args}")
     logger.info(f"Starting molecule optimization for SMILES: {args.smiles}")
 
     # Validate input
