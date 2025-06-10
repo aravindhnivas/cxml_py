@@ -74,7 +74,7 @@ def predict_value(
     arguments: dict[str, Any],
 ):
     logger.info(f"Loading estimator from {pretrained_model_file}")
-    estimator, _ = load_model()
+    estimator, yscaler_old = load_model()
     logger.info(f"Loaded estimator: {estimator}")
 
     if not estimator:
@@ -86,9 +86,15 @@ def predict_value(
     yscaler_file = pretrained_model_file.with_suffix(".yscaler.pkl")
 
     if yscaling:
-        if not yscaler_file.exists():
-            raise ValueError("Yscaler file not found")
-        yscaler = load(yscaler_file)
+        if yscaler_file.exists():
+            yscaler = load(yscaler_file)
+        else:
+            if yscaler_old:
+                yscaler = yscaler_old
+                logger.info(f"Using old yscaler: {yscaler}")
+            else:
+                raise ValueError("Yscaler file not found and no old yscaler found")
+
         logger.info(f"Loaded yscaler: {yscaler}")
 
     ytransformation = arguments.get("ytransformation")
