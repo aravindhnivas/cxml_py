@@ -1094,7 +1094,16 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
     if args.save_pretrained_model:
         logger.info(f"Saving model to {pre_trained_file}")
         dump((estimator, yscaler), pre_trained_file)
-        logger.success("Trained model saved")
+        logger.success(f"Trained model saved to {pre_trained_file}")
+
+        if yscaler:
+            yscaler_file = pre_trained_file.with_suffix(".yscaler.pkl")
+            dump(yscaler, yscaler_file)
+            logger.success(f"yscaler saved to {yscaler_file}")
+        if y_transformer:
+            y_transformer_file = pre_trained_file.with_suffix(".y_transformer.pkl")
+            dump(y_transformer, y_transformer_file)
+            logger.success(f"y_transformer saved to {y_transformer_file}")
 
     trained_params = estimator.get_params()
     if args.model == "catboost":
@@ -1174,6 +1183,16 @@ def compute(args: Args, X: np.ndarray, y: np.ndarray):
             "mae": train_stats[3],
         },
     }
+
+    # save boxcox_lambda_param if ytransformation is boxcox
+    if ytransformation == "boxcox" and boxcox_lambda_param is not None:
+        results["boxcox_lambda_param"] = boxcox_lambda_param
+
+        boxcox_lambda_param_file = pre_trained_file.with_suffix(
+            ".boxcox_lambda_param.json"
+        )
+        safe_json_dump(boxcox_lambda_param, boxcox_lambda_param_file)
+        logger.success("boxcox_lambda_param saved to results")
 
     if args.cross_validation and test_size > 0:
         results["cv_fold"] = args.cv_fold

@@ -1,6 +1,7 @@
 import json
 from dataclasses import dataclass
 from pathlib import Path as pt
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -10,6 +11,8 @@ from cxml_lib.vectorize_molecules.embedder import get_smi_to_vec
 from cxml_lib.logger import logger
 import joblib
 from gensim.models import word2vec
+from scipy.special import inv_boxcox
+from cxml_lib.utils.json import safe_json_load
 
 
 @dataclass
@@ -48,65 +51,95 @@ def load_model():
     return load(pretrained_model_file)
 
 
-def predict_from_file(
-    prediction_file: pt,
-    vectors_file: pt,
-    smi_to_vector,
-    embedder_model,
-    estimator,
-    scaler,
+pretrained_model_file = None
+
+
+def inverse_transform_data(data: np.ndarray, method: str):
+    if method == "log1p":
+        return np.expm1(data)
+    elif method == "sqrt":
+        return np.power(data, 2)
+    elif method == "reciprocal":
+        return (1 / data) - 1
+    elif method == "square":
+        return np.sqrt(data)
+    elif method == "exp":
+        return np.log(data)
+    else:
+        raise ValueError(f"Unsupported transformation method: {method}")
+
+
+def predict_value(
+    X: np.ndarray,
+    arguments: dict[str, Any],
 ):
-    if not prediction_file.exists():
-        raise ValueError(f"Prediction file not found: {prediction_file}")
+    logger.info(f"Loading estimator from {pretrained_model_file}")
+    estimator, _ = load_model()
+    logger.info(f"Loaded estimator: {estimator}")
 
-    logger.info(f"Reading test file: {prediction_file}")
+    if not estimator:
+        logger.error("Failed to load estimator")
+        raise ValueError("Failed to load estimator")
 
-    # smiles = np.loadtxt(prediction_file, dtype=str, delimiter="\n")
-    with open(prediction_file, "r") as f:
-        smiles = f.read().splitlines()
+    yscaling = arguments.get("yscaling")
+    yscaler = None
+    yscaler_file = pretrained_model_file.with_suffix(".yscaler.pkl")
 
-    logger.info(f"Read {len(smiles)} SMILES from {prediction_file}")
+    if yscaling:
+        if not yscaler_file.exists():
+            raise ValueError("Yscaler file not found")
+        yscaler = load(yscaler_file)
+        logger.info(f"Loaded yscaler: {yscaler}")
 
-    if len(smiles) == 0:
-        raise ValueError("No valid SMILES found in test file")
+    ytransformation = arguments.get("ytransformation")
+    y_transformer = None
+    y_transformer_file = pretrained_model_file.with_suffix(".y_transformer.pkl")
 
-    X = np.array([smi_to_vector(smi, embedder_model) for smi in smiles])
-    logger.info(f"{X.shape=}")
+    if ytransformation:
+        if not y_transformer_file.exists():
+            raise ValueError("Y_transformer file not found")
+        y_transformer = load(y_transformer_file)
+        logger.info(f"Loaded y_transformer: {y_transformer}")
 
-    if "_with" in vectors_file.stem:
-        dr_pipeline = joblib.load(
-            vectors_file.parent / "dr_pipelines" / f"{vectors_file.stem}.joblib"
-        )
-        X: np.ndarray = dr_pipeline.transform(X)
-        X = np.squeeze(X)
-        logger.info(f"Transformed X shape: {X.shape=}")
-        logger.info(f"{X.shape=}")
+    if yscaling and yscaler is None:
+        raise ValueError("Yscaler not found")
 
-    if len(X) == 0:
-        raise ValueError("No valid SMILES found in test file")
+    if ytransformation and y_transformer is None:
+        raise ValueError("Y_transformer not found")
 
     predicted_value: np.ndarray = estimator.predict(X)
+    logger.info(f"Predicted value: {predicted_value}")
+    logger.info(f"yscaler: {yscaler}")
 
-    if scaler:
-        predicted_value = scaler.inverse_transform(
+    if yscaler:
+        predicted_value = yscaler.inverse_transform(
             predicted_value.reshape(-1, 1)
         ).flatten()
+        logger.info(f"Scaled predicted value: {predicted_value}")
 
-    predicted_value = predicted_value.tolist()
+    if ytransformation == "boxcox":
+        boxcox_lambda_param_file = pretrained_model_file.with_suffix(
+            ".boxcox_lambda_param.json"
+        )
+        boxcox_lambda_param = safe_json_load(boxcox_lambda_param_file)
+        if boxcox_lambda_param is None:
+            raise ValueError("Boxcox lambda parameter not found")
+        predicted_value = inv_boxcox(predicted_value, boxcox_lambda_param)
+        logger.info(f"Boxcox inverse transformed predicted value: {predicted_value}")
+    elif ytransformation == "yeo_johnson":
+        if y_transformer is None:
+            raise ValueError("Y_transformer not found")
+        predicted_value = y_transformer.inverse_transform(
+            predicted_value.reshape(-1, 1)
+        ).flatten()
+        logger.info(
+            f"Yeo-Johnson inverse transformed predicted value: {predicted_value}"
+        )
+    elif ytransformation:
+        predicted_value = inverse_transform_data(predicted_value, ytransformation)
+        logger.info(f"Inverse transformed predicted value: {predicted_value}")
 
-    data = pd.DataFrame({"SMILES": smiles})
-    data["predicted_value"] = predicted_value
-    savefile = (
-        prediction_file.parent
-        / f"{prediction_file.stem}_predicted_values_{pretrained_model_file.stem}.csv"
-    )
-    data.to_csv(savefile, index=False)
-
-    logger.info(f"Predicted values saved to {savefile}")
-    return {"savedfile": str(savefile)}
-
-
-pretrained_model_file = None
+    return predicted_value
 
 
 def main(args: Args):
@@ -122,7 +155,7 @@ def main(args: Args):
         raise ValueError(f"Arguments file not found: {arguments_file}")
 
     with open(arguments_file, "r") as f:
-        arguments = json.load(f)
+        arguments: dict[str, Any] = json.load(f)
         logger.info(
             f"Arguments: {arguments} from {arguments_file} for {pretrained_model_file} loaded"
         )
@@ -136,9 +169,6 @@ def main(args: Args):
 
     vectors_file = pt(vectors_file)
 
-    predicted_value = None
-    estimator = None
-
     embedder_model = load_embedder(
         embedder_name=args.embedder_name, embedder_loc=args.embedder_loc
     )
@@ -146,47 +176,49 @@ def main(args: Args):
         args.embedder_name, args.embedder_loc
     )
 
-    logger.info(f"Loading estimator from {pretrained_model_file}")
-    estimator, scaler = load_model()
-
-    if not estimator:
-        logger.error("Failed to load estimator")
-        raise ValueError("Failed to load estimator")
-
-    logger.info(f"Loaded estimator: {estimator}")
-    logger.info(f"Loaded scaler: {scaler}")
-
+    prediction_file = None
     if args.prediction_file:
         prediction_file = pt(args.prediction_file)
-        return predict_from_file(
-            prediction_file,
-            vectors_file,
-            smi_to_vector,
-            embedder_model,
-            estimator,
-            scaler,
-        )
+        with open(args.prediction_file, "r") as f:
+            smiles = f.read().splitlines()
 
-    logger.info(f"Loading smi: {args.smiles}")
-    X = smi_to_vector(args.smiles, embedder_model)
-    logger.info(f"{X.shape=}")
+        logger.info(f"Read {len(smiles)} SMILES from {prediction_file}")
+
+        if len(smiles) == 0:
+            raise ValueError("No valid SMILES found in test file")
+
+        X = np.array([smi_to_vector(smi, embedder_model) for smi in smiles])
+    else:
+        X = smi_to_vector(args.smiles, embedder_model)
+        X = np.array([X])
+        logger.info(f"Loaded X: {X}")
 
     if "_with" in vectors_file.stem:
         dr_pipeline = joblib.load(
             vectors_file.parent / "dr_pipelines" / f"{vectors_file.stem}.joblib"
         )
-        X: np.ndarray = dr_pipeline.transform([X])
+        X: np.ndarray = dr_pipeline.transform(X)
         X = np.squeeze(X)
         logger.info(f"Transformed X shape: {X.shape=}")
         logger.info(f"{X.shape=}")
 
-    predicted_value: np.ndarray = estimator.predict([X])
+    predicted_value = predict_value(
+        X,
+        arguments,
+    )
 
-    if scaler:
-        predicted_value = scaler.inverse_transform(
-            predicted_value.reshape(-1, 1)
-        ).flatten()
+    if prediction_file is not None:
+        predicted_value = predicted_value.tolist()
 
-    predicted_value = float(predicted_value[0])
-    logger.info(f"Predicted value: {predicted_value}")
-    return {"predicted_value": predicted_value}
+        data = pd.DataFrame({"SMILES": smiles})
+        data["predicted_value"] = predicted_value
+        savefile = (
+            prediction_file.parent
+            / f"{prediction_file.stem}_predicted_values_{pretrained_model_file.stem}.csv"
+        )
+        data.to_csv(savefile, index=False)
+
+        logger.info(f"Predicted values saved to {savefile}")
+        return {"savedfile": str(savefile)}
+    else:
+        return {"predicted_value": float(predicted_value[0])}
