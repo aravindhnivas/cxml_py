@@ -43,14 +43,12 @@ def convert_to_json_compatible(obj):
 
 
 def safe_json_dump(
-    obj: dict, filename: str | pt, overwrite=True, create_dir: bool = True
+    obj: dict,
+    filename: str | pt,
+    overwrite: bool = True,
+    create_dir: bool = True,
+    indent: int = 4,
 ):
-    if not isinstance(obj, dict):
-        raise ValueError(f"Expected a dictionary, got {type(obj)}")
-
-    if not isinstance(filename, (str, pt)):
-        raise ValueError(f"Expected a string or Path, got {type(filename)}")
-
     if isinstance(filename, str):
         filename = pt(filename)
 
@@ -72,8 +70,20 @@ def safe_json_dump(
     try:
         logger.info(f"Saving to {filename}")
         with open(filename, "w") as f:
-            json.dump(convert_to_json_compatible(obj), f, indent=4)
+            json.dump(convert_to_json_compatible(obj), f, indent=indent)
             logger.success(f"{filename.name} saved successfully to {filename.parent}")
     except Exception as e:
         logger.error(f"Error saving to {filename}: {e}")
         raise e
+
+
+def safe_json_load(file: pt) -> dict | list | str | int | float | bool | None:
+    if not file.exists():
+        logger.error(f"File not found: {file} for safe_json_load")
+        return None
+    try:
+        with open(file, "r") as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"Error loading data from {file}: {e} for safe_json_load")
+        return None
