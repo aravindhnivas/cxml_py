@@ -1,0 +1,4 @@
+scripts/build/
+scripts/dist/
+scripts/stderr.txt
+scripts/stdout.txt
