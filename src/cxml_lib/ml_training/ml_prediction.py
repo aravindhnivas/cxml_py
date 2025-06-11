@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from joblib import load
 
+from cxml_lib.utils import parse_args
 from cxml_lib.vectorize_molecules.embedder import get_smi_to_vec
 from cxml_lib.logger import logger
 import joblib
@@ -22,6 +23,9 @@ class Args:
     prediction_file: str
     embedder_name: str
     embedder_loc: str
+    choosen_model: str = None
+    choosen_embedder: str = None
+    choosen_pkl_key: str = None
 
 
 def load_embedder(embedder_name: str, embedder_loc: str, use_joblib: bool = False):
@@ -151,6 +155,9 @@ def predict_value(
 def main(args: Args):
     global pretrained_model_file
 
+    args = parse_args(args.__dict__, Args)
+    logger.info(f"Args: {args.__dict__}")
+
     pretrained_model_file = pt(args.pretrained_model_file)
     pretrained_model_loc = pretrained_model_file.parent
 
@@ -227,4 +234,10 @@ def main(args: Args):
         logger.info(f"Predicted values saved to {savefile}")
         return {"savedfile": str(savefile)}
     else:
-        return {"predicted_value": float(predicted_value[0])}
+        return {
+            "predicted_value": float(predicted_value[0]),
+            "choosen_model": args.choosen_model,
+            "choosen_embedder": args.choosen_embedder,
+            "choosen_pkl_key": args.choosen_pkl_key,
+            "smiles": args.smiles,
+        }
