@@ -6,7 +6,14 @@ from cxml_lib.logger import logger
 from pathlib import Path as pt
 import joblib
 from gensim.models import word2vec
-from transformers import AutoTokenizer, AutoModel, PreTrainedModel, PreTrainedTokenizer
+from transformers import (
+    AutoTokenizer,
+    AutoModel,
+    PreTrainedModel,
+    PreTrainedTokenizer,
+    RobertaModel,
+    RobertaTokenizer,
+)
 import torch
 import pandas as pd
 import mapply
@@ -134,16 +141,14 @@ def get_smi_to_vec(embedding, pretrained_file):
         logger.info("Loaded VICGAE model")
         smi_to_vector = VICGAE2vec
     elif embedding == "ChemBERTa-zinc-base-v1":
-        # smi_to_vector = ChemBERTa_to_vec
-        hf_model = AutoModel.from_pretrained(
+        hf_model = RobertaModel.from_pretrained(
             pretrained_file,
             trust_remote_code=True,
         )
-        hf_tokenizer = AutoTokenizer.from_pretrained(
+        hf_tokenizer = RobertaTokenizer.from_pretrained(
             pretrained_file,
             trust_remote_code=True,
         )
-        # smi_to_vector = hf_func
     elif embedding == "MoLFormer-XL-both-10pct":
         hf_model = AutoModel.from_pretrained(
             pretrained_file,
@@ -154,7 +159,6 @@ def get_smi_to_vec(embedding, pretrained_file):
             pretrained_file,
             trust_remote_code=True,
         )
-        # smi_to_vector = hf_func
     else:
         raise ValueError(f"Unknown embedding model: {embedding}")
 
