@@ -76,7 +76,7 @@ def compute(pyfile: str, args: dict | str):
 
             result = convert_to_json_compatible(result)
             logger.success(f"Computation completed successfully in {computed_time}")
-            logger.success(f"result = {json.dumps(result, indent=4)}")
+            # logger.success(f"result = {json.dumps(result, indent=4)}")
             safe_json_dump(result, result_file)
 
         logger.info(f"Finished main.py execution for {pyfile} in {computed_time}")
