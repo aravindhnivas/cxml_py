@@ -78,6 +78,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      # print the architecture name for macos (only)
+      - name: Print architecture name for macos
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+            uname -m
+          fi
+
       - name: Install Rye
         id: setup-rye
         uses: eifinger/setup-rye@v4
@@ -87,14 +95,6 @@ jobs:
 
       - name: Set up Python environment with Rye
         run: rye sync
-
-      # print the architecture name for macos (only)
-      - name: Print architecture name for macos
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          if [[ "$OSTYPE" == "darwin"* ]]; then
-            uname -m
-          fi
 
       - name: Build with PyInstaller
         run: rye run ${{ matrix.CMD_BUILD }}
