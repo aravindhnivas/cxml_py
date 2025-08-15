@@ -44,26 +44,34 @@ jobs:
       fail-fast: true
       matrix:
         include:
-          - os: macos-latest
-            TARGET: macos
+          - os: macos-13
+            TARGET: macos-x86_64
             CMD_BUILD: >
               pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name cxml_py --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import cxml_lib --paths src/ src/main.py
-            ZIP_IT: cd dist && zip -r9 cxml_py-darwin.zip cxml_py/
-            OUT_FILE_NAME: cxml_py-darwin.zip
+            ZIP_IT: cd dist && zip -r9 cxml_py-macos-x86_64.zip cxml_py/
+            OUT_FILE_NAME: cxml_py-macos-x86_64.zip
             ASSET_MIME: application/zip
 
-          - os: windows-latest
-            TARGET: windows
-            CMD_BUILD: pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name cxml_py --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import cxml_lib --paths src/ src/main.py
-            ZIP_IT: powershell Compress-Archive -Path dist/cxml_py -DestinationPath dist/cxml_py-win32.zip
-            OUT_FILE_NAME: cxml_py-win32.zip
+          - os: macos-14
+            TARGET: macos-aarch64
+            CMD_BUILD: >
+              pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name cxml_py --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import cxml_lib --paths src/ src/main.py
+            ZIP_IT: cd dist && zip -r9 cxml_py-macos-aarch64.zip cxml_py/
+            OUT_FILE_NAME: cxml_py-macos-aarch64.zip
             ASSET_MIME: application/zip
+
+          # - os: windows-latest
+          #   TARGET: windows-x86_64
+          #   CMD_BUILD: pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name cxml_py --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import cxml_lib --paths src/ src/main.py
+          #   ZIP_IT: powershell Compress-Archive -Path dist/cxml_py -DestinationPath dist/cxml_py-windows-x86_64.zip
+          #   OUT_FILE_NAME: cxml_py-windows-x86_64.zip
+          #   ASSET_MIME: application/zip
 
           # - os: ubuntu-latest
           #   TARGET: ubuntu
           #   CMD_BUILD: >
           #     pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name cxml_py --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import cxml_lib --paths src/ src/main.py
-          #   ZIP_IT: cd dist && zip -r cxml_py-linux.zip cxml_py/
+          #   ZIP_IT: cd dist && zip -r9 cxml_py-linux.zip cxml_py/
           #   OUT_FILE_NAME: cxml_py-linux.zip
           #   ASSET_MIME: application/zip
 
@@ -79,6 +87,14 @@ jobs:
 
       - name: Set up Python environment with Rye
         run: rye sync
+
+      # print the architecture name for macos (only)
+      - name: Print architecture name for macos
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+            uname -m
+          fi
 
       - name: Build with PyInstaller
         run: rye run ${{ matrix.CMD_BUILD }}
