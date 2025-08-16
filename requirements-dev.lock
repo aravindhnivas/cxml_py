@@ -29,7 +29,7 @@ appnope==0.1.4
     # via ipykernel
 arrow==1.3.0
     # via rq-dashboard
-astrochem-embedding @ file:///Volumes/DataDock2TB/Documents/GitHub/astrochem_embedding
+astrochem-embedding @ git+https://github.com/aravindhnivas/astrochem_embedding.git@a7208ce3afb39eb0331e6164ab2ba6fa2487167c
     # via cxml-lib
 asttokens==3.0.0
     # via stack-data
