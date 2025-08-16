@@ -52,7 +52,7 @@ jobs:
             OUT_FILE_NAME: cxml_py-macos-x86_64.zip
             ASSET_MIME: application/zip
 
-          - os: macos-14
+          - os: macos-latest
             TARGET: macos-aarch64
             CMD_BUILD: >
               pyinstaller --noconfirm --onedir --console --icon src/icons/icon.ico --name cxml_py --debug noarchive --noupx --additional-hooks-dir src/hooks --hidden-import cxml_lib --paths src/ src/main.py
