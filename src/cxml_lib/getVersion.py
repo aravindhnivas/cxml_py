@@ -2,6 +2,8 @@ import sys
 from multiprocessing import cpu_count
 from cxml_lib import __version__ as pyPackageVersion
 from cxml_lib.utils import NPARTITIONS, RAM_IN_GB
+from platform import machine
+from cxml_lib import __name__ as pyPackageName
 
 
 def main(args=None):
@@ -13,4 +15,6 @@ def main(args=None):
         "cpu_count": cpu_count(),
         "ram": RAM_IN_GB,
         "npartitions": NPARTITIONS,
+        "pyPackageArch": machine(),
+        "pyPackageName": pyPackageName,
     }
